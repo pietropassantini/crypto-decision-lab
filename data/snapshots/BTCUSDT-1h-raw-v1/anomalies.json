@@ -1,0 +1,124 @@
+{
+  "dataset_id": "BTCUSDT-1h-raw-v1",
+  "events": [
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-02-11T03:00:00+00:00",
+      "timestamp_ms": 1613012400000,
+      "observed_close_ms": 1613014854773,
+      "chunk": "chunks/BTCUSDT/1h/20210201T0000_20210301T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-02-11T04:00:00+00:00",
+      "timestamp_ms": 1613016000000,
+      "chunk": "chunks/BTCUSDT/1h/20210201T0000_20210301T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-03-06T02:00:00+00:00",
+      "timestamp_ms": 1614996000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210301T0000_20210401T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-20T02:00:00+00:00",
+      "timestamp_ms": 1618884000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-20T03:00:00+00:00",
+      "timestamp_ms": 1618887600000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-04-25T04:00:00+00:00",
+      "timestamp_ms": 1619323200000,
+      "observed_close_ms": 1619323258146,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T05:00:00+00:00",
+      "timestamp_ms": 1619326800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T06:00:00+00:00",
+      "timestamp_ms": 1619330400000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T07:00:00+00:00",
+      "timestamp_ms": 1619334000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-08-13T01:00:00+00:00",
+      "timestamp_ms": 1628816400000,
+      "observed_close_ms": 1628819999000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T02:00:00+00:00",
+      "timestamp_ms": 1628820000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T03:00:00+00:00",
+      "timestamp_ms": 1628823600000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T04:00:00+00:00",
+      "timestamp_ms": 1628827200000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T05:00:00+00:00",
+      "timestamp_ms": 1628830800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-09-29T07:00:00+00:00",
+      "timestamp_ms": 1632898800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210901T0000_20211001T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-09-29T08:00:00+00:00",
+      "timestamp_ms": 1632902400000,
+      "chunk": "quarantine/BTCUSDT/1h/20210901T0000_20211001T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-12-24T04:00:00+00:00",
+      "timestamp_ms": 1640318400000,
+      "observed_close_ms": 1640321994362,
+      "chunk": "quarantine/BTCUSDT/1h/20211201T0000_20220101T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2023-03-24T12:00:00+00:00",
+      "timestamp_ms": 1679659200000,
+      "observed_close_ms": 1679661581646,
+      "chunk": "quarantine/BTCUSDT/1h/20230301T0000_20230401T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2023-03-24T13:00:00+00:00",
+      "timestamp_ms": 1679662800000,
+      "chunk": "quarantine/BTCUSDT/1h/20230301T0000_20230401T0000.parquet"
+    }
+  ]
+}

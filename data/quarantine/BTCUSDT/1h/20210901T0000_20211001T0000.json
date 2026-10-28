@@ -1,0 +1,30 @@
+{
+  "start_ms": 1630454400000,
+  "end_ms": 1633046400000,
+  "sha256": "047a03f1eac0daa7c24c113cad9465c02d02fc0bb6d8bd49c493417d8342c0f6",
+  "quality": {
+    "ok": false,
+    "rows": 718,
+    "expected_rows": 720,
+    "start_utc": "2021-09-01 00:00:00+00:00",
+    "end_exclusive_utc": "2021-10-01 00:00:00+00:00",
+    "issues": [
+      "missing hours: 2, first: 2021-09-29 07:00:00+00:00"
+    ],
+    "status": "ERROR",
+    "exceptions": [],
+    "unresolved_issues": [
+      "missing hours: 2, first: 2021-09-29 07:00:00+00:00"
+    ]
+  },
+  "details": {
+    "missing_utc": [
+      "2021-09-29T07:00:00+00:00",
+      "2021-09-29T08:00:00+00:00"
+    ],
+    "incorrect_close": [],
+    "issues": [
+      "missing hours: 2, first: 2021-09-29 07:00:00+00:00"
+    ]
+  }
+}

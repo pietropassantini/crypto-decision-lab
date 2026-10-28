@@ -1,0 +1,26 @@
+{
+  "schema_version": "cdl.diagnostics.v1",
+  "rows": 100,
+  "model": "mistralai/Timestral-209M",
+  "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+  "windows_sha256": "21bbe08da031e54960b32e1764fd76df5b12eaf82ebdaa123c1703229c9defa8",
+  "features_available_at_forecast": [
+    "last_context_close",
+    "volatility_168h",
+    "trend_168h",
+    "momentum_24h",
+    "forecast_return_24h",
+    "interval_width_pct",
+    "mean_interval_width_pct"
+  ],
+  "future_outcomes_do_not_use_as_features": [
+    "realized_return_24h",
+    "timestral_mae",
+    "naive_mae",
+    "mae_improvement_pct",
+    "timestral_better",
+    "direction_correct",
+    "interval_coverage"
+  ],
+  "diagnostics_sha256": "7ec4bd8746f03ab12125a547bb4fe3aaaae973dea88b7d08783d7b5c9f9f168f"
+}

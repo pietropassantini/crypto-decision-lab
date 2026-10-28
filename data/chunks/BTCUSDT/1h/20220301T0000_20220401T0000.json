@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "provider": "binance-spot",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_ms": 1646092800000,
+  "end_ms": 1648771200000,
+  "rows": 744,
+  "sha256": "d889cbdad257ff1ecbec8ff3a6132882b655e13d345b82f4acc194497848ac99",
+  "collected_utc": "2026-10-23T17:18:06.039834+00:00",
+  "quality": {
+    "ok": true,
+    "rows": 744,
+    "expected_rows": 744,
+    "start_utc": "2022-03-01 00:00:00+00:00",
+    "end_exclusive_utc": "2022-04-01 00:00:00+00:00",
+    "issues": [],
+    "status": "VALID",
+    "exceptions": []
+  }
+}

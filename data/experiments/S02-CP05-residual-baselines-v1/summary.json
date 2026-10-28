@@ -1,0 +1,44 @@
+{
+  "evaluation_rows": 50,
+  "folds": 5,
+  "metrics": {
+    "timestral": {
+      "mae_price_24h": 1457.9514375,
+      "rmse_price_24h": 1858.5425633702635,
+      "direction_accuracy_24h": 0.5
+    },
+    "naive": {
+      "mae_price_24h": 1458.1010937500005,
+      "rmse_price_24h": 1858.5230315703816,
+      "direction_accuracy_24h": 0.0
+    },
+    "ridge": {
+      "mae_price_24h": 1543.6478173224768,
+      "rmse_price_24h": 1946.8320900727092,
+      "direction_accuracy_24h": 0.42
+    },
+    "histgb": {
+      "mae_price_24h": 1658.0125154782547,
+      "rmse_price_24h": 2128.814291333831,
+      "direction_accuracy_24h": 0.48
+    }
+  },
+  "mae_improvement_vs_timestral_pct": {
+    "ridge": -5.877862432059011,
+    "histgb": -13.722067335885079
+  },
+  "notice": "Exploratory historical backtest, no transaction costs, no independent model-pretraining holdout.",
+  "source_features_sha256": "193e2657f148e8762f6795f222ab858f53f95c9bc45e516963f82065716b497c",
+  "source_targets_sha256": "ae6b2c6c7e0f4fb85cacdabe4006fd3169ca48b3fdbad689596edf002482fa67",
+  "train_min": 50,
+  "fold_test_size": 10,
+  "feature_columns": [
+    "volatility_168h",
+    "trend_168h",
+    "momentum_24h",
+    "forecast_return_24h",
+    "interval_width_pct",
+    "mean_interval_width_pct"
+  ],
+  "predictions_sha256": "f65df16dd889d4641d5ad26220b63a3120b19297343932e5f7c56a020216b5ab"
+}

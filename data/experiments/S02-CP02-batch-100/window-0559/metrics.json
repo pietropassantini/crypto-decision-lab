@@ -1,0 +1,34 @@
+{
+  "experiment": "S02-CP02",
+  "model": "mistralai/Timestral-209M",
+  "revision_requested": null,
+  "window_index": 559,
+  "device": "cpu",
+  "provenance": {
+    "start_utc": "2022-09-05T00:00:00+00:00",
+    "forecast_start_utc": "2022-09-12T00:00:00+00:00",
+    "target_end_exclusive_utc": "2022-09-13T00:00:00+00:00",
+    "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+    "windows_sha256": "21bbe08da031e54960b32e1764fd76df5b12eaf82ebdaa123c1703229c9defa8"
+  },
+  "last_context_close": 21826.869140625,
+  "metrics": {
+    "timestral": {
+      "mae": 423.6946614583333,
+      "rmse": 482.9637365832359,
+      "final_forecast": 21731.28125,
+      "final_actual": 22395.740234375,
+      "direction_correct_24h": false
+    },
+    "naive": {
+      "mae": 368.0926920572917,
+      "rmse": 412.82099865201064,
+      "final_forecast": 21826.869140625,
+      "final_actual": 22395.740234375,
+      "direction_correct_24h": null
+    },
+    "quantile_10_90_empirical_coverage": 0.5833333333333334,
+    "mae_improvement_pct": -15.105426051867244
+  },
+  "forecast_sha256": "51f934e07a552d778c5bfc45594c6acf6d634301ff23637b7e25269ac1bab3cf"
+}

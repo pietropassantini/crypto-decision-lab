@@ -1,0 +1,51 @@
+{
+  "rows": 100,
+  "wins": 52,
+  "timestral_mean_mae": 796.6371948242189,
+  "naive_mean_mae": 809.1334106445314,
+  "mean_interval_coverage": 0.7820833333333331,
+  "by_year": [
+    {
+      "year": 2021,
+      "windows": 15,
+      "wins": 9,
+      "mae_improvement_pct": 5.515134598670057,
+      "interval_coverage": 0.7722222222222221
+    },
+    {
+      "year": 2022,
+      "windows": 18,
+      "wins": 10,
+      "mae_improvement_pct": -3.1884420194398855,
+      "interval_coverage": 0.8101851851851851
+    },
+    {
+      "year": 2023,
+      "windows": 17,
+      "wins": 7,
+      "mae_improvement_pct": -4.225728705617082,
+      "interval_coverage": 0.8578431372549019
+    },
+    {
+      "year": 2024,
+      "windows": 18,
+      "wins": 8,
+      "mae_improvement_pct": -3.0246285400458373,
+      "interval_coverage": 0.800925925925926
+    },
+    {
+      "year": 2025,
+      "windows": 17,
+      "wins": 10,
+      "mae_improvement_pct": 4.98579792625341,
+      "interval_coverage": 0.7034313725490197
+    },
+    {
+      "year": 2026,
+      "windows": 15,
+      "wins": 8,
+      "mae_improvement_pct": -0.4151636710716833,
+      "interval_coverage": 0.738888888888889
+    }
+  ]
+}

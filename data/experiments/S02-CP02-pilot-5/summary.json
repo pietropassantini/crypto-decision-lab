@@ -1,0 +1,31 @@
+{
+  "config": {
+    "schema_version": 1,
+    "experiment": "S02-CP02",
+    "model": "mistralai/Timestral-209M",
+    "revision": null,
+    "device": "cpu",
+    "window_indices": [
+      0,
+      513,
+      1026,
+      1539,
+      2052
+    ],
+    "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+    "windows_sha256": "21bbe08da031e54960b32e1764fd76df5b12eaf82ebdaa123c1703229c9defa8",
+    "lookback": 168,
+    "horizon": 24
+  },
+  "summary": {
+    "completed": 5,
+    "timestral_mean_mae": 861.2559895833334,
+    "naive_mean_mae": 879.7321940104166,
+    "mean_mae_improvement_pct": 2.1002078306190053,
+    "timestral_better_windows": 3,
+    "ties": 0,
+    "mean_interval_coverage": 0.7166666666666666,
+    "direction_accuracy": 0.8,
+    "direction_evaluable": 5
+  }
+}

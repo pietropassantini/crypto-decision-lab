@@ -1,0 +1,770 @@
+{
+  "schema_version": 1,
+  "dataset_id": "BTCUSDT-1h-raw-v1",
+  "source_manifest": "/home/sirio/projects/crypto-decision-lab/data/manifests/BTCUSDT_1h_1609459200000_1792771200000.json",
+  "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+  "chunk_chain_sha256": "f7ecc3223ecbe7b29353ffaac7c5fdb27f3ffd499144afe3c5534dcc2d8a33f4",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_utc": "2021-01-01T00:00:00Z",
+  "end_exclusive_utc": "2026-10-23T16:00:00Z",
+  "expected_rows": 50920,
+  "observed_rows": 50906,
+  "missing_count": 14,
+  "irregular_close_count": 5,
+  "chunks": [
+    {
+      "file": "chunks/BTCUSDT/1h/20210101T0000_20210201T0000.parquet",
+      "sha256": "867f05b52394f063db3f89f95ccba81b67d90276f178390813d2657b0f9fce06",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1609459200000,
+      "end_ms": 1612137600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20210201T0000_20210301T0000.parquet",
+      "sha256": "1ddf564fe5fff32ebfa6c446b1f8f36f71b0fbe56a93d7d1d813d353f971a4a9",
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "rows": 671,
+      "expected_rows": 672,
+      "start_ms": 1612137600000,
+      "end_ms": 1614556800000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20210301T0000_20210401T0000.parquet",
+      "sha256": "86291ae7411afc7198cbc683b45d7d825f76ab097358f0d7e46e85b84f2b9eb9",
+      "status": "REQUIRES_REVIEW",
+      "rows": 743,
+      "expected_rows": 744,
+      "start_ms": 1614556800000,
+      "end_ms": 1617235200000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet",
+      "sha256": "f2c79069a3a8e8ba9f7be56a38d382a8e443df22d7ff555467936b2877898b35",
+      "status": "REQUIRES_REVIEW",
+      "rows": 715,
+      "expected_rows": 720,
+      "start_ms": 1617235200000,
+      "end_ms": 1619827200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20210501T0000_20210601T0000.parquet",
+      "sha256": "03aed1714e7f3517ba9e5957a06c039970adee47a681efb768684a1788e062aa",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1619827200000,
+      "end_ms": 1622505600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20210601T0000_20210701T0000.parquet",
+      "sha256": "dc73aa18b0bdf8c16f8aa8b4e32e0a9ee88aa7de19aeff92d49146f710626c79",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1622505600000,
+      "end_ms": 1625097600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20210701T0000_20210801T0000.parquet",
+      "sha256": "b62d30c1e0ee03441c88a274152e6ab10fd3de194ace6c07458a4901d79d2b49",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1625097600000,
+      "end_ms": 1627776000000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet",
+      "sha256": "5a64b55035215d94c32be4fa34a084990b202508a611998aaa5a6c28b27be33c",
+      "status": "REQUIRES_REVIEW",
+      "rows": 740,
+      "expected_rows": 744,
+      "start_ms": 1627776000000,
+      "end_ms": 1630454400000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20210901T0000_20211001T0000.parquet",
+      "sha256": "047a03f1eac0daa7c24c113cad9465c02d02fc0bb6d8bd49c493417d8342c0f6",
+      "status": "REQUIRES_REVIEW",
+      "rows": 718,
+      "expected_rows": 720,
+      "start_ms": 1630454400000,
+      "end_ms": 1633046400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20211001T0000_20211101T0000.parquet",
+      "sha256": "5c7776c061f35717cec1097a65d16ad87a9980bf68831b1a728f8ceeeb15e876",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1633046400000,
+      "end_ms": 1635724800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20211101T0000_20211201T0000.parquet",
+      "sha256": "4db02ae7e3abcf94d3dc0d80c825a4f4c4da7703d23f263200336a942384bdef",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1635724800000,
+      "end_ms": 1638316800000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20211201T0000_20220101T0000.parquet",
+      "sha256": "9ce53c396f0b19f904b63bb8dce20138e3a275644dab71793e0bd2c8370b6758",
+      "status": "REQUIRES_REVIEW",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1638316800000,
+      "end_ms": 1640995200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220101T0000_20220201T0000.parquet",
+      "sha256": "bd6626ee7f9fea17ec7a7e200dda5f5b027affab1d6b41aa23a65a1ace75ff5b",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1640995200000,
+      "end_ms": 1643673600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220201T0000_20220301T0000.parquet",
+      "sha256": "e78bba5639b85f78df9f53ad78480892ad630b6a370b0901c2efff62912762ad",
+      "status": "VALID",
+      "rows": 672,
+      "expected_rows": 672,
+      "start_ms": 1643673600000,
+      "end_ms": 1646092800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220301T0000_20220401T0000.parquet",
+      "sha256": "d889cbdad257ff1ecbec8ff3a6132882b655e13d345b82f4acc194497848ac99",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1646092800000,
+      "end_ms": 1648771200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220401T0000_20220501T0000.parquet",
+      "sha256": "1afce96d7b6010c6976b791769a3909085e37770dcfa7900afda2eec420c2096",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1648771200000,
+      "end_ms": 1651363200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220501T0000_20220601T0000.parquet",
+      "sha256": "2223862006e89a72fe7656882aff3478ebf7d6fc9a7c2fa556c27b302bd7ea87",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1651363200000,
+      "end_ms": 1654041600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220601T0000_20220701T0000.parquet",
+      "sha256": "9ddf7d4ddd6be507bf69b67f46f080a9659eb9a9b4049dfd27aa6bd8690e3bb5",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1654041600000,
+      "end_ms": 1656633600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220701T0000_20220801T0000.parquet",
+      "sha256": "a1e6254610e209d668fcdb7d982efca74858f53f4f03214ae77571f1e89a5d82",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1656633600000,
+      "end_ms": 1659312000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220801T0000_20220901T0000.parquet",
+      "sha256": "71c920abd0f096d72454c600fa0647cc88e8d7a31421f1add54e68ae61a2ee45",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1659312000000,
+      "end_ms": 1661990400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20220901T0000_20221001T0000.parquet",
+      "sha256": "4f492f71eb07dec7ae2799415bd3d4f5998a32f9dbf5a033622ead7a7bbd02dd",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1661990400000,
+      "end_ms": 1664582400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20221001T0000_20221101T0000.parquet",
+      "sha256": "683d98b570df97b52bb36c5ed8c7d00a712f734bf47d4171bf23871283723bfb",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1664582400000,
+      "end_ms": 1667260800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20221101T0000_20221201T0000.parquet",
+      "sha256": "7342038068035c6381e616342fe48d9fbe52b87a4b3f04fb0631e4aa8291bc2f",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1667260800000,
+      "end_ms": 1669852800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20221201T0000_20230101T0000.parquet",
+      "sha256": "f63dc9604c26e0db46862ace73ffe2935a2ed8e116cebd783328791cf9f89011",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1669852800000,
+      "end_ms": 1672531200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230101T0000_20230201T0000.parquet",
+      "sha256": "626d57e84a167ca0d73b81469610f7355b013427e2c7df1e1167193569ef8060",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1672531200000,
+      "end_ms": 1675209600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230201T0000_20230301T0000.parquet",
+      "sha256": "af5deef483b96295ab9d9c14f81bee9b6030d8a54aad908919591f2f1e4bdcac",
+      "status": "VALID",
+      "rows": 672,
+      "expected_rows": 672,
+      "start_ms": 1675209600000,
+      "end_ms": 1677628800000
+    },
+    {
+      "file": "quarantine/BTCUSDT/1h/20230301T0000_20230401T0000.parquet",
+      "sha256": "439c4b21bd580e24ec338d71ad6ff9b2bb0d6c2a05ac022b6f1dbc018d9c6d1a",
+      "status": "REQUIRES_REVIEW",
+      "rows": 743,
+      "expected_rows": 744,
+      "start_ms": 1677628800000,
+      "end_ms": 1680307200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230401T0000_20230501T0000.parquet",
+      "sha256": "9c038c55e1ca9a60419cad108ab0348edd4515d717e4a42ecd20567a37cf4400",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1680307200000,
+      "end_ms": 1682899200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230501T0000_20230601T0000.parquet",
+      "sha256": "8d2621dda85dfef11979689183004260db59e679273aabccaeb91fbe47c14571",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1682899200000,
+      "end_ms": 1685577600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230601T0000_20230701T0000.parquet",
+      "sha256": "86a28126575b975a0563c1eb0c671c93b4ea9f0b01027bb920ed3d4bd241fda7",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1685577600000,
+      "end_ms": 1688169600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230701T0000_20230801T0000.parquet",
+      "sha256": "3d687b3d756eaef54c4f7e42c25ecce191e5fc38161f9e74e187bb623e16e1a5",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1688169600000,
+      "end_ms": 1690848000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230801T0000_20230901T0000.parquet",
+      "sha256": "afbd603993c7774da62279ca08a5a7f870f36462ceb328ec2835d2ed2c048543",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1690848000000,
+      "end_ms": 1693526400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20230901T0000_20231001T0000.parquet",
+      "sha256": "1bf081bbcea200dc83fd37b5eb336ece5925b5800c8fd3b23007f80acd1e391f",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1693526400000,
+      "end_ms": 1696118400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20231001T0000_20231101T0000.parquet",
+      "sha256": "0d7cc9da5595eff5fe660c018e9c71d6a2a937887a09ddd7963d19d93d5fdb06",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1696118400000,
+      "end_ms": 1698796800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20231101T0000_20231201T0000.parquet",
+      "sha256": "d928102790ae0ca5d590a6eb4d83159e2b753c4319b5935992da55a69956a69a",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1698796800000,
+      "end_ms": 1701388800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20231201T0000_20240101T0000.parquet",
+      "sha256": "390d4123444044ede8a8c02de127cd3ac8bb1c46fecd38b75d1d64ccb4b3b588",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1701388800000,
+      "end_ms": 1704067200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240101T0000_20240201T0000.parquet",
+      "sha256": "cc5b876d10b1c81fa228c20974c8e513b929a8e39241701a286eaef4680d0ea6",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1704067200000,
+      "end_ms": 1706745600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240201T0000_20240301T0000.parquet",
+      "sha256": "dae9aacb1302d2d31641af45036dfadc5388219fb67f1372576518d97cd15a65",
+      "status": "VALID",
+      "rows": 696,
+      "expected_rows": 696,
+      "start_ms": 1706745600000,
+      "end_ms": 1709251200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240301T0000_20240401T0000.parquet",
+      "sha256": "1948c6480708ea9d48f094594bf6842d5dcf5181b311ad19a3e3a1c6253a0341",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1709251200000,
+      "end_ms": 1711929600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240401T0000_20240501T0000.parquet",
+      "sha256": "68eb31f1dd952b842c6d2321cdf08a19ef1db6cd0db0efe171053bdca76100c5",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1711929600000,
+      "end_ms": 1714521600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240501T0000_20240601T0000.parquet",
+      "sha256": "8a935ba882fff70cc04fc3fcb028ddecf252787a0aaa5b1c62af0dcba4e1fbda",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1714521600000,
+      "end_ms": 1717200000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240601T0000_20240701T0000.parquet",
+      "sha256": "48984431788316c3ea838ac5a8b602750e6bf4452716fcc1a34a26d25e462afa",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1717200000000,
+      "end_ms": 1719792000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240701T0000_20240801T0000.parquet",
+      "sha256": "453e73f8d094f3e15c4733ec9a8a2dcaa4c1e4a3cd2e2e0c83de8938c673b3c5",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1719792000000,
+      "end_ms": 1722470400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240801T0000_20240901T0000.parquet",
+      "sha256": "c9b8e33fe00db93bf926c97f672ede1148d721205a98573f34e66abc1c76ffea",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1722470400000,
+      "end_ms": 1725148800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20240901T0000_20241001T0000.parquet",
+      "sha256": "7e9f1c456b46fdbe421339119f2aab462927ecd325f2d3b5bb330e00702572cb",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1725148800000,
+      "end_ms": 1727740800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20241001T0000_20241101T0000.parquet",
+      "sha256": "7bfca1ec843e5177b5e185f4a45f9bc555a0f248cfb92b09d49c60c6d69e9f25",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1727740800000,
+      "end_ms": 1730419200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20241101T0000_20241201T0000.parquet",
+      "sha256": "29778c7939b2d00e5c07cc4e9ba3ac720eab8d7cde0cd338edbd0b7ea63a0d29",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1730419200000,
+      "end_ms": 1733011200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20241201T0000_20250101T0000.parquet",
+      "sha256": "3ff7fd943352f080fad48e44b73e601b942ed600b6edeb663862b02eae90294c",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1733011200000,
+      "end_ms": 1735689600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250101T0000_20250201T0000.parquet",
+      "sha256": "d68b8e1e0c9246f044c8cf0fdc4e71d5ec3a82d3e28d47329b2ed5bbc5beb035",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1735689600000,
+      "end_ms": 1738368000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250201T0000_20250301T0000.parquet",
+      "sha256": "cccc89cd8c0a7fcbc87ffe7ef7e58f4230a08f46ded2ccb103bb6889d4fc075c",
+      "status": "VALID",
+      "rows": 672,
+      "expected_rows": 672,
+      "start_ms": 1738368000000,
+      "end_ms": 1740787200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250301T0000_20250401T0000.parquet",
+      "sha256": "83267ef4de3a92c0ca076bbc9e8f1619254cbf7d8639da5334b6c3609f895fdd",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1740787200000,
+      "end_ms": 1743465600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250401T0000_20250501T0000.parquet",
+      "sha256": "720d5662db58e7b948c133e4ce685abd980d0bc69e535786dbff643d7efdf611",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1743465600000,
+      "end_ms": 1746057600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250501T0000_20250601T0000.parquet",
+      "sha256": "2081a6e8789c2807bc5e63097afade87308176c02f830c96defa247c66b4148e",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1746057600000,
+      "end_ms": 1748736000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250601T0000_20250701T0000.parquet",
+      "sha256": "279a6ffe5a74a693915aa10af232b0546e59d23c6833946ec4479b8df886f87c",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1748736000000,
+      "end_ms": 1751328000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250701T0000_20250801T0000.parquet",
+      "sha256": "9f645d0f2d3aa7165a15b7867ed4d8dd49b5f07c814d84fa3c548c325ed0d20f",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1751328000000,
+      "end_ms": 1754006400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250801T0000_20250901T0000.parquet",
+      "sha256": "f12596e91d59959195dc07d2ac327764bc66b130fe9c50cf7f69743635709429",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1754006400000,
+      "end_ms": 1756684800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20250901T0000_20251001T0000.parquet",
+      "sha256": "b7b44d18887877f1425809fa1ec5faaaa4172d04f0c6fc96491eb40e4b6bf6ca",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1756684800000,
+      "end_ms": 1759276800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20251001T0000_20251101T0000.parquet",
+      "sha256": "e9c060409118d4174f6c36ccac3776a0ddc3aecf987f27b57dd6f2c6bd24ac7c",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1759276800000,
+      "end_ms": 1761955200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20251101T0000_20251201T0000.parquet",
+      "sha256": "0b863aef6564185a7da249c7273955ab6e8643e48fc48ce97b89cf6f1189c599",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1761955200000,
+      "end_ms": 1764547200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20251201T0000_20260101T0000.parquet",
+      "sha256": "e01859ed44a5ea40bc4fae567d3d44d7a5909a4964aecf767575a27d8050d700",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1764547200000,
+      "end_ms": 1767225600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260101T0000_20260201T0000.parquet",
+      "sha256": "ccfa27ca003831946a9abd3121f99871f625c8f08ee60a2fc9427b710d783d69",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1767225600000,
+      "end_ms": 1769904000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260201T0000_20260301T0000.parquet",
+      "sha256": "15a8c743f068d41b58476610c123578a8fd1e6ac76e431cfc625c1b4d8d6aee3",
+      "status": "VALID",
+      "rows": 672,
+      "expected_rows": 672,
+      "start_ms": 1769904000000,
+      "end_ms": 1772323200000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260301T0000_20260401T0000.parquet",
+      "sha256": "a686905303a4822d027ae1f00aa942ce3cc22ddf17fca3be722bfedd90645ad8",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1772323200000,
+      "end_ms": 1775001600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260401T0000_20260501T0000.parquet",
+      "sha256": "4f55a597dedb2951a295ab5926fde583a3fcc35f3b0a85ef353cea71030b422f",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1775001600000,
+      "end_ms": 1777593600000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260501T0000_20260601T0000.parquet",
+      "sha256": "e51142fed788a2f88fbfd47a02d3e217866cf71a5d976c7aeab46f52cf087693",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1777593600000,
+      "end_ms": 1780272000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260601T0000_20260701T0000.parquet",
+      "sha256": "75815a0151630c4fe76e441c47ef392caa92f805a1309df23f869c2ef590497d",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1780272000000,
+      "end_ms": 1782864000000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260701T0000_20260801T0000.parquet",
+      "sha256": "077bf8454501becfd92f721fa892b953f81b5340416f1b1725faa524f321e58f",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1782864000000,
+      "end_ms": 1785542400000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260801T0000_20260901T0000.parquet",
+      "sha256": "2e81f885d515eb3d3a06be014f5aa18e8c20aac954d87b44a4221fa708ef1a78",
+      "status": "VALID",
+      "rows": 744,
+      "expected_rows": 744,
+      "start_ms": 1785542400000,
+      "end_ms": 1788220800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20260901T0000_20261001T0000.parquet",
+      "sha256": "80ca782e401f3ba83dd803ee49200a70f5bb0dc3ea49a1165d0b1a6820e5bc7e",
+      "status": "VALID",
+      "rows": 720,
+      "expected_rows": 720,
+      "start_ms": 1788220800000,
+      "end_ms": 1790812800000
+    },
+    {
+      "file": "chunks/BTCUSDT/1h/20261001T0000_20261023T1600.parquet",
+      "sha256": "5dbc4c5f2c649fcd577b361ef395eeffeb8c1c4467ca178226036eaa53a69c3f",
+      "status": "VALID",
+      "rows": 544,
+      "expected_rows": 544,
+      "start_ms": 1790812800000,
+      "end_ms": 1792771200000
+    }
+  ],
+  "anomalies": [
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-02-11T03:00:00+00:00",
+      "timestamp_ms": 1613012400000,
+      "observed_close_ms": 1613014854773,
+      "chunk": "chunks/BTCUSDT/1h/20210201T0000_20210301T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-02-11T04:00:00+00:00",
+      "timestamp_ms": 1613016000000,
+      "chunk": "chunks/BTCUSDT/1h/20210201T0000_20210301T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-03-06T02:00:00+00:00",
+      "timestamp_ms": 1614996000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210301T0000_20210401T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-20T02:00:00+00:00",
+      "timestamp_ms": 1618884000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-20T03:00:00+00:00",
+      "timestamp_ms": 1618887600000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-04-25T04:00:00+00:00",
+      "timestamp_ms": 1619323200000,
+      "observed_close_ms": 1619323258146,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T05:00:00+00:00",
+      "timestamp_ms": 1619326800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T06:00:00+00:00",
+      "timestamp_ms": 1619330400000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-04-25T07:00:00+00:00",
+      "timestamp_ms": 1619334000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210401T0000_20210501T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-08-13T01:00:00+00:00",
+      "timestamp_ms": 1628816400000,
+      "observed_close_ms": 1628819999000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T02:00:00+00:00",
+      "timestamp_ms": 1628820000000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T03:00:00+00:00",
+      "timestamp_ms": 1628823600000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T04:00:00+00:00",
+      "timestamp_ms": 1628827200000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-08-13T05:00:00+00:00",
+      "timestamp_ms": 1628830800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210801T0000_20210901T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-09-29T07:00:00+00:00",
+      "timestamp_ms": 1632898800000,
+      "chunk": "quarantine/BTCUSDT/1h/20210901T0000_20211001T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2021-09-29T08:00:00+00:00",
+      "timestamp_ms": 1632902400000,
+      "chunk": "quarantine/BTCUSDT/1h/20210901T0000_20211001T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2021-12-24T04:00:00+00:00",
+      "timestamp_ms": 1640318400000,
+      "observed_close_ms": 1640321994362,
+      "chunk": "quarantine/BTCUSDT/1h/20211201T0000_20220101T0000.parquet"
+    },
+    {
+      "type": "IRREGULAR_CLOSE",
+      "timestamp_utc": "2023-03-24T12:00:00+00:00",
+      "timestamp_ms": 1679659200000,
+      "observed_close_ms": 1679661581646,
+      "chunk": "quarantine/BTCUSDT/1h/20230301T0000_20230401T0000.parquet"
+    },
+    {
+      "type": "MISSING_CANDLE",
+      "timestamp_utc": "2023-03-24T13:00:00+00:00",
+      "timestamp_ms": 1679662800000,
+      "chunk": "quarantine/BTCUSDT/1h/20230301T0000_20230401T0000.parquet"
+    }
+  ],
+  "quality_status": "REQUIRES_REVIEW",
+  "policy": "Raw market data unmodified. No gap filling. Forecast windows crossing bad timestamps excluded."
+}

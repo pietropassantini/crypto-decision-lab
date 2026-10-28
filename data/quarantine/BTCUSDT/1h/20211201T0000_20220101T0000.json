@@ -1,0 +1,32 @@
+{
+  "start_ms": 1638316800000,
+  "end_ms": 1640995200000,
+  "sha256": "9ce53c396f0b19f904b63bb8dce20138e3a275644dab71793e0bd2c8370b6758",
+  "quality": {
+    "ok": false,
+    "rows": 744,
+    "expected_rows": 744,
+    "start_utc": "2021-12-01 00:00:00+00:00",
+    "end_exclusive_utc": "2022-01-01 00:00:00+00:00",
+    "issues": [
+      "incorrect candle close time"
+    ],
+    "status": "ERROR",
+    "exceptions": [],
+    "unresolved_issues": [
+      "incorrect candle close time"
+    ]
+  },
+  "details": {
+    "missing_utc": [],
+    "incorrect_close": [
+      {
+        "open_utc": "2021-12-24T04:00:00+00:00",
+        "close_time_ms": 1640321994362
+      }
+    ],
+    "issues": [
+      "incorrect candle close time"
+    ]
+  }
+}
