@@ -181,3 +181,18 @@ spaziatura uniforme del calendario; le lacune storiche sono già escluse.
 Il benchmark naïve è persistenza di prezzo. MAE/RMSE in USDT non normalizzati
 sono sensibili al livello del prezzo; la successiva fase includerà metriche
 percentuali, split cronologici e analisi per regime.
+
+## S03-CP01 · Dashboard read-only
+
+La dashboard Streamlit per BTCUSDT, Timestral e baseline statistiche è descritta in
+[`README-DASHBOARD.md`](README-DASHBOARD.md). Avvio dalla radice del repository:
+
+```bash
+pip install -e '.[dashboard,dev]'
+streamlit run src/crypto_decision_lab/dashboard/app.py
+```
+
+Legge esclusivamente gli archivi già presenti in `data/`, non richiede un server
+Timestral attivo e non modifica lo snapshot congelato. Test: `pytest tests/dashboard -q`.
+
+Report milestone: [`docs/S03-CP01-report.md`](docs/S03-CP01-report.md).

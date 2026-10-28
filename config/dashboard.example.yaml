@@ -1,0 +1,64 @@
+# Crypto Decision Lab · dashboard configuration example
+# Copy to config/dashboard.yaml for automatic loading, or set
+# CDL_DASHBOARD_CONFIG=/path/to/file.yaml.
+
+data:
+  root: data
+  snapshot_dir: data/snapshots/BTCUSDT-1h-raw-v1
+
+forecast:
+  batch_dir: data/experiments/S02-CP02-batch-100
+  residual_baselines_dir: data/experiments/S02-CP05-residual-baselines-v1
+  diagnostics_dir: data/diagnostics/S02-CP03-batch-100-v1
+  residual_dataset_dir: data/datasets/S02-CP04-residuals-v1
+  # Optional future S03 archive. Compatible columns are documented in
+  # src/crypto_decision_lab/dashboard/forecast_adapter.py.
+  decision_glob: data/experiments/S03-*
+  default_mode: h24_common
+  default_models: [timestral, naive, ridge, histgb]
+
+display:
+  default_timeframe: 1D
+  default_days: 730
+  chart_height: 650
+  cache_ttl_seconds: 300
+  source_label: "BTCUSDT · Binance Spot · 1h · UTC"
+
+integrity:
+  verify_checksums: true
+
+regimes:
+  # Past-only 168h log-return volatility thresholds and 168h trend thresholds.
+  volatility_bins: [0.005, 0.008]
+  trend_bins: [-0.05, 0.05]
+
+colors:
+  actual: "#f0b90b"
+  timestral: "#4cc9f0"
+  naive: "#9aa4b2"
+  ridge: "#ff8f6b"
+  histgb: "#b388ff"
+  decision: "#2dd4bf"
+
+# Optional: omit this key to use the built-in preset catalogue in indicators.py.
+indicator_presets:
+  - {key: sma, params: {window: 7}}
+  - {key: sma, params: {window: 20}}
+  - {key: sma, params: {window: 50}}
+  - {key: sma, params: {window: 100}}
+  - {key: sma, params: {window: 200}}
+  - {key: ema, params: {window: 9}}
+  - {key: ema, params: {window: 12}}
+  - {key: ema, params: {window: 26}}
+  - {key: ema, params: {window: 50}}
+  - {key: ema, params: {window: 200}}
+  - {key: macd, params: {fast: 12, slow: 26, signal: 9}}
+  - {key: bollinger, params: {window: 20, num_std: 2.0}}
+  - {key: adx, params: {period: 14}}
+  - {key: rsi, params: {period: 14}}
+  - {key: roc, params: {period: 12}}
+  - {key: stochastic, params: {k_window: 14, d_window: 3, smooth: 3}}
+  - {key: atr, params: {period: 14}}
+  - {key: rolling_volatility, params: {window: 24, annualize: true, periods_per_year: 0}}
+  - {key: volume, params: {}}
+  - {key: volume_ma, params: {window: 20}}

@@ -109,6 +109,7 @@ logs/
 # ==================================================
 
 config/local.yaml
+config/dashboard.yaml
 config/local.yml
 config/local.json
 config/secrets.*
