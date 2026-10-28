@@ -271,6 +271,8 @@ Suite completa:
 68 passed
 ```
 
+(La suite è stata estesa a 87 test dalla successiva S02-CP06B.)
+
 Comandi:
 
 ```bash

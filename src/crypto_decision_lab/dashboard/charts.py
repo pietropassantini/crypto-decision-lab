@@ -657,3 +657,100 @@ def make_forecast_inspector_figure(
         f"Cutoff {cutoff:%Y-%m-%d %H:%M} → target {target:%Y-%m-%d %H:%M} UTC",
         height,
     )
+
+
+def make_delta_mae_histogram(
+    errors_frame: pd.DataFrame,
+    *,
+    title: str = "Distribuzione delta MAE (Timestral - Naive) · h24",
+    height: int = 380,
+) -> go.Figure:
+    if errors_frame.empty:
+        return empty_figure("Nessun dato delta MAE disponibile", height=height)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Histogram(
+            x=errors_frame["delta_mae"],
+            nbinsx=40,
+            marker={"color": _with_alpha(model_color("timestral", {}), 0.55), "line": {"color": "#4cc9f0", "width": 1}},
+            hovertemplate="delta MAE %{x:,.1f} USDT<br>finestre %{y}<extra></extra>",
+        )
+    )
+    mean_value = float(errors_frame["delta_mae"].mean())
+    fig.add_vline(x=0, line_width=1, line_color=MUTED, line_dash="dash")
+    fig.add_vline(x=mean_value, line_width=1.4, line_color=GREEN)
+    fig.add_annotation(
+        x=mean_value,
+        y=1.0,
+        yref="paper",
+        text=f"media {mean_value:+,.1f} USDT",
+        showarrow=False,
+        xanchor="left",
+        font={"size": 11, "color": GREEN},
+    )
+    fig.update_xaxes(title_text="delta MAE (USDT), negativo = Timestral migliore")
+    fig.update_yaxes(title_text="Finestre")
+    return _apply_layout(fig, title, height)
+
+
+def make_win_rate_by_regime_figure(
+    stats_frames: dict[str, pd.DataFrame],
+    *,
+    height: int = 380,
+) -> go.Figure:
+    fig = go.Figure()
+    palette = ["#4cc9f0", "#f472b6", "#facc15"]
+    for index, (name, frame) in enumerate(stats_frames.items()):
+        if frame.empty:
+            continue
+        fig.add_trace(
+            go.Bar(
+                x=frame.iloc[:, 0],
+                y=frame["timestral_win_rate"] * 100.0,
+                name=name,
+                marker={"color": palette[index % len(palette)]},
+                customdata=np.column_stack(
+                    [frame["observations"], frame["delta_mae_usdt"]]
+                ),
+                hovertemplate=(
+                    "regime %{x}<br>win Timestral %{y:.1f}%<br>"
+                    "finestre %{customdata[0]}<br>delta MAE %{customdata[1]:+,.1f} USDT<extra></extra>"
+                ),
+            )
+        )
+    fig.add_hline(y=50, line_width=1, line_dash="dot", line_color=MUTED)
+    fig.update_yaxes(title_text="Win rate Timestral (%)")
+    fig.update_layout(barmode="group")
+    return _apply_layout(fig, "Win rate Timestral per regime · full sample", height)
+
+
+def make_policy_performance_figure(
+    policy_rows: list[dict],
+    *,
+    height: int = 420,
+) -> go.Figure:
+    if not policy_rows:
+        return empty_figure("Nessuna policy valutata", height=height)
+    fig = go.Figure()
+    names = [row["label"] for row in policy_rows]
+    mae = [row["mae_usdt"] for row in policy_rows]
+    colors = [model_color("naive", {}) if row["name"] == "always_naive" else RED if row["uses_target"] else "#4cc9f0" for row in policy_rows]
+    fig.add_trace(
+        go.Bar(
+            x=names,
+            y=mae,
+            marker={"color": colors},
+            customdata=np.array([[row["delta"], row["ci_low"], row["ci_high"], row["share_timestral"]] for row in policy_rows]),
+            hovertemplate=(
+                "<b>%{x}</b><br>MAE OOS %{y:,.2f} USDT<br>"
+                "delta vs naive %{customdata[0]:+,.2f} USDT<br>"
+                "CI95 [%{customdata[1]:+,.2f}, %{customdata[2]:+,.2f}]<br>"
+                "share Timestral %{customdata[3]:.0%}<extra></extra>"
+            ),
+        )
+    )
+    baseline = next((row["mae_usdt"] for row in policy_rows if row["name"] == "always_naive"), None)
+    if baseline is not None:
+        fig.add_hline(y=baseline, line_width=1.2, line_dash="dash", line_color=MUTED)
+    fig.update_yaxes(title_text="MAE out-of-sample (USDT)")
+    return _apply_layout(fig, "Policy performance · walk-forward out-of-sample", height)

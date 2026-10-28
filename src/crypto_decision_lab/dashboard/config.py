@@ -31,6 +31,8 @@ class DashboardConfig:
     residual_corrected_dir: Path | None
     diagnostics_dir: Path | None
     residual_dataset_dir: Path | None
+    regime_dataset_dir: Path | None
+    policy_results_dir: Path | None
     decision_glob: str | None
     default_timeframe: str = "1D"
     default_days: int = 3650
@@ -142,6 +144,12 @@ def load_config(
         ),
         residual_dataset_dir=_resolve(
             forecast.get("residual_dataset_dir", "data/datasets/S02-CP04-residuals-v1"), root
+        ),
+        regime_dataset_dir=_resolve(
+            forecast.get("regime_dataset_dir", "data/datasets/S02-CP06B-regime-features-v1"), root
+        ),
+        policy_results_dir=_resolve(
+            forecast.get("policy_results_dir", "data/experiments/S02-CP06B-selective-policy-v1"), root
         ),
         decision_glob=forecast.get("decision_glob", "data/experiments/S03-*"),
         default_timeframe=str(display.get("default_timeframe", "1D")),

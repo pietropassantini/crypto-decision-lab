@@ -222,3 +222,20 @@ con checkpoint/resume/dedup e benchmark ricalcolato:
 - convenzione condivisa: `src/crypto_decision_lab/canonical.py`
 
 La dashboard preferisce automaticamente questo archivio quando presente.
+
+
+## S02-CP06B · Market regime analysis & selective forecasting
+
+Analisi dei regimi di mercato al cutoff e valutazione di policy selettive
+USE_TIMESTRAL/USE_NAIVE con walk-forward temporale (5 fold, purge 24h):
+
+- report: [`docs/S02-CP06B-market-regime-analysis.md`](docs/S02-CP06B-market-regime-analysis.md)
+- dataset: `data/datasets/S02-CP06B-regime-features-v1/`
+- esperimento: `data/experiments/S02-CP06B-selective-policy-v1/`
+- comandi: `python -m crypto_decision_lab.regime_analysis` e
+  `python -m crypto_decision_lab.policy_evaluation`
+
+Risultato: nessuna policy selettiva batte Always Naive out-of-sample
+(300 finestre); l'oracle teorico indica un margine di -72,56 USDT non
+catturabile con le feature testate. Intern-Decision-0.8B non addestrato.
+La dashboard espone la vista "Regime & Policy".

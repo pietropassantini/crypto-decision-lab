@@ -369,7 +369,7 @@ python -m pytest tests/test_forecast_consistency_audit.py -q
 python -m pytest -q
 ```
 
-Risultato suite corrente: **68 passed** (27 dashboard + 5 audit + 6 canonical + 4 expansion + test storici).
+Risultato suite alla milestone CP05R/CP06A: **68 passed** (27 dashboard + 5 audit + 6 canonical + 4 expansion + test storici); la suite è stata estesa a 87 test da S02-CP06B.
 
 ---
 

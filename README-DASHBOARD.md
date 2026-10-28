@@ -48,6 +48,8 @@ Ridge/HistGB restano selezionabili e coprono le 50 finestre CP05R comuni.
 | Timestral S02-CP06A (500) | `data/experiments/S02-CP06A-historical-expansion-v1/` |
 | Ridge / HistGB S02-CP05 | `data/experiments/S02-CP05-residual-baselines-v1/predictions.parquet` |
 | CP05R corretto (preferito) | `data/experiments/S02-CP05R-corrected-benchmark-v1/predictions.parquet` |
+| Regime features CP06B | `data/datasets/S02-CP06B-regime-features-v1/` |
+| Policy CP06B | `data/experiments/S02-CP06B-selective-policy-v1/` |
 | Diagnostica S02-CP03 | `data/diagnostics/S02-CP03-batch-100-v1/` (opzionale) |
 | Decision Model S03 | `data/experiments/S03-*/predictions.parquet` (opzionale, non presente) |
 
@@ -108,6 +110,13 @@ Metriche su campioni comuni: MAE, RMSE, bias, MAPE, directional accuracy, miglio
 vs naive, distribuzione residui, errori nel tempo, scatter actual/predicted e MAE per
 regime di volatilità/trend. I regimi usano solo chiusure precedenti al cutoff.
 Il numero di campioni comuni è sempre mostrato.
+
+### Regime & Policy
+Distribuzione delta MAE, win rate per regime (trend/vol), errori nel tempo,
+performance policy out-of-sample con CI bootstrap, confronto in-sample vs
+out-of-sample e dettaglio decisioni USE_TIMESTRAL/USE_NAIVE per fold.
+Vista read-only che distingue esplicitamente risultati full-sample descrittivi
+da risultati walk-forward out-of-sample.
 
 ### Forecast Inspector
 Per una singola previsione: cutoff, target, prezzo al cutoff, actual al target, previsione,
@@ -172,6 +181,7 @@ src/crypto_decision_lab/dashboard/
         market_explorer.py
         model_comparison.py
         forecast_inspector.py
+        regime_policy.py
 tests/dashboard/            27 test su fixture sintetiche
 src/crypto_decision_lab/canonical.py   contratto canonico condiviso
 scripts/render_screenshots.py
@@ -181,7 +191,7 @@ scripts/render_screenshots.py
 
 ```bash
 pytest tests/dashboard -q     # 27 passed
-pytest -q                    # 68 passed (suite completa)
+pytest -q                    # 87 passed (suite completa)
 ```
 
 I test dashboard usano fixture sintetiche, non i dati reali. Coprono SMA/EMA, RSI/MACD,
