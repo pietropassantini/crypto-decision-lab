@@ -1,12 +1,122 @@
-.venv/
+
+# ==================================================
+# Crypto Decision Lab - Git Ignore
+# ==================================================
+
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
+*.pyo
+*.pyd
 *.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables / secrets
 .env
-data/raw/*
-data/processed/*
-data/reports/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/reports/.gitkeep
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ==================================================
+# DATASETS
+# ==================================================
+
+# Raw market data
+data/raw/
+data/downloads/
+data/cache/
+data/quarantine/
+
+# Frozen snapshots
+data/snapshots/
+
+# Generated datasets
+data/datasets/
+data/processed/
+data/features/
+
+# Dataset formats (any location)
+*.parquet
+*.feather
+*.arrow
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# ==================================================
+# AI / ML MODELS
+# ==================================================
+
+models/
+checkpoints/
+weights/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# ==================================================
+# EXPERIMENTS / OUTPUTS
+# ==================================================
+
+outputs/
+artifacts/
+runs/
+experiments/
+wandb/
+mlruns/
+tensorboard/
+lightning_logs/
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+*.pid
+
+# ==================================================
+# LOCAL CONFIGURATION
+# ==================================================
+
+config/local.yaml
+config/local.yml
+config/local.json
+config/secrets.*
+
+# ==================================================
+# KEEP DIRECTORY STRUCTURE
+# ==================================================
+
+!data/**/.gitkeep
+!models/**/.gitkeep
+!outputs/**/.gitkeep
