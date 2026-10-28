@@ -26,13 +26,15 @@ class DashboardConfig:
     data_root: Path
     snapshot_dir: Path
     batch_dir: Path
+    expansion_dir: Path | None
     residual_baselines_dir: Path | None
+    residual_corrected_dir: Path | None
     diagnostics_dir: Path | None
     residual_dataset_dir: Path | None
     decision_glob: str | None
     default_timeframe: str = "1D"
-    default_days: int = 730
-    default_models: tuple[str, ...] = ("timestral", "naive", "ridge", "histgb")
+    default_days: int = 3650
+    default_models: tuple[str, ...] = ("timestral", "naive")
     default_forecast_mode: str = "h24_common"
     verify_checksums: bool = True
     cache_ttl_seconds: int = 300
@@ -123,8 +125,16 @@ def load_config(
         data_root=data_root,
         snapshot_dir=snapshot_dir,
         batch_dir=batch_dir,
+        expansion_dir=_resolve(
+            forecast.get("expansion_dir", "data/experiments/S02-CP06A-historical-expansion-v1"),
+            root,
+        ),
         residual_baselines_dir=_resolve(
             forecast.get("residual_baselines_dir", "data/experiments/S02-CP05-residual-baselines-v1"),
+            root,
+        ),
+        residual_corrected_dir=_resolve(
+            forecast.get("residual_corrected_dir", "data/experiments/S02-CP05R-corrected-benchmark-v1"),
             root,
         ),
         diagnostics_dir=_resolve(
@@ -135,8 +145,8 @@ def load_config(
         ),
         decision_glob=forecast.get("decision_glob", "data/experiments/S03-*"),
         default_timeframe=str(display.get("default_timeframe", "1D")),
-        default_days=int(display.get("default_days", 730)),
-        default_models=tuple(forecast.get("default_models", ("timestral", "naive", "ridge", "histgb"))),
+        default_days=int(display.get("default_days", 3650)),
+        default_models=tuple(forecast.get("default_models", ("timestral", "naive"))),
         default_forecast_mode=str(forecast.get("default_mode", "h24_common")),
         verify_checksums=bool(integrity.get("verify_checksums", True)),
         cache_ttl_seconds=int(display.get("cache_ttl_seconds", 300)),

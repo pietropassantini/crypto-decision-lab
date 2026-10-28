@@ -8,18 +8,23 @@ data:
 
 forecast:
   batch_dir: data/experiments/S02-CP02-batch-100
+  # If present, the dashboard prefers the 500-window S02-CP06A archive.
+  expansion_dir: data/experiments/S02-CP06A-historical-expansion-v1
   residual_baselines_dir: data/experiments/S02-CP05-residual-baselines-v1
+  # Optional additive CP05R benchmark. When present, the dashboard prefers it
+  # for Ridge/HistGB prices; original CP05 remains untouched.
+  residual_corrected_dir: data/experiments/S02-CP05R-corrected-benchmark-v1
   diagnostics_dir: data/diagnostics/S02-CP03-batch-100-v1
   residual_dataset_dir: data/datasets/S02-CP04-residuals-v1
   # Optional future S03 archive. Compatible columns are documented in
   # src/crypto_decision_lab/dashboard/forecast_adapter.py.
   decision_glob: data/experiments/S03-*
   default_mode: h24_common
-  default_models: [timestral, naive, ridge, histgb]
+  default_models: [timestral, naive]
 
 display:
   default_timeframe: 1D
-  default_days: 730
+  default_days: 3650
   chart_height: 650
   cache_ttl_seconds: 300
   source_label: "BTCUSDT · Binance Spot · 1h · UTC"

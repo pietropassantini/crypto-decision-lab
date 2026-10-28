@@ -17,6 +17,10 @@ dashboard = [
     "PyYAML>=6,<7",
     "kaleido>=1.0,<2",
 ]
+forecast = [
+    "torch>=2.4,<3",
+    "timestral @ git+https://github.com/mistralai/timestral.git",
+]
 
 [project.scripts]
 cdl = "crypto_decision_lab.cli:main"

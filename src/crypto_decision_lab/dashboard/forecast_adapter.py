@@ -312,6 +312,8 @@ def _load_cp05(
     residual_dir: Path | None,
     batch_records: list[dict],
     snapshot_id: str | None,
+    *,
+    corrected: bool = False,
 ) -> tuple[list[dict], list[dict], list[str]]:
     issues: list[str] = []
     records: list[dict] = []
@@ -338,20 +340,23 @@ def _load_cp05(
         return records, runs, [f"Residual baseline columns missing: {sorted(missing)}"]
     summary_path = residual_dir / "summary.json"
     summary = _read_json(summary_path) if summary_path.is_file() else {}
+    predictions_sha = summary.get("predictions_sha256") or digest_file(predictions_path)
     runs.append(
         {
-            "experiment": "S02-CP05 residual baselines",
+            "experiment": "S02-CP05R corrected benchmark" if corrected else "S02-CP05 residual baselines",
             "windows": len(frame),
             "path": str(residual_dir),
-            "predictions_sha256": summary.get("predictions_sha256"),
+            "predictions_sha256": predictions_sha,
             "materialized_rows": summary.get("evaluation_rows"),
+            "corrected": corrected,
         }
     )
     by_window: dict[int, dict] = {}
     for record in batch_records:
         if record["model"] == "timestral":
             by_window[(int(record["window_index"]), int(record["horizon_hours"]))] = record
-    version = "S02-CP05-residual-baselines-v1"
+    version = "S02-CP05R-corrected-benchmark-v1" if corrected else "S02-CP05-residual-baselines-v1"
+    experiment = "S02-CP05R" if corrected else "S02-CP05"
     timestral_reference_checked = False
     timestral_reference_mismatch = False
     for row in frame.itertuples(index=False):
@@ -389,7 +394,7 @@ def _load_cp05(
                         "model": model,
                         "model_label": MODEL_CATALOG[model].label,
                         "model_version": version,
-                        "experiment": "S02-CP05",
+                        "experiment": experiment,
                         "window_index": idx,
                         "cutoff": cutoff,
                         "target": target,
@@ -399,9 +404,9 @@ def _load_cp05(
                         "anchor_price": anchor,
                         "lower": np.nan,
                         "upper": np.nan,
-                        "sample_id": f"S02-CP05:{model}:window-{idx:04d}:h{CP_HORIZON_HOURS:02d}",
+                        "sample_id": f"{experiment}:{model}:window-{idx:04d}:h{CP_HORIZON_HOURS:02d}",
                         "source": str(predictions_path.relative_to(residual_dir)),
-                        "forecast_sha256": summary.get("predictions_sha256"),
+                        "forecast_sha256": predictions_sha,
                         "snapshot_id": snapshot_id,
                     }
                 )
@@ -411,6 +416,12 @@ def _load_cp05(
         issues.append(
             "CP05 timestral_price_24h differs from CP02 p50 at h24; archived CP05 values "
             "are displayed unchanged and CP05's Timestral reference is not used for metrics"
+        )
+    if not corrected:
+        issues.append(
+            "Original S02-CP05 price fields are affected by the S02-CP05R unit error; "
+            "Ridge/HistGB prices shown from this source are legacy and must not be used "
+            "for CP06A. Prefer data/experiments/S02-CP05R-corrected-benchmark-v1."
         )
     return records, runs, issues
 
@@ -521,11 +532,13 @@ def _deduplicate_points(frame: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 def _load_forecasts_cached(
     batch_dir_value: str,
     residual_dir_value: str,
+    corrected_dir_value: str,
     snapshot_dir_value: str,
     decision_pattern: str | None,
 ) -> ForecastDataset:
     batch_dir = Path(batch_dir_value)
     residual_dir = Path(residual_dir_value) if residual_dir_value else None
+    corrected_dir = Path(corrected_dir_value) if corrected_dir_value else None
     snapshot_dir = Path(snapshot_dir_value)
     snapshot_id = None
     snapshot_sha = None
@@ -535,7 +548,18 @@ def _load_forecasts_cached(
         snapshot_id = report.get("dataset_id") or snapshot_dir.name
         snapshot_sha = report.get("source_manifest_sha256")
     records, windows, runs, issues = _load_batch(batch_dir, snapshot_id)
-    cp05_records, cp05_runs, cp05_issues = _load_cp05(residual_dir, records, snapshot_id)
+    use_corrected = bool(
+        corrected_dir and (corrected_dir / "predictions.parquet").is_file()
+    )
+    cp05_dir = corrected_dir if use_corrected else residual_dir
+    if corrected_dir and not use_corrected:
+        issues.append(
+            f"Corrected CP05R benchmark not found at {corrected_dir}; "
+            "falling back to original CP05 price fields, which are legacy and invalid for CP06A"
+        )
+    cp05_records, cp05_runs, cp05_issues = _load_cp05(
+        cp05_dir, records, snapshot_id, corrected=use_corrected
+    )
     decision_records, decision_runs, decision_issues = _load_decision(decision_pattern, snapshot_id)
     issues.extend(cp05_issues)
     issues.extend(decision_issues)
@@ -566,7 +590,7 @@ def _load_forecasts_cached(
     for key, info in models.items():
         info.available = key in available
         if info.available:
-            info.source = str(batch_dir if key in {"timestral", "naive"} else residual_dir if key in {"ridge", "histgb"} else "decision archive")
+            info.source = str(batch_dir if key in {"timestral", "naive"} else cp05_dir if key in {"ridge", "histgb"} else "decision archive")
     if not points.empty:
         counts = points.groupby("model")["window_index"].nunique().to_dict()
         for key, info in models.items():
@@ -581,7 +605,7 @@ def _load_forecasts_cached(
         snapshot_id=snapshot_id,
         snapshot_sha256=snapshot_sha,
         batch_dir=batch_dir,
-        residual_baselines_dir=residual_dir,
+        residual_baselines_dir=cp05_dir,
     )
 
 
@@ -590,10 +614,12 @@ def load_forecasts(
     residual_baselines_dir: str | Path | None = None,
     snapshot_dir: str | Path | None = None,
     decision_glob: str | None = None,
+    corrected_residual_dir: str | Path | None = None,
 ) -> ForecastDataset:
     return _load_forecasts_cached(
         str(Path(batch_dir).expanduser().resolve()),
         str(Path(residual_baselines_dir).expanduser().resolve()) if residual_baselines_dir else "",
+        str(Path(corrected_residual_dir).expanduser().resolve()) if corrected_residual_dir else "",
         str(Path(snapshot_dir).expanduser().resolve()) if snapshot_dir else "",
         decision_glob,
     )

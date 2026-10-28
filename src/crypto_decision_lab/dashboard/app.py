@@ -75,6 +75,7 @@ def _market_cached(data_root: str, snapshot_dir: str, verify: bool) -> MarketDat
 def _forecasts_cached(
     batch_dir: str,
     residual_dir: str,
+    corrected_residual_dir: str,
     snapshot_dir: str,
     decision_glob: str,
 ) -> ForecastDataset:
@@ -83,6 +84,7 @@ def _forecasts_cached(
         residual_dir or None,
         snapshot_dir,
         decision_glob or None,
+        corrected_residual_dir or None,
     )
 
 
@@ -307,10 +309,15 @@ def main() -> None:
         key="forecast_mode",
     )
 
+    expansion_available = bool(
+        config.expansion_dir and (config.expansion_dir / "config.json").is_file()
+    )
+    active_batch_dir = config.expansion_dir if expansion_available else config.batch_dir
     try:
         forecasts = _forecasts_cached(
-            str(config.batch_dir),
+            str(active_batch_dir),
             str(config.residual_baselines_dir) if config.residual_baselines_dir else "",
+            str(config.residual_corrected_dir) if config.residual_corrected_dir else "",
             str(snapshot_dir),
             config.decision_glob or "",
         )
@@ -340,6 +347,11 @@ def main() -> None:
     )
     show_forecast = st.sidebar.checkbox("Mostra forecast nel Market Explorer", value=True)
 
+    if expansion_available:
+        st.sidebar.caption(
+            f"Archivio attivo: S02-CP06A ({forecasts.windows.shape[0]} finestre canonical) · "
+            "CP05R preferito per Ridge/HistGB"
+        )
     if forecasts.issues:
         with st.sidebar.expander("Avvisi archivio forecast", expanded=False):
             for issue in forecasts.issues[:12]:

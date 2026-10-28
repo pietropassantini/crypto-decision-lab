@@ -37,13 +37,17 @@ pytest tests/dashboard -q
 
 ## Prerequisiti dati
 
-La dashboard legge gli artefatti già prodotti:
+La dashboard preferisce l’archivio S02-CP06A da 500 finestre se presente, poi CP02.
+Le serie predefinite sono Timestral + naive, così l’espansione completa è visibile subito;
+Ridge/HistGB restano selezionabili e coprono le 50 finestre CP05R comuni.
 
 | Dato | Percorso |
 |---|---|
 | Storico BTCUSDT 1h | `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` e chunk referenziati |
 | Timestral S02-CP02 | `data/experiments/S02-CP02-batch-100/window-NNNN/` |
+| Timestral S02-CP06A (500) | `data/experiments/S02-CP06A-historical-expansion-v1/` |
 | Ridge / HistGB S02-CP05 | `data/experiments/S02-CP05-residual-baselines-v1/predictions.parquet` |
+| CP05R corretto (preferito) | `data/experiments/S02-CP05R-corrected-benchmark-v1/predictions.parquet` |
 | Diagnostica S02-CP03 | `data/diagnostics/S02-CP03-batch-100-v1/` (opzionale) |
 | Decision Model S03 | `data/experiments/S03-*/predictions.parquet` (opzionale, non presente) |
 
@@ -67,6 +71,8 @@ export CDL_DATA_ROOT=/percorso/data
 ```
 
 `config/dashboard.yaml` e `config/local.yaml` sono ignorati da git; l'esempio è versionato.
+Il campo `forecast.residual_corrected_dir` punta al benchmark CP05R; se presente viene
+preferito, altrimenti la dashboard usa CP05 originale con warning.
 I percorsi relativi sono risolti rispetto alla radice del repository.
 
 ## Semantica temporale dei forecast (`cutoff`, orizzonte, target)
@@ -166,15 +172,16 @@ src/crypto_decision_lab/dashboard/
         market_explorer.py
         model_comparison.py
         forecast_inspector.py
-tests/dashboard/            26 test su fixture sintetiche
+tests/dashboard/            27 test su fixture sintetiche
+src/crypto_decision_lab/canonical.py   contratto canonico condiviso
 scripts/render_screenshots.py
 ```
 
 ## Test
 
 ```bash
-pytest tests/dashboard -q     # 26 passed
-pytest -q                    # 52 passed (suite completa)
+pytest tests/dashboard -q     # 27 passed
+pytest -q                    # 68 passed (suite completa)
 ```
 
 I test dashboard usano fixture sintetiche, non i dati reali. Coprono SMA/EMA, RSI/MACD,
@@ -194,13 +201,20 @@ python scripts/render_screenshots.py
 
 La toolbar Plotly consente comunque l'export PNG direttamente dal browser.
 
-## Nota su S02-CP05
+## Nota su S02-CP05 / CP05R
 
-L'archivio CP05 contiene `timestral_price_24h` con una scala non coerente rispetto a
-`forecast_return_24h` (decimale vs percentuale). La dashboard **non modifica** quei file:
-usa il p50 CP02 per Timestral, mostra Ridge/HistGB così come archiviati e segnala
-l'incongruenza negli avvisi. Non usare questi output come valutazione definitiva o per
-decisioni di trading.
+L'archivio CP05 originale contiene `timestral_price_24h` con una scala non coerente
+rispetto a `forecast_return_24h` (decimale vs percentuale); anche le colonne
+Ridge/HistGB ricostruite da CP05 sono affette dallo stesso errore. La dashboard:
+
+- preferisce, se presente, il benchmark additivo
+  `data/experiments/S02-CP05R-corrected-benchmark-v1/predictions.parquet`;
+- usa il p50 CP02 per Timestral;
+- se CP05R manca, ripiega su CP05 originale ma mostra un avviso esplicito e non tratta
+  quei prezzi come canonici.
+
+Dettagli: `docs/S02-CP05R-forecast-consistency-audit.md`. Non usare questi output come
+valutazione definitiva o per decisioni di trading.
 
 ## Read-only e limiti
 

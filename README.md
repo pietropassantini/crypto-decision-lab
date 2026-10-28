@@ -196,3 +196,29 @@ Legge esclusivamente gli archivi già presenti in `data/`, non richiede un serve
 Timestral attivo e non modifica lo snapshot congelato. Test: `pytest tests/dashboard -q`.
 
 Report milestone: [`docs/S03-CP01-report.md`](docs/S03-CP01-report.md).
+
+## S02-CP05R · Timestral forecast consistency audit
+
+Audit read-only della rappresentazione Timestral CP02/CP04/CP05 e benchmark canonico
+additivo CP05R:
+
+- report: [`docs/S02-CP05R-forecast-consistency-audit.md`](docs/S02-CP05R-forecast-consistency-audit.md)
+- benchmark: `data/experiments/S02-CP05R-corrected-benchmark-v1/`
+- audit riproducibile: `python -m crypto_decision_lab.forecast_consistency_audit --no-write`
+
+I file CP02/CP04/CP05 e lo snapshot originale restano invariati. La dashboard preferisce
+CP05R quando presente.
+
+
+## S02-CP06A · Historical forecast expansion
+
+Archivio additivo di 500 finestre Timestral canoniche (100 CP02 riusate + 400 nuove inferenze),
+con checkpoint/resume/dedup e benchmark ricalcolato:
+
+- report: [`docs/S02-CP06A-historical-forecast-expansion.md`](docs/S02-CP06A-historical-forecast-expansion.md)
+- archivio: `data/experiments/S02-CP06A-historical-expansion-v1/`
+- comandi: `python -m crypto_decision_lab.forecast_expansion prepare|run|benchmark|status`
+- dipendenze inferenza: `pip install -e '.[forecast]'`
+- convenzione condivisa: `src/crypto_decision_lab/canonical.py`
+
+La dashboard preferisce automaticamente questo archivio quando presente.

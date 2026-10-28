@@ -165,7 +165,33 @@ def write_forecast_archive(data_root: Path, frame: pd.DataFrame) -> dict:
         "metrics": {},
     }
     (residual / "summary.json").write_text(__import__("json").dumps(summary, indent=2))
-    return {"batch": batch, "residual": residual, "expected": expected, "config": config}
+
+    corrected = data_root / "experiments" / "S02-CP05R-corrected-benchmark-v1"
+    corrected.mkdir(parents=True, exist_ok=True)
+    corrected_rows = cp05.copy()
+    corrected_rows["timestral_price_24h"] = [
+        expected[int(idx)]["p50_24"] for idx in corrected_rows["window_index"]
+    ]
+    corrected_rows["ridge_price_24h"] = corrected_rows["actual_price_24h"] * 1.001
+    corrected_rows["histgb_price_24h"] = corrected_rows["actual_price_24h"] * 0.999
+    corrected_rows["forecast_start_utc"] = [str(expected[int(idx)]["cutoff"]) for idx in corrected_rows["window_index"]]
+    corrected_rows.to_parquet(corrected / "predictions.parquet", index=False)
+    (corrected / "summary.json").write_text(
+        __import__("json").dumps(
+            {
+                "evaluation_rows": len(corrected_rows),
+                "predictions_sha256": digest_file(corrected / "predictions.parquet"),
+            },
+            indent=2,
+        )
+    )
+    return {
+        "batch": batch,
+        "residual": residual,
+        "corrected": corrected,
+        "expected": expected,
+        "config": config,
+    }
 
 
 @dataclass

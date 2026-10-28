@@ -30,15 +30,21 @@ from crypto_decision_lab.dashboard.metrics import add_error_columns
 def main() -> None:
     config = load_config(repo_root=ROOT)
     market = load_market_data(config.data_root, config.snapshot_dir, verify_checksums=True)
+    active_batch = (
+        config.expansion_dir
+        if config.expansion_dir and (config.expansion_dir / "config.json").is_file()
+        else config.batch_dir
+    )
     forecasts = load_forecasts(
-        config.batch_dir,
+        active_batch,
         config.residual_baselines_dir,
         config.snapshot_dir,
         config.decision_glob,
+        config.residual_corrected_dir,
     )
     out = ROOT / "docs" / "screenshots"
     out.mkdir(parents=True, exist_ok=True)
-    start = market.latest_timestamp - pd.Timedelta(days=365)
+    start = market.first_timestamp
     end = market.latest_timestamp + pd.Timedelta(hours=1)
     market_slice = filter_range(market.frame, start, end)
     daily = resample_ohlcv(market_slice, "1D")
@@ -53,7 +59,7 @@ def main() -> None:
     )
     common = align_models(
         forecasts.points[(forecasts.points["target"] >= start) & (forecasts.points["target"] < end)],
-        ["timestral", "naive", "ridge", "histgb"],
+        ["timestral", "naive"],
         horizon=24,
     )
     overview = make_market_figure(
@@ -67,7 +73,7 @@ def main() -> None:
         forecast_points=common,
         forecast_mode="h24_common",
         colors=config.colors,
-        title="Bitcoin Forecast Explorer · BTCUSDT · ultimi 365 giorni",
+        title="Bitcoin Forecast Explorer · BTCUSDT · 500 finestre canoniche",
         height=900,
     )
     overview.write_image(out / "overview.png", width=1600, height=900, scale=1)

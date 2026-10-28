@@ -152,6 +152,21 @@ def test_regimes_use_only_past_closes(archive):
     assert set(table.columns) >= {"trend_regime", "model", "samples", "mae", "rmse", "bias"}
 
 
+def test_corrected_cp05_source_is_preferred(archive):
+    from crypto_decision_lab.dashboard.forecast_adapter import load_forecasts
+
+    dataset = load_forecasts(
+        archive.paths["batch"],
+        archive.paths["residual"],
+        archive.snapshot,
+        None,
+        archive.paths["corrected"],
+    )
+    cp05 = dataset.points[dataset.points["model"].isin(["ridge", "histgb"])]
+    assert set(cp05["model_version"]) == {"S02-CP05R-corrected-benchmark-v1"}
+    assert not any("legacy" in issue for issue in dataset.issues)
+
+
 def test_missing_forecast_archive_degrades_to_empty(tmp_path):
     from crypto_decision_lab.dashboard.forecast_adapter import load_forecasts
 

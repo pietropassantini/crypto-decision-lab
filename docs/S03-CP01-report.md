@@ -42,7 +42,7 @@
 | Rischio | Mitigazione |
 |---|---|
 | CP05 copre solo 50/100 finestre e solo h24 | Confronto multi-modello solo su timestamp/sample comuni; conteggio sempre visibile |
-| CP05 Timestral reference incoerente | Timestral letto da CP02; CP05 Ridge/HistGB mostrati come archiviati; warning UI |
+| CP05 Timestral reference incoerente | Timestral letto da CP02; CP05R corretto preferito; fallback CP05 originale con warning UI |
 | Assenza Decision Model | Adapter opzionale, serie marcata non disponibile, nessun valore inventato |
 | Path Windows/Linux e avvio senza install | Bootstrap `sys.path` nell'entrypoint; path `pathlib` |
 | Snapshot non modificabile | Solo lettura, verifica SHA-256, nessuna scrittura |
@@ -139,10 +139,10 @@ Cache: `lru_cache` nel core + `st.cache_data` nell'app; pulsante “Aggiorna cac
 
 ```text
 $ pytest tests/dashboard -q
-26 passed in 5.04s
+27 passed in 13.95s
 
 $ pytest -q
-52 passed in 13.16s
+68 passed in 12.52s
 ```
 
 Copertura dei requisiti di test:
@@ -184,7 +184,7 @@ tabs: Overview, Market Explorer, Model Comparison, Forecast Inspector
 | SMA/EMA abilitabili | ✅ | sidebar indicatori |
 | Selezione periodo | ✅ | date range UTC |
 | MAE/RMSE senza disallineamenti | ✅ | test metriche comuni |
-| Test automatici passano | ✅ | 52 passed |
+| Test automatici passano | ✅ | 68 passed |
 | Snapshot non modificato | ✅ | sola lettura, checksum |
 | Read-only | ✅ | nessun writer/ordine/download |
 
@@ -205,7 +205,8 @@ esporta PNG dal browser. `scripts/render_screenshots.py` è opzionale e non tocc
 - Il dataset è statico: l'ultima candela non è un prezzo live (mostrato esplicitamente).
 - Nessun Decision Model disponibile: adapter pronto, serie non simulata.
 - CP05 resta esplorativo e non è una validazione di trading; l'incongruenza di scala
-  nell'artefatto CP05 è documentata e segnalata.
+  nell'artefatto CP05 è documentata in `docs/S02-CP05R-forecast-consistency-audit.md`.
+  La dashboard preferisce il benchmark additivo CP05R quando disponibile.
 - Il numero di campioni comuni può ridursi molto restringendo il periodo o selezionando
   Ridge/HistGB (solo h24, 50 finestre).
 - Aggiornamenti futuri: supporto a più run decisionali, download PDF/HTML del report,
