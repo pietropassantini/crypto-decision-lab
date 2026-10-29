@@ -33,6 +33,8 @@ class DashboardConfig:
     residual_dataset_dir: Path | None
     regime_dataset_dir: Path | None
     policy_results_dir: Path | None
+    trading_label_dir: Path | None
+    trading_experiment_dir: Path | None
     decision_glob: str | None
     default_timeframe: str = "1D"
     default_days: int = 3650
@@ -150,6 +152,12 @@ def load_config(
         ),
         policy_results_dir=_resolve(
             forecast.get("policy_results_dir", "data/experiments/S02-CP06B-selective-policy-v1"), root
+        ),
+        trading_label_dir=_resolve(
+            forecast.get("trading_label_dir", "data/datasets/S02-CP07-decision-labels-v1"), root
+        ),
+        trading_experiment_dir=_resolve(
+            forecast.get("trading_experiment_dir", "data/experiments/S02-CP07-trading-simulation-v1"), root
         ),
         decision_glob=forecast.get("decision_glob", "data/experiments/S03-*"),
         default_timeframe=str(display.get("default_timeframe", "1D")),

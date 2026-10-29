@@ -50,6 +50,8 @@ Ridge/HistGB restano selezionabili e coprono le 50 finestre CP05R comuni.
 | CP05R corretto (preferito) | `data/experiments/S02-CP05R-corrected-benchmark-v1/predictions.parquet` |
 | Regime features CP06B | `data/datasets/S02-CP06B-regime-features-v1/` |
 | Policy CP06B | `data/experiments/S02-CP06B-selective-policy-v1/` |
+| Decision labels CP07 | `data/datasets/S02-CP07-decision-labels-v1/` |
+| Trading simulation CP07 | `data/experiments/S02-CP07-trading-simulation-v1/` |
 | Diagnostica S02-CP03 | `data/diagnostics/S02-CP03-batch-100-v1/` (opzionale) |
 | Decision Model S03 | `data/experiments/S03-*/predictions.parquet` (opzionale, non presente) |
 
@@ -118,6 +120,11 @@ out-of-sample e dettaglio decisioni USE_TIMESTRAL/USE_NAIVE per fold.
 Vista read-only che distingue esplicitamente risultati full-sample descrittivi
 da risultati walk-forward out-of-sample.
 
+### Trading Simulation
+Equity curve out-of-sample, drawdown, segnali LONG/SHORT/NO_TRADE, performance
+per policy, sensitivity fee × slippage, trade log, dettaglio decisioni e
+controlli di leakage. Sola lettura; l'oracle è marcato come limite teorico.
+
 ### Forecast Inspector
 Per una singola previsione: cutoff, target, prezzo al cutoff, actual al target, previsione,
 naive, residuo, errore assoluto/percentuale, direzioni, versione modello, sample id,
@@ -182,6 +189,7 @@ src/crypto_decision_lab/dashboard/
         model_comparison.py
         forecast_inspector.py
         regime_policy.py
+        trading_simulation.py
 tests/dashboard/            27 test su fixture sintetiche
 src/crypto_decision_lab/canonical.py   contratto canonico condiviso
 scripts/render_screenshots.py
@@ -191,7 +199,7 @@ scripts/render_screenshots.py
 
 ```bash
 pytest tests/dashboard -q     # 27 passed
-pytest -q                    # 87 passed (suite completa)
+pytest -q                    # 112 passed (suite completa)
 ```
 
 I test dashboard usano fixture sintetiche, non i dati reali. Coprono SMA/EMA, RSI/MACD,

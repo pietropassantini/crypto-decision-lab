@@ -21,6 +21,7 @@ from crypto_decision_lab.dashboard.components.market_explorer import render_mark
 from crypto_decision_lab.dashboard.components.model_comparison import render_model_comparison
 from crypto_decision_lab.dashboard.components.overview import render_overview
 from crypto_decision_lab.dashboard.components.regime_policy import render_regime_policy
+from crypto_decision_lab.dashboard.components.trading_simulation import render_trading_simulation
 from crypto_decision_lab.dashboard.config import DashboardConfig, discover_snapshots, load_config
 from crypto_decision_lab.dashboard.data_loader import (
     DataValidationError,
@@ -369,7 +370,14 @@ def main() -> None:
                 st.caption(issue)
 
     tabs = st.tabs(
-        ["Overview", "Market Explorer", "Model Comparison", "Forecast Inspector", "Regime & Policy"]
+        [
+            "Overview",
+            "Market Explorer",
+            "Model Comparison",
+            "Forecast Inspector",
+            "Regime & Policy",
+            "Trading Simulation",
+        ]
     )
     with tabs[0]:
         render_overview(
@@ -420,6 +428,8 @@ def main() -> None:
         )
     with tabs[4]:
         render_regime_policy(config)
+    with tabs[5]:
+        render_trading_simulation(config)
 
     st.divider()
     st.caption(

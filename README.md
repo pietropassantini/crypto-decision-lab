@@ -239,3 +239,20 @@ Risultato: nessuna policy selettiva batte Always Naive out-of-sample
 (300 finestre); l'oracle teorico indica un margine di -72,56 USDT non
 catturabile con le feature testate. Intern-Decision-0.8B non addestrato.
 La dashboard espone la vista "Regime & Policy".
+
+
+## S02-CP07 · Decision labeling & offline trading simulation
+
+Simulatore deterministico LONG/SHORT/NO_TRADE con costi, label retrospettive e
+walk-forward a 5 fold:
+
+- report: [`docs/S02-CP07-trading-simulation.md`](docs/S02-CP07-trading-simulation.md)
+- label: `data/datasets/S02-CP07-decision-labels-v1/`
+- esperimento: `data/experiments/S02-CP07-trading-simulation-v1/`
+- comandi: `python -m crypto_decision_lab.decision_labeling` e
+  `python -m crypto_decision_lab.trading_policy`
+
+Verdetto: **INCONCLUSIVE**. Nessuna policy batte Always NO_TRADE in modo
+statisticamente stabile; il momentum threshold è positivo ma non significativo
+contro la baseline no-trade. Intern-Decision-0.8B non addestrato.
+La dashboard espone la vista "Trading Simulation".

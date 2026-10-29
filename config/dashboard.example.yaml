@@ -18,6 +18,8 @@ forecast:
   residual_dataset_dir: data/datasets/S02-CP04-residuals-v1
   regime_dataset_dir: data/datasets/S02-CP06B-regime-features-v1
   policy_results_dir: data/experiments/S02-CP06B-selective-policy-v1
+  trading_label_dir: data/datasets/S02-CP07-decision-labels-v1
+  trading_experiment_dir: data/experiments/S02-CP07-trading-simulation-v1
   # Optional future S03 archive. Compatible columns are documented in
   # src/crypto_decision_lab/dashboard/forecast_adapter.py.
   decision_glob: data/experiments/S03-*

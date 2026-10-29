@@ -301,7 +301,7 @@ Entrambi i comandi rifiutano di sovrascrivere directory esistenti e verificano g
 |---|---:|---|
 | `tests/test_regime_analysis.py` | 9 | errori hand-computed, winner/direzioni, riconciliazione benchmark, causalità feature, guardia storico, terzili train-only, assegnazione regimi, bootstrap deterministico, flag sottogruppi |
 | `tests/test_policy_evaluation.py` | 10 | fold cronologici+purge, rigetto dati insufficienti, apprendimento regola da segnale di training, soglie da training, selezione C e indipendenza dagli esiti del test, always/oracle, campioni paired e bound oracle, in-sample separato, verifica no-leakage, lettura dataset |
-| Suite completa | **87** | tutte verdi |
+| Suite completa | **87** | tutte verdi alla milestone CP06B; estesa a 112 da S02-CP07 |
 
 ---
 

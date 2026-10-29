@@ -754,3 +754,173 @@ def make_policy_performance_figure(
         fig.add_hline(y=baseline, line_width=1.2, line_dash="dash", line_color=MUTED)
     fig.update_yaxes(title_text="MAE out-of-sample (USDT)")
     return _apply_layout(fig, "Policy performance · walk-forward out-of-sample", height)
+
+
+POLICY_COLORS = {
+    "always_no_trade": "#9aa4b2",
+    "always_long": "#2dd4bf",
+    "always_short": "#ff6b6b",
+    "timestral_threshold": "#4cc9f0",
+    "momentum_threshold": "#f0b90b",
+    "oracle_retrospective": "#b388ff",
+}
+
+
+def policy_color(name: str) -> str:
+    return POLICY_COLORS.get(name, "#c7d2fe")
+
+
+def make_equity_curve_figure(
+    curves: dict[str, pd.Series],
+    *,
+    title: str = "Equity curve · out-of-sample walk-forward",
+    height: int = 420,
+) -> go.Figure:
+    fig = go.Figure()
+    for name, curve in curves.items():
+        if curve.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=curve.index,
+                y=curve.to_numpy(dtype=float),
+                mode="lines",
+                name=name,
+                line={"color": policy_color(name), "width": 1.8},
+                hovertemplate="%{x|%Y-%m-%d}<br>equity %{y:,.2f}<extra></extra>",
+            )
+        )
+    fig.update_yaxes(title_text="Equity (USDT)")
+    return _apply_layout(fig, title, height)
+
+
+def make_drawdown_figure(
+    curve: pd.Series,
+    *,
+    name: str,
+    height: int = 300,
+) -> go.Figure:
+    if curve.empty:
+        return empty_figure("Nessuna curva disponibile", height=height)
+    equity = curve.to_numpy(dtype=float)
+    peak = np.maximum.accumulate(equity)
+    drawdown = 100.0 * (equity / peak - 1.0)
+    fig = go.Figure(
+        go.Scatter(
+            x=curve.index,
+            y=drawdown,
+            mode="lines",
+            name="drawdown",
+            fill="tozeroy",
+            line={"color": RED, "width": 1.4},
+            fillcolor=_with_alpha(RED, 0.2),
+            hovertemplate="%{x|%Y-%m-%d}<br>drawdown %{y:.2f}%<extra></extra>",
+        )
+    )
+    fig.update_yaxes(title_text="Drawdown (%)")
+    return _apply_layout(fig, f"Drawdown · {name}", height)
+
+
+def make_trade_signal_figure(decisions: pd.DataFrame, *, policy: str, height: int = 380) -> go.Figure:
+    if decisions.empty:
+        return empty_figure("Nessun segnale disponibile", height=height)
+    fig = go.Figure()
+    styles = {
+        "LONG": ("triangle-up", GREEN),
+        "SHORT": ("triangle-down", RED),
+        "NO_TRADE": ("circle", MUTED),
+    }
+    for action, (symbol, color) in styles.items():
+        subset = decisions[decisions["action"] == action]
+        if subset.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=pd.to_datetime(subset["entry_timestamp"], utc=True),
+                y=subset["reference_price"].to_numpy(dtype=float),
+                mode="markers",
+                name=action,
+                marker={"symbol": symbol, "size": 7, "color": color},
+                customdata=np.column_stack(
+                    [subset["net_return_pct"].to_numpy(dtype=float), subset["window_index"].to_numpy()]
+                ),
+                hovertemplate=(
+                    "%{x|%Y-%m-%d %H:%M}<br>reference %{y:,.2f} USDT<br>"
+                    "net %{customdata[0]:+.2f}%<br>window %{customdata[1]}<extra></extra>"
+                ),
+            )
+        )
+    fig.update_yaxes(title_text="Reference price (USDT)")
+    return _apply_layout(fig, f"Segnali · {policy}", height)
+
+
+def make_sensitivity_heatmap(
+    scenarios: list[dict],
+    *,
+    policy: str,
+    height: int = 360,
+) -> go.Figure:
+    if not scenarios:
+        return empty_figure("Sensitivity non disponibile", height=height)
+    fees = sorted({item["fee_rate"] for item in scenarios})
+    slips = sorted({item["slippage"] for item in scenarios})
+    z = np.full((len(slips), len(fees)), np.nan)
+    for item in scenarios:
+        row = slips.index(item["slippage"])
+        column = fees.index(item["fee_rate"])
+        z[row, column] = item["total_return_pct"].get(policy, np.nan)
+    fig = go.Figure(
+        go.Heatmap(
+            x=[f"{value:.4%}" for value in fees],
+            y=[f"{value:.4%}" for value in slips],
+            z=z,
+            colorscale=[[0.0, "#ff6b6b"], [0.5, "#111722"], [1.0, "#2dd4bf"]],
+            zmid=0.0,
+            text=np.round(z, 2),
+            texttemplate="%{text}%",
+            hovertemplate="fee %{x}<br>slippage %{y}<br>total return %{z:+.2f}%<extra></extra>",
+            colorbar={"title": "%"},
+        )
+    )
+    fig.update_xaxes(title_text="Fee per side")
+    fig.update_yaxes(title_text="Slippage per side")
+    return _apply_layout(fig, f"Sensitivity · {policy}", height)
+
+
+def make_policy_return_figure(
+    rows: list[dict],
+    *,
+    title: str = "Policy total return · out-of-sample",
+    height: int = 380,
+) -> go.Figure:
+    if not rows:
+        return empty_figure("Nessuna policy valutata", height=height)
+    names = [row["label"] for row in rows]
+    returns = [row["total_return"] for row in rows]
+    colors = [RED if row["uses_target"] else (GREEN if row["total_return"] >= 0 else "#f59e0b") for row in rows]
+    fig = go.Figure(
+        go.Bar(
+            x=names,
+            y=returns,
+            marker={"color": colors},
+            customdata=np.array(
+                [
+                    [
+                        row["trades"],
+                        row["win_rate"] * 100.0,
+                        row["max_drawdown"],
+                        row.get("ci_low", np.nan),
+                        row.get("ci_high", np.nan),
+                    ]
+                    for row in rows
+                ]
+            ),
+            hovertemplate=(
+                "<b>%{x}</b><br>total return %{y:+.2f}%<br>trades %{customdata[0]}<br>"
+                "win rate %{customdata[1]:.1f}%<br>max DD %{customdata[2]:.2f}%<extra></extra>"
+            ),
+        )
+    )
+    fig.add_hline(y=0, line_width=1, line_color=MUTED)
+    fig.update_yaxes(title_text="Total return OOS (%)")
+    return _apply_layout(fig, title, height)
