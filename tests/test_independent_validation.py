@@ -185,14 +185,21 @@ def test_sidecar_pins_the_configuration(tmp_path, protocol_bundle):
     paths = _paths()
     sidecar = _sidecar_for(paths.config_file, protocol_bundle["config_sha256"])
     assert sidecar["sidecar_present"] is True
-    assert sidecar["match"] is True
+    # The v1 sidecar pins the CRLF freeze form: the raw working-tree bytes match
+    # it on a CRLF checkout (Windows) and differ -- by line endings only -- on an
+    # LF checkout (Git/Linux).  That gap is the S02-CP08-05R incident and is
+    # resolved by the v2 dual-representation sidecar (tested in
+    # tests/test_protocol_integrity.py, which passes on both forms).
+    crlf_sha256 = protocol_bundle["config_sha256_crlf"]
+    assert sidecar["declared_sha256"] == crlf_sha256
+    assert sidecar["match"] == (protocol_bundle["config_sha256"] == crlf_sha256)
     engine_sidecar = _sidecar_for(paths.engine_config_file, protocol_bundle["engine_config_sha256"])
-    assert engine_sidecar["match"] is True
+    assert engine_sidecar["declared_sha256"] == protocol_bundle["engine_config_sha256_crlf"]
 
     tampered = tmp_path / "protocol.yaml"
     tampered.write_bytes(paths.config_file.read_bytes() + b"\n# tampered\n")
     (tmp_path / "protocol.yaml.sha256").write_text(
-        f"{protocol_bundle['config_sha256']}  protocol.yaml\n", encoding="utf-8"
+        f"{crlf_sha256}  protocol.yaml\n", encoding="utf-8"
     )
     from crypto_decision_lab.sync import digest
 

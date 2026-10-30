@@ -91,12 +91,13 @@ def test_frozen_hashes_are_the_two_pure_line_ending_representations():
     assert evidence["only_line_endings"] is True
     assert evidence["round_trip_lf_to_crlf_to_lf"] is True
     assert evidence["round_trip_crlf_to_lf_to_crlf"] is True
-    # byte-level arithmetic: CRLF = LF + one CR per line
+    # byte-level arithmetic, valid whichever pure form the working tree uses
     profile = evidence["profile"]
-    assert profile["lone_cr"] == 0
-    assert profile["lone_lf"] == 0
-    assert evidence["crlf_bytes"] - evidence["lf_bytes"] == profile["crlf_pairs"]
-    assert denormalize_crlf(normalize_lf(raw)) == raw
+    assert profile["lone_cr"] == 0  # no carriage return outside a CRLF pair
+    assert profile["crlf_pairs"] + profile["lone_lf"] == 445  # exactly 445 lines
+    assert evidence["crlf_bytes"] - evidence["lf_bytes"] == 445  # CRLF = LF + one CR per line
+    assert raw in (normalize_lf(raw), denormalize_crlf(raw))  # a pure form (LF or CRLF)
+    assert normalize_lf(denormalize_crlf(raw)) == normalize_lf(raw)  # same line sequence
 
 
 def test_both_working_tree_representations_verify(tmp_path):
