@@ -91,13 +91,13 @@ def make_repo(tmp_path: Path, *, protocol_copy: bool = True) -> Path:
     protocols.mkdir(parents=True)
 
     if protocol_copy:
-    for name in (
-        "momentum-independent-validation-v1.yaml",
-        "momentum-confirmation-engine-v1.yaml",
-    ):
-        for suffix in ("", ".sha256", ".sha256.v2.json"):
-            source = REPO / "config" / "protocols" / f"{name}{suffix}"
-            shutil.copy(source, protocols / source.name)
+        for name in (
+            "momentum-independent-validation-v1.yaml",
+            "momentum-confirmation-engine-v1.yaml",
+        ):
+            for suffix in ("", ".sha256", ".sha256.v2.json"):
+                source = REPO / "config" / "protocols" / f"{name}{suffix}"
+                shutil.copy(source, protocols / source.name)
 
     source_archive = (
         REPO
