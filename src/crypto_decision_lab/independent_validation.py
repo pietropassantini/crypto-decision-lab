@@ -54,6 +54,18 @@ from .parameter_robustness import (
     grid_frame,
     select_threshold,
 )
+from .protocol_integrity import (
+    ARCHIVE_MISSING,
+    ARCHIVE_VERIFIED,
+    GATE_BLOCKED,
+    GATE_FAIL,
+    GATE_PASS,
+    PROTOCOL_VERIFIED,
+    denormalize_crlf,
+    normalize_lf,
+    verify_archive,
+    verify_protocol_integrity,
+)
 from .simulator_integrity_audit import _json_safe
 from .sync import digest
 
@@ -210,11 +222,15 @@ def load_protocol(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any]:
         "config": protocol,
         "config_path": str(paths.config_path),
         "config_sha256": _sha256_bytes(raw),
+        "config_sha256_lf": _sha256_bytes(normalize_lf(raw)),
+        "config_sha256_crlf": _sha256_bytes(denormalize_crlf(raw)),
         "config_bytes": raw,
         "canonical_sha256": canonical_hash(protocol),
         "engine_config": engine,
         "engine_config_path": str(paths.engine_config_path),
         "engine_config_sha256": _sha256_bytes(engine_raw),
+        "engine_config_sha256_lf": _sha256_bytes(normalize_lf(engine_raw)),
+        "engine_config_sha256_crlf": _sha256_bytes(denormalize_crlf(engine_raw)),
         "engine_config_bytes": engine_raw,
         "engine_canonical_sha256": canonical_hash(engine),
     }
@@ -1367,6 +1383,13 @@ def _check(
 
 
 def _sidecar_for(config_file: Path, actual_sha256: str) -> dict[str, Any]:
+    """Legacy v1 single-hash view (kept: it is the untouched freeze evidence).
+
+    It pins the CRLF byte sequence of the original Windows freeze.  On its own
+    it cannot verify an LF (Git/Linux) working tree: that gap is exactly the
+    S02-CP08-05R incident and is resolved by the versioned v2 verification
+    below, never by editing this sidecar.
+    """
     sidecar = config_file.with_suffix(config_file.suffix + ".sha256")
     if not sidecar.is_file():
         return {
@@ -1385,8 +1408,22 @@ def _sidecar_for(config_file: Path, actual_sha256: str) -> dict[str, Any]:
 
 
 def _sidecar_check(paths: ValidationPaths, loaded: Mapping[str, Any]) -> dict[str, Any]:
-    result = _sidecar_for(paths.config_file, loaded["config_sha256"])
-    result["path"] = f"{paths.config_path}.sha256"
+    """S02-CP08-05R versioned check: v1 anchor + v2 dual-representation sidecar.
+
+    PASS iff the working-tree bytes are exactly one of the two pinned
+    representations (LF or CRLF) of the unchanged frozen content and the other
+    is reproducible by line-ending conversion only.
+    """
+    result = verify_protocol_integrity(paths.config_file)
+    result["path"] = f"{paths.config_path}.sha256(.v2.json)"
+    result["match"] = result["status"] == PROTOCOL_VERIFIED
+    return result
+
+
+def _engine_sidecar_check(paths: ValidationPaths) -> dict[str, Any]:
+    result = verify_protocol_integrity(paths.engine_config_file)
+    result["path"] = f"{paths.engine_config_path}.sha256(.v2.json)"
+    result["match"] = result["status"] == PROTOCOL_VERIFIED
     return result
 
 
@@ -1404,8 +1441,16 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
     data_registry = build_data_registry(paths, protocol)
     separation = check_data_separation(data_registry, protocol)
     sidecar = _sidecar_check(paths, loaded)
-    engine_sidecar = _sidecar_for(paths.engine_config_file, loaded["engine_config_sha256"])
-    engine_sidecar["path"] = f"{paths.engine_config_path}.sha256"
+    engine_sidecar = _engine_sidecar_check(paths)
+    # S02-CP08-05R: archive presence/integrity is a SEPARATE control.
+    archive = verify_archive(paths.output)
+    archive_gate = (
+        GATE_PASS
+        if archive["status"] == ARCHIVE_VERIFIED
+        else GATE_BLOCKED
+        if archive["status"] == ARCHIVE_MISSING
+        else GATE_FAIL
+    )
     registry = ValidationRegistry(paths.registry_root)
     registry_state = registry.state(loaded["canonical_sha256"])
     grid = [float(value) for value in protocol["threshold_preregistration"]["grid"]]
@@ -1437,9 +1482,11 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
         ),
         _check(
             "CP08-04.2",
-            "Sidecar SHA-256 di protocollo e specifica engine",
+            "Integrità del protocollo: sidecar v1 (freeze CRLF) + sidecar v2 (LF/CRLF)",
             bool(sidecar["match"] and engine_sidecar["match"]),
-            "I due file YAML corrispondono byte-per-byte agli hash congelati nei sidecar.",
+            "I due file YAML corrispondono byte-per-byte a una delle due rappresentazioni "
+            "congelate; l'altra è riproducibile variando esclusivamente i fine riga "
+            "(migrazione esplicita S02-CP08-05R, hash CRLF originale preservato).",
             evidence={"protocol": sidecar, "engine": engine_sidecar},
         ),
         _check(
@@ -1604,6 +1651,23 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
             "L'hash canonico è stabile e indipendente dalla formattazione del file.",
             evidence={"canonical_sha256": canonical_hash(protocol)},
         ),
+        _check(
+            "CP08-04.16",
+            "Archivio CP08-04: presenza e integrità (controllo separato dal protocollo)",
+            archive["status"] == ARCHIVE_VERIFIED,
+            "ARCHIVE_VERIFIED: ogni file dell'archivio corrisponde agli SHA-256 pinnati dal "
+            "suo stesso manifest. ARCHIVE_MISSING blocca solo il gate di archivio: non "
+            "invalida l'integrità del protocollo né la completa l'evidenza mancante.",
+            status=STATUS_WARN if archive["status"] == ARCHIVE_MISSING else None,
+            evidence={
+                "status": archive["status"],
+                "directory": archive["directory"],
+                "outputs_total": archive.get("outputs_total"),
+                "outputs_matched": archive.get("outputs_matched"),
+                "mismatched": archive.get("mismatched", []),
+                "manifest_sha256": archive.get("manifest_sha256"),
+            },
+        ),
     ]
     failed = [check["id"] for check in checks if check["status"] == STATUS_FAIL]
     technical_gate = STATUS_PASS if not failed else STATUS_FAIL
@@ -1616,9 +1680,13 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
             "protocol_version": protocol["protocol_version"],
             "config_path": loaded["config_path"],
             "config_sha256": loaded["config_sha256"],
+            "config_sha256_lf": loaded["config_sha256_lf"],
+            "config_sha256_crlf": loaded["config_sha256_crlf"],
             "canonical_sha256": loaded["canonical_sha256"],
             "engine_config_path": loaded["engine_config_path"],
             "engine_config_sha256": loaded["engine_config_sha256"],
+            "engine_config_sha256_lf": loaded["engine_config_sha256_lf"],
+            "engine_config_sha256_crlf": loaded["engine_config_sha256_crlf"],
             "engine_canonical_sha256": loaded["engine_canonical_sha256"],
         },
         "config_bytes": loaded["config_bytes"],
@@ -1632,6 +1700,8 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
             "engine": engine_sidecar,
             "both_match": bool(sidecar["match"] and engine_sidecar["match"]),
         },
+        "archive": archive,
+        "archive_gate": archive_gate,
         "criteria": criteria,
         "primary_scenario": primary,
         "confirmation_engine": {
@@ -1837,6 +1907,8 @@ def _printable(report: Mapping[str, Any]) -> dict[str, Any]:
             "config_sha256": report["protocol_meta"]["config_sha256"],
             "technical_gate": report["technical_gate"],
             "strategic_gate": report["strategic_gate"],
+            "archive_status": report["archive"]["status"],
+            "archive_gate": report["archive_gate"],
             "independent_validation_status": report["independent_validation"]["status"],
             "verdict": report["independent_validation"]["verdict"],
             "checks_total": len(report["checks"]),

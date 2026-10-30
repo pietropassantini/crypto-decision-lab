@@ -1,0 +1,116 @@
+{
+  "config": {
+    "schema_version": "cdl.cp08.confirmation_engine.spec.v1",
+    "engine_id": "momentum-confirmation-engine",
+    "engine_version": "0.1.0",
+    "status": "SPECIFICATION_ONLY",
+    "created_utc": "2026-10-30T00:00:00Z",
+    "frozen_after_utc": "2026-10-30T00:00:00Z",
+    "supersedes": null,
+    "owner": "quantitative-research",
+    "scope": "S02-CP08-04",
+    "runnable": false,
+    "authorises_backtest": false,
+    "authorises_training": false,
+    "authorises_trading": false,
+    "base_strategy": {
+      "protocol_id": "momentum-independent-validation",
+      "protocol_version": "1.0.0",
+      "policy_id": "momentum_threshold_5pct",
+      "signal_column": "momentum_168h",
+      "threshold": 0.05,
+      "threshold_source": "protocol threshold_preregistration, train-only selection",
+      "horizon_hours": 24,
+      "immutable_fields": [
+        "threshold",
+        "horizon_hours",
+        "signal_column",
+        "direction"
+      ]
+    },
+    "interface": {
+      "function": "confirm",
+      "signature": "confirm(base_decision, features_at_cutoff) -> {decision, confirmation, confidence}",
+      "deterministic": true,
+      "stateful": false,
+      "inputs_causal": true,
+      "allowed_input_features": [
+        "rsi14",
+        "atr_pct",
+        "volatility_24h",
+        "volatility_168h",
+        "momentum_24h",
+        "momentum_168h",
+        "dist_sma50_pct",
+        "trend_strength_pct",
+        "volume_ratio"
+      ],
+      "forbidden_inputs": [
+        "best_action",
+        "best_net_pct",
+        "long_net_pct",
+        "short_net_pct",
+        "long_gross_pct",
+        "short_gross_pct",
+        "entry_open",
+        "exit_open",
+        "actual_price_24h",
+        "any_target_or_future_column"
+      ],
+      "decision_contract": {
+        "actions": [
+          "LONG",
+          "SHORT",
+          "NO_TRADE"
+        ],
+        "can_only_downgrade": true,
+        "cannot_flip_direction": true,
+        "no_trade_rule": "flat, zero cost, no market occupancy"
+      },
+      "output_additions": [
+        "confirmation",
+        "confidence"
+      ]
+    },
+    "rules": {
+      "active": [],
+      "candidate": [],
+      "registration_requirements": [
+        "new engine_version file",
+        "rule expressed only with allowed_input_features",
+        "no parameter derived from the research OOS period",
+        "new independent validation protocol version if the rule changes the base policy",
+        "rule frozen before any independent data is read"
+      ],
+      "forbidden_provenance": [
+        "CP08-02 volatility bucket findings (VOL_HIGH negative) because observed on OOS",
+        "CP08-03 OOS parameter surface (best exploratory threshold 6%) because observed on OOS",
+        "any threshold or filter fitted on the 300 CP07 OOS windows"
+      ]
+    },
+    "evaluation": {
+      "protocol_id": "momentum-independent-validation",
+      "protocol_version": "1.0.0",
+      "gating_scenario": "realistic_1h_cost20_carry",
+      "base_reference": "momentum_threshold_5pct",
+      "comparison": "paired per window vs the frozen base strategy, same fold structure and costs",
+      "promotion_rule": "GO requires the confirmation variant to meet the protocol GO criteria AND not degrade the base strategy on the same independent sample; otherwise NO-GO",
+      "note": "A confirmation engine is an add-on, not a replacement. It must be judged on the same pre-registered independent data with the same criteria; it cannot resurrect a base strategy that failed the protocol.\n"
+    },
+    "versioning": {
+      "immutable": true,
+      "sidecar_hash_file": "momentum-confirmation-engine-v1.yaml.sha256",
+      "change_process": "new engine_version + new file + new protocol version; never edit in place",
+      "active_rule_requires": [
+        "frozen_yaml",
+        "sidecar_sha256",
+        "independent_validation_protocol_version",
+        "archive_with_manifest"
+      ]
+    }
+  },
+  "sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+  "canonical_sha256": "8984e65122cd245e905e0722c35a245b465a3952f805316ac03eb152690d5b6c",
+  "active_rules": 0,
+  "status": "SPECIFICATION_ONLY"
+}

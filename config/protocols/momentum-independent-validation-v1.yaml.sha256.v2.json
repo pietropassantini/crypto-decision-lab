@@ -1,0 +1,20 @@
+{
+  "schema_version": "cdl.protocol_integrity.sidecar.v2",
+  "artifact": "momentum-independent-validation-v1.yaml",
+  "hash_algorithm": "sha256",
+  "frozen_utc": null,
+  "representations": {
+    "crlf_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+    "lf_sha256": "cda9eab6c2943b9515f8fbabf6089851398ec2c578a697f90399ea46ba569665"
+  },
+  "canonical_line_ending": "lf",
+  "canonical_rationale": "Git stores this artifact with text eol=lf; LF is the canonical representation on Linux checkouts. The CRLF hash is preserved as the original freeze evidence and remains verifiable byte-for-byte.",
+  "original_sidecar": "momentum-independent-validation-v1.yaml.sha256",
+  "original_sidecar_sha256": "285f79fb939c1c214a83e28d24554d79fe209408df951e693cf0d2d9ae7271cc",
+  "migration": {
+    "id": "S02-CP08-05R",
+    "reason": "S02-CP08-05R: Git (text eol=lf) materialises the LF form of the frozen YAML while the original sidecar pinned the CRLF freeze. Both representations of the unchanged v1.0.0 content are now recorded.",
+    "rules_unchanged": true,
+    "note": "No rule, value or comment of the frozen protocol was modified: the two hashes differ exclusively in line-ending encoding."
+  }
+}

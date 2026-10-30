@@ -586,12 +586,17 @@ def test_evaluate_independent_refuses_research_windows(synthetic, protocol, prot
 def test_readiness_gate_and_status(readiness):
     assert readiness["technical_gate"] == STATUS_PASS
     assert readiness["checks_failed"] == []
-    assert len(readiness["checks"]) == 15
+    # S02-CP08-05R: CP08-04.16 (archive presence, separate control) was added
+    # by the versioned integrity migration.
+    assert len(readiness["checks"]) == 16
     statuses = {check["id"]: check["status"] for check in readiness["checks"]}
     assert statuses["CP08-04.13"] == "WARN"
     assert all(
         status == "PASS" for cid, status in statuses.items() if cid != "CP08-04.13"
     )
+    # the archive control is distinct from protocol integrity
+    assert readiness["archive"]["status"] == "ARCHIVE_VERIFIED"
+    assert readiness["archive_gate"] == "PASS"
     assert readiness["strategic_gate"] == VERDICT_NO_GO
     assert readiness["independent_validation"]["status"] == VERDICT_NOT_EVALUATED
     assert readiness["independent_validation"]["data_available"] is False

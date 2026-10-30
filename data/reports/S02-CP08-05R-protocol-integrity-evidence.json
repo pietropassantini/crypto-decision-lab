@@ -1,0 +1,188 @@
+{
+  "schema_version": "cdl.cp08_05r.protocol_integrity_reconciliation.v1",
+  "migration_id": "S02-CP08-05R",
+  "generated_utc": "2026-10-30T16:36:20.558399+00:00",
+  "protocol_integrity": {
+    "protocol": {
+      "config_file": "config\\protocols\\momentum-independent-validation-v1.yaml",
+      "representation": "CRLF",
+      "crlf_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+      "lf_sha256": "cda9eab6c2943b9515f8fbabf6089851398ec2c578a697f90399ea46ba569665",
+      "raw_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+      "byte_level_evidence": {
+        "profile": {
+          "bytes": 19459,
+          "crlf_pairs": 445,
+          "lone_cr": 0,
+          "lone_lf": 0
+        },
+        "raw_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "lf_sha256": "cda9eab6c2943b9515f8fbabf6089851398ec2c578a697f90399ea46ba569665",
+        "crlf_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "lf_bytes": 19014,
+        "crlf_bytes": 19459,
+        "is_pure_lf_form": false,
+        "is_pure_crlf_form": true,
+        "only_line_endings": true,
+        "round_trip_lf_to_crlf_to_lf": true,
+        "round_trip_crlf_to_lf_to_crlf": true
+      },
+      "v1": {
+        "path": "config\\protocols\\momentum-independent-validation-v1.yaml.sha256",
+        "sidecar_present": true,
+        "declared_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "sidecar_sha256": "285f79fb939c1c214a83e28d24554d79fe209408df951e693cf0d2d9ae7271cc"
+      },
+      "v2_present": true,
+      "status": "PROTOCOL_VERIFIED",
+      "reason": "Working-tree bytes are exactly one of the two pinned representations of the frozen content; the other is reproduced by line-ending conversion only; the v1 anchor still pins the original freeze."
+    },
+    "engine": {
+      "config_file": "config\\protocols\\momentum-confirmation-engine-v1.yaml",
+      "representation": "CRLF",
+      "crlf_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+      "lf_sha256": "0f2a89a07a47d911b1ed4ffe2b3aba1f8573e21cc26272a51a427df8905b38d2",
+      "raw_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+      "byte_level_evidence": {
+        "profile": {
+          "bytes": 4448,
+          "crlf_pairs": 109,
+          "lone_cr": 0,
+          "lone_lf": 0
+        },
+        "raw_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "lf_sha256": "0f2a89a07a47d911b1ed4ffe2b3aba1f8573e21cc26272a51a427df8905b38d2",
+        "crlf_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "lf_bytes": 4339,
+        "crlf_bytes": 4448,
+        "is_pure_lf_form": false,
+        "is_pure_crlf_form": true,
+        "only_line_endings": true,
+        "round_trip_lf_to_crlf_to_lf": true,
+        "round_trip_crlf_to_lf_to_crlf": true
+      },
+      "v1": {
+        "path": "config\\protocols\\momentum-confirmation-engine-v1.yaml.sha256",
+        "sidecar_present": true,
+        "declared_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "sidecar_sha256": "16ed459d097eb149aceec50029859f2ed1e5d922cc5476433f20dff79a4c3bbf"
+      },
+      "v2_present": true,
+      "status": "PROTOCOL_VERIFIED",
+      "reason": "Working-tree bytes are exactly one of the two pinned representations of the frozen content; the other is reproduced by line-ending conversion only; the v1 anchor still pins the original freeze."
+    }
+  },
+  "semantic_equivalence": {
+    "protocol": {
+      "config_file": "config\\protocols\\momentum-independent-validation-v1.yaml",
+      "parsed_canonical_sha256_lf": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+      "parsed_canonical_sha256_crlf": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+      "semantically_identical": true
+    },
+    "engine": {
+      "config_file": "config\\protocols\\momentum-confirmation-engine-v1.yaml",
+      "parsed_canonical_sha256_lf": "8984e65122cd245e905e0722c35a245b465a3952f805316ac03eb152690d5b6c",
+      "parsed_canonical_sha256_crlf": "8984e65122cd245e905e0722c35a245b465a3952f805316ac03eb152690d5b6c",
+      "semantically_identical": true
+    }
+  },
+  "archive": {
+    "directory": "data\\experiments\\S02-CP08-independent-validation-protocol-v1",
+    "status": "ARCHIVE_VERIFIED",
+    "manifest_sha256": "eabe2d11b0441fd2771ec41099006bf74477103f92da24a08f4aa409ec20c87a",
+    "created_utc": "2026-10-30T14:36:02.521526+00:00",
+    "technical_gate": "PASS",
+    "strategic_gate": "NO-GO",
+    "verdict": "NOT_EVALUATED",
+    "protocol_config_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+    "protocol_canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+    "outputs_total": 10,
+    "outputs_matched": 10,
+    "mismatched": [],
+    "files": [
+      {
+        "file": "anti_reuse.json",
+        "present": true,
+        "expected_sha256": "4dd962209a77037da40058c5f7c99f5a4509fe8f47cc9fc06dbfafd78549fe57",
+        "actual_sha256": "4dd962209a77037da40058c5f7c99f5a4509fe8f47cc9fc06dbfafd78549fe57",
+        "match": true
+      },
+      {
+        "file": "checks.json",
+        "present": true,
+        "expected_sha256": "db335b834736568240d9f356da2c8d6fd132f9377d86992b6768f87a944fc0fa",
+        "actual_sha256": "db335b834736568240d9f356da2c8d6fd132f9377d86992b6768f87a944fc0fa",
+        "match": true
+      },
+      {
+        "file": "confirmation_engine.json",
+        "present": true,
+        "expected_sha256": "a83c0c3ce730adfc08bb5841ee1fe7bce3697f897f80c084dd0cd21d19726297",
+        "actual_sha256": "a83c0c3ce730adfc08bb5841ee1fe7bce3697f897f80c084dd0cd21d19726297",
+        "match": true
+      },
+      {
+        "file": "criteria.json",
+        "present": true,
+        "expected_sha256": "6f87b9ed51c0327b31e142de7926cf30450cf7a404d22573ae48bf493c0ba3f9",
+        "actual_sha256": "6f87b9ed51c0327b31e142de7926cf30450cf7a404d22573ae48bf493c0ba3f9",
+        "match": true
+      },
+      {
+        "file": "data_registry.json",
+        "present": true,
+        "expected_sha256": "634145e6f018773ffc1992753ec0146a53c892486818384e4a4ed3c955e91462",
+        "actual_sha256": "634145e6f018773ffc1992753ec0146a53c892486818384e4a4ed3c955e91462",
+        "match": true
+      },
+      {
+        "file": "frozen_benchmark.json",
+        "present": true,
+        "expected_sha256": "3c7904c670bdc59d54cf63d6228a8e3342c58e1cc1ad7aa2a88475bd925dfca6",
+        "actual_sha256": "3c7904c670bdc59d54cf63d6228a8e3342c58e1cc1ad7aa2a88475bd925dfca6",
+        "match": true
+      },
+      {
+        "file": "momentum-confirmation-engine-v1.yaml",
+        "present": true,
+        "expected_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "actual_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "match": true
+      },
+      {
+        "file": "momentum-independent-validation-v1.yaml",
+        "present": true,
+        "expected_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "actual_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "match": true
+      },
+      {
+        "file": "protocol.json",
+        "present": true,
+        "expected_sha256": "546c20bfbf753d13f3a59b48579f406a31a24dc7ddbd4214d30f287d040b8a91",
+        "actual_sha256": "546c20bfbf753d13f3a59b48579f406a31a24dc7ddbd4214d30f287d040b8a91",
+        "match": true
+      },
+      {
+        "file": "summary.json",
+        "present": true,
+        "expected_sha256": "330b9c07af4718113850bde5af3e8b8c1a4472244e33838d8f30f77b39c26dce",
+        "actual_sha256": "330b9c07af4718113850bde5af3e8b8c1a4472244e33838d8f30f77b39c26dce",
+        "match": true
+      }
+    ]
+  },
+  "gates": {
+    "protocol_integrity_gate": "PASS",
+    "archive_gate": "PASS",
+    "independent_validation": "NOT_EVALUATED",
+    "strategic_gate": "NO-GO"
+  },
+  "constraints": {
+    "protocol_rules_modified": false,
+    "original_archive_rewritten": false,
+    "v1_sidecar_modified": false,
+    "evaluation_performed": false,
+    "forward_dataset_used": false
+  }
+}

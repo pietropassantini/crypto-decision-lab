@@ -1,0 +1,128 @@
+{
+  "decision_rule": [
+    "NO-GO if any no_go_criteria triggers, regardless of sample size.",
+    "INCONCLUSIVE if sample_requirements are not met and no no_go criterion triggers.",
+    "GO only if sample_requirements are met and every go_criterion passes.",
+    "INCONCLUSIVE otherwise (some GO criteria unmet, none hard-failing)."
+  ],
+  "sample_requirements": {
+    "min_trades": 100,
+    "min_folds": 5,
+    "min_independent_days": 180
+  },
+  "go_criteria": [
+    {
+      "id": "net_return_positive",
+      "metric": "total_return_pct",
+      "operator": ">",
+      "value": 0.0,
+      "description": "Net compounded return on the primary scenario must be positive."
+    },
+    {
+      "id": "net_return_ci_low_positive",
+      "metric": "ci_return_low_pct",
+      "operator": ">",
+      "value": 0.0,
+      "description": "Bootstrap 95% lower bound of the compounded return must be positive."
+    },
+    {
+      "id": "profit_factor_min",
+      "metric": "profit_factor_usdt",
+      "operator": ">=",
+      "value": 1.1,
+      "description": "Monetary profit factor must be at least 1.10."
+    },
+    {
+      "id": "max_drawdown_mtm_limit",
+      "metric": "max_drawdown_mtm_pct",
+      "operator": ">=",
+      "value": -30.0,
+      "description": "Hourly mark-to-market max drawdown must be no worse than -30%."
+    },
+    {
+      "id": "positive_folds",
+      "metric": "positive_folds",
+      "operator": ">=",
+      "value": 3,
+      "description": "At least 3 of 5+ folds must have a positive compounded return."
+    },
+    {
+      "id": "max_fold_share",
+      "metric": "max_abs_fold_share_pct",
+      "operator": "<=",
+      "value": 60.0,
+      "description": "No single fold may explain more than 60% of net P&L."
+    },
+    {
+      "id": "leave_top5_positive",
+      "metric": "return_after_removing_top5_pct",
+      "operator": ">",
+      "value": 0.0,
+      "description": "Return after removing the 5 best trades must stay positive."
+    },
+    {
+      "id": "thresholds_in_grid",
+      "metric": "selected_thresholds_in_grid",
+      "operator": "==",
+      "value": 1,
+      "description": "Every selected threshold must belong to the pre-registered grid."
+    },
+    {
+      "id": "no_protocol_violation",
+      "metric": "protocol_violations",
+      "operator": "==",
+      "value": 0,
+      "description": "No anti-reuse, boundary or hash violation may occur."
+    }
+  ],
+  "no_go_criteria": [
+    {
+      "id": "net_return_non_positive",
+      "metric": "total_return_pct",
+      "operator": "<=",
+      "value": 0.0,
+      "description": "A non-positive net return is an automatic NO-GO."
+    },
+    {
+      "id": "profit_factor_below_one",
+      "metric": "profit_factor_usdt",
+      "operator": "<",
+      "value": 1.0,
+      "description": "A monetary profit factor below 1.0 is an automatic NO-GO."
+    },
+    {
+      "id": "drawdown_breach",
+      "metric": "max_drawdown_mtm_pct",
+      "operator": "<",
+      "value": -40.0,
+      "description": "A mark-to-market drawdown worse than -40% is an automatic NO-GO."
+    },
+    {
+      "id": "concentration_failure",
+      "metric": "return_after_removing_top5_pct",
+      "operator": "<=",
+      "value": 0.0,
+      "description": "A non-positive return without the 5 best trades is an automatic NO-GO."
+    },
+    {
+      "id": "majority_folds_negative",
+      "metric": "positive_folds",
+      "operator": "<=",
+      "value": 2,
+      "description": "Two or fewer positive folds is an automatic NO-GO."
+    },
+    {
+      "id": "protocol_violation",
+      "metric": "protocol_violations",
+      "operator": ">",
+      "value": 0,
+      "description": "Any anti-reuse, boundary or hash violation is an automatic NO-GO."
+    }
+  ],
+  "risk_limits": {
+    "max_mark_to_market_drawdown_pct": -40.0,
+    "max_single_fold_share_pct": 60.0,
+    "min_trades": 100
+  },
+  "note": "Criteria are fixed before independent data exists. They are deliberately stricter than a repeat of the research result. They cannot be relaxed after seeing independent data; relaxing them requires a new protocol version and a new independent period, and the old version remains archived as NO-GO.\n"
+}

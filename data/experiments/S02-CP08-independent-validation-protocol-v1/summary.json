@@ -1,0 +1,186 @@
+{
+  "schema_version": "cdl.cp08.independent_validation.v1",
+  "generated_utc": "2026-10-30T14:36:02.443997+00:00",
+  "protocol": {
+    "protocol_id": "momentum-independent-validation",
+    "protocol_version": "1.0.0",
+    "config_path": "config\\protocols\\momentum-independent-validation-v1.yaml",
+    "config_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+    "canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+    "engine_config_path": "config\\protocols\\momentum-confirmation-engine-v1.yaml",
+    "engine_config_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+    "engine_canonical_sha256": "8984e65122cd245e905e0722c35a245b465a3952f805316ac03eb152690d5b6c"
+  },
+  "technical_gate": "PASS",
+  "strategic_gate": "NO-GO",
+  "independent_validation": {
+    "status": "NOT_EVALUATED",
+    "data_available": false,
+    "verdict": "NOT_EVALUATED",
+    "reason": "Nessun dataset indipendente \u00e8 presente nel repository: il protocollo attende dati nuovi.",
+    "start_utc": "2026-10-23T16:00:00Z"
+  },
+  "checks": {
+    "total": 15,
+    "failed": [],
+    "statuses": {
+      "CP08-04.1": "PASS",
+      "CP08-04.2": "PASS",
+      "CP08-04.3": "PASS",
+      "CP08-04.4": "PASS",
+      "CP08-04.5": "PASS",
+      "CP08-04.6": "PASS",
+      "CP08-04.7": "PASS",
+      "CP08-04.8": "PASS",
+      "CP08-04.9": "PASS",
+      "CP08-04.10": "PASS",
+      "CP08-04.11": "PASS",
+      "CP08-04.12": "PASS",
+      "CP08-04.13": "WARN",
+      "CP08-04.14": "PASS",
+      "CP08-04.15": "PASS"
+    }
+  },
+  "frozen_benchmark": {
+    "all_match": true,
+    "max_abs_delta": 4.973799150320701e-14,
+    "expected": {
+      "trades": 106,
+      "total_return_pct": 39.17576428398106,
+      "final_equity_usdt": 13917.576428398108,
+      "profit_factor_usdt": 1.3295465337690715,
+      "profit_factor_pct": 1.411143,
+      "max_drawdown_exit_pct": -21.180367003355915,
+      "max_drawdown_mtm_pct": -27.202366839386947,
+      "ci_return_low_pct": -24.005669250412755,
+      "ci_return_high_pct": 148.1896128077286,
+      "ci_return_p_positive": 0.844,
+      "threshold_selected_in_all_research_folds": 0.05
+    },
+    "cp08_03_reference": {
+      "latency_1h": {
+        "scenario": "latency_1h",
+        "total_return_pct": 23.590450507610083,
+        "profit_factor_usdt": 1.2216574750328155,
+        "max_drawdown_mtm_pct": -30.760345663708055,
+        "ci_return_p_low": -29.52546814442041,
+        "ci_return_p_high": 108.89530978921077
+      },
+      "conservative_envelope": {
+        "scenario": "conservative_1h_cost20_carry",
+        "total_return_pct": 3.785384260051061,
+        "profit_factor_usdt": 1.0348455284733935,
+        "max_drawdown_mtm_pct": -37.351215686603176,
+        "ci_return_p_low": -41.62734962096152,
+        "ci_return_p_high": 74.19061856731585,
+        "ci_return_p_positive": 0.518
+      }
+    }
+  },
+  "primary_scenario": {
+    "id": "realistic_1h_cost20_carry",
+    "label": "Latency 1h + 0.20% per side + SHORT carry (hypothesis)",
+    "rationale": "Conservative but realistic: the decision is generated at the cutoff close and the order is filled on the next hourly open; fee+slippage are 0.20% per side; SHORT positions pay a funding/borrow hypothesis. It matches the CP08-03 conservative envelope, the only scenario that was close to break-even.\n",
+    "latency_hours": 1,
+    "latency_semantics": "entry and exit shifted on the real open of the bar N hours later; holding stays 24h",
+    "fee_rate": 0.001,
+    "slippage": 0.001,
+    "total_cost_per_side": 0.002,
+    "short_carry": {
+      "funding_pct_8h": 0.0003,
+      "borrow_pct_day": 0.0005,
+      "carry_pct_per_trade": 0.14,
+      "status": "HYPOTHESIS_NOT_HISTORICAL",
+      "applied_to": "SHORT_ONLY",
+      "note": "The repository contains spot prices only: no historical funding or borrow series exists. The carry is a fixed parametric hypothesis, charged at exit.\n"
+    },
+    "mark_to_market": "hourly_liquidation_value",
+    "mark_to_market_carry_accrual": "exit_only",
+    "bootstrap": {
+      "method": "moving_block",
+      "block": 10,
+      "draws": 2000,
+      "seed": 42,
+      "confidence": 0.95
+    }
+  },
+  "criteria": {
+    "go": [
+      "net_return_positive",
+      "net_return_ci_low_positive",
+      "profit_factor_min",
+      "max_drawdown_mtm_limit",
+      "positive_folds",
+      "max_fold_share",
+      "leave_top5_positive",
+      "thresholds_in_grid",
+      "no_protocol_violation"
+    ],
+    "no_go": [
+      "net_return_non_positive",
+      "profit_factor_below_one",
+      "drawdown_breach",
+      "concentration_failure",
+      "majority_folds_negative",
+      "protocol_violation"
+    ],
+    "sample_requirements": {
+      "min_trades": 100,
+      "min_folds": 5,
+      "min_independent_days": 180
+    },
+    "decision_rule": [
+      "NO-GO if any no_go_criteria triggers, regardless of sample size.",
+      "INCONCLUSIVE if sample_requirements are not met and no no_go criterion triggers.",
+      "GO only if sample_requirements are met and every go_criterion passes.",
+      "INCONCLUSIVE otherwise (some GO criteria unmet, none hard-failing)."
+    ]
+  },
+  "data_separation": {
+    "last_used_target_end_utc": "2026-10-23T00:00:00+00:00",
+    "observed_unused_tail": [
+      "2026-10-23T00:00:00+00:00",
+      "2026-10-23T16:00:00+00:00"
+    ],
+    "independent_start_utc": "2026-10-23T16:00:00+00:00",
+    "research_target_before_tail": true,
+    "tail_before_independent_start": true,
+    "independent_after_research": true,
+    "no_overlap": true,
+    "tail_not_independent": true,
+    "all_ok": true
+  },
+  "registry_state": {
+    "datasets": 0,
+    "evaluations": 0,
+    "final_evaluations": 0,
+    "final_consumed": false,
+    "interim_evaluations": 0
+  },
+  "immutability": {
+    "protocol": {
+      "path": "config\\protocols\\momentum-independent-validation-v1.yaml.sha256",
+      "sidecar_present": true,
+      "declared_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+      "actual_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+      "match": true
+    },
+    "engine": {
+      "path": "config\\protocols\\momentum-confirmation-engine-v1.yaml.sha256",
+      "sidecar_present": true,
+      "declared_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+      "actual_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+      "match": true
+    },
+    "both_match": true
+  },
+  "confirmation_engine": {
+    "engine_id": "momentum-confirmation-engine",
+    "engine_version": "0.1.0",
+    "status": "SPECIFICATION_ONLY",
+    "active_rules": 0,
+    "sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67"
+  },
+  "confirmation_engine_started": false,
+  "intern_decision_0_8b_started": false
+}

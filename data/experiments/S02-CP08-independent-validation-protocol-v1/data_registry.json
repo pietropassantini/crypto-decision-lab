@@ -1,0 +1,154 @@
+{
+  "schema_version": "cdl.cp08.independent_validation.v1",
+  "research_period": {
+    "start_utc": "2021-01-01T00:00:00Z",
+    "end_exclusive_utc": "2026-10-23T16:00:00Z",
+    "last_used_target_end_utc": "2026-10-23T00:00:00Z",
+    "oos_period": {
+      "start_utc": "2023-06-10T00:00:00Z",
+      "end_utc": "2026-10-22T00:00:00Z"
+    }
+  },
+  "observed": {
+    "labels_rows": 500,
+    "labels_first_cutoff_utc": "2021-01-08T00:00:00+00:00",
+    "labels_last_cutoff_utc": "2026-10-22T00:00:00+00:00",
+    "labels_last_exit_utc": "2026-10-23T00:00:00+00:00",
+    "features_rows": 500,
+    "features_last_feature_bar_utc": "2026-10-21T23:00:00+00:00",
+    "decisions_rows": 1800,
+    "decision_policies": 6,
+    "oos_windows": 300,
+    "oos_first_cutoff_utc": "2023-06-10T00:00:00+00:00",
+    "oos_last_cutoff_utc": "2026-10-22T00:00:00+00:00",
+    "oos_last_exit_utc": "2026-10-23T00:00:00+00:00",
+    "folds": 5,
+    "snapshot_start_utc": "2021-01-01T00:00:00Z",
+    "snapshot_end_exclusive_utc": "2026-10-23T16:00:00Z",
+    "snapshot_observed_rows": 50906,
+    "snapshot_expected_rows": 50920,
+    "snapshot_missing_hours": 14
+  },
+  "declared": {
+    "labels_rows": 500,
+    "labels_first_cutoff_utc": "2021-01-08T00:00:00Z",
+    "labels_last_cutoff_utc": "2026-10-22T00:00:00Z",
+    "labels_last_exit_utc": "2026-10-23T00:00:00Z",
+    "features_rows": 500,
+    "oos_windows": 300,
+    "oos_first_cutoff_utc": "2023-06-10T00:00:00Z",
+    "oos_last_cutoff_utc": "2026-10-22T00:00:00Z",
+    "folds": 5,
+    "snapshot_end_exclusive_utc": "2026-10-23T16:00:00Z"
+  },
+  "comparisons": [
+    {
+      "field": "labels_rows",
+      "observed": 500,
+      "declared": 500,
+      "match": true
+    },
+    {
+      "field": "labels_first_cutoff_utc",
+      "observed": "2021-01-08T00:00:00+00:00",
+      "declared": "2021-01-08T00:00:00Z",
+      "match": true
+    },
+    {
+      "field": "labels_last_cutoff_utc",
+      "observed": "2026-10-22T00:00:00+00:00",
+      "declared": "2026-10-22T00:00:00Z",
+      "match": true
+    },
+    {
+      "field": "labels_last_exit_utc",
+      "observed": "2026-10-23T00:00:00+00:00",
+      "declared": "2026-10-23T00:00:00Z",
+      "match": true
+    },
+    {
+      "field": "features_rows",
+      "observed": 500,
+      "declared": 500,
+      "match": true
+    },
+    {
+      "field": "oos_windows",
+      "observed": 300,
+      "declared": 300,
+      "match": true
+    },
+    {
+      "field": "oos_first_cutoff_utc",
+      "observed": "2023-06-10T00:00:00+00:00",
+      "declared": "2023-06-10T00:00:00Z",
+      "match": true
+    },
+    {
+      "field": "oos_last_cutoff_utc",
+      "observed": "2026-10-22T00:00:00+00:00",
+      "declared": "2026-10-22T00:00:00Z",
+      "match": true
+    },
+    {
+      "field": "folds",
+      "observed": 5,
+      "declared": 5,
+      "match": true
+    },
+    {
+      "field": "snapshot_end_exclusive_utc",
+      "observed": "2026-10-23T16:00:00Z",
+      "declared": "2026-10-23T16:00:00Z",
+      "match": true
+    }
+  ],
+  "all_match": true,
+  "datasets": [
+    {
+      "id": "btcusdt_1h_snapshot_v1",
+      "role": "research_used",
+      "path": "data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json",
+      "sha256": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+      "coverage": {
+        "start_utc": "2021-01-01T00:00:00Z",
+        "end_exclusive_utc": "2026-10-23T16:00:00Z"
+      },
+      "rows_observed": 50906
+    },
+    {
+      "id": "research_unused_tail",
+      "role": "OBSERVED_NOT_INDEPENDENT",
+      "coverage": {
+        "start_utc": "2026-10-23T00:00:00Z",
+        "end_exclusive_utc": "2026-10-23T16:00:00Z"
+      },
+      "usable_as_independent_evidence": false,
+      "note": "These bars are present in the frozen snapshot and were therefore observed during the research phase, even if no decision used them. They are not independent evidence.\n"
+    },
+    {
+      "id": "independent_window",
+      "role": "independent_untouched",
+      "coverage": {
+        "start_utc": "2026-10-23T16:00:00Z",
+        "end_exclusive_utc": null
+      },
+      "available_in_repository": false,
+      "note": "No independent data exists in the repository: the protocol awaits genuinely new data."
+    }
+  ],
+  "separation": {
+    "last_used_target_end_utc": "2026-10-23T00:00:00+00:00",
+    "observed_unused_tail": [
+      "2026-10-23T00:00:00+00:00",
+      "2026-10-23T16:00:00+00:00"
+    ],
+    "independent_start_utc": "2026-10-23T16:00:00+00:00",
+    "research_target_before_tail": true,
+    "tail_before_independent_start": true,
+    "independent_after_research": true,
+    "no_overlap": true,
+    "tail_not_independent": true,
+    "all_ok": true
+  }
+}

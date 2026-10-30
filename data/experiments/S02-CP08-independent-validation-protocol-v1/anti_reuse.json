@@ -1,0 +1,31 @@
+{
+  "schema_version": "cdl.cp08.independent_validation.v1",
+  "controls": {
+    "one_final_evaluation_per_protocol_version": true,
+    "max_final_evaluations_per_version": 1,
+    "interim_looks_gating": false,
+    "require_dataset_registration": true,
+    "require_dataset_sha256_pin": true,
+    "require_boundary_check": true,
+    "require_protocol_hash_match": true,
+    "forbid_research_period_as_independent": true,
+    "forbid_observed_unused_tail": true,
+    "forbid_reuse_after_final_evaluation": true,
+    "registry_backend": "append_only_jsonl",
+    "registry_default_dir": "data/validation_registry",
+    "on_violation": "raise_and_abort",
+    "note": "Any attempt to evaluate the same protocol version twice, to swap the registered dataset, to use research windows, or to use the observed but unused snapshot tail as independent evidence aborts the evaluation.\n"
+  },
+  "registry": {
+    "directory": "data\\validation_registry",
+    "state": {
+      "datasets": 0,
+      "evaluations": 0,
+      "final_evaluations": 0,
+      "final_consumed": false,
+      "interim_evaluations": 0
+    },
+    "datasets": [],
+    "evaluations": []
+  }
+}

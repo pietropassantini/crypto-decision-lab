@@ -1,0 +1,328 @@
+{
+  "schema_version": "cdl.cp08.independent_validation.v1",
+  "created_utc": "2026-10-30T14:36:02.521526+00:00",
+  "read_only": true,
+  "analysis": "S02-CP08-04 independent validation protocol & research freeze",
+  "protocol": {
+    "protocol_id": "momentum-independent-validation",
+    "protocol_version": "1.0.0",
+    "config_path": "config\\protocols\\momentum-independent-validation-v1.yaml",
+    "config_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+    "canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+    "engine_config_path": "config\\protocols\\momentum-confirmation-engine-v1.yaml",
+    "engine_config_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+    "engine_canonical_sha256": "8984e65122cd245e905e0722c35a245b465a3952f805316ac03eb152690d5b6c"
+  },
+  "config_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+  "canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+  "engine_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+  "frozen_artifacts": [
+    {
+      "id": "snapshot_raw_manifest",
+      "path": "data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json",
+      "role": "market_data_observed",
+      "exists": true,
+      "expected_sha256": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+      "actual_sha256": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+      "match": true
+    },
+    {
+      "id": "snapshot_anomalies",
+      "path": "data/snapshots/BTCUSDT-1h-raw-v1/anomalies.json",
+      "role": "market_data_observed",
+      "exists": true,
+      "expected_sha256": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+      "actual_sha256": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+      "match": true
+    },
+    {
+      "id": "cp07_labels",
+      "path": "data/datasets/S02-CP07-decision-labels-v1/labels.parquet",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+      "actual_sha256": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+      "match": true
+    },
+    {
+      "id": "cp07_labels_manifest",
+      "path": "data/datasets/S02-CP07-decision-labels-v1/manifest.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+      "actual_sha256": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+      "match": true
+    },
+    {
+      "id": "cp06b_features",
+      "path": "data/datasets/S02-CP06B-regime-features-v1/features.parquet",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+      "actual_sha256": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+      "match": true
+    },
+    {
+      "id": "cp06b_errors",
+      "path": "data/datasets/S02-CP06B-regime-features-v1/errors.parquet",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+      "actual_sha256": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+      "match": true
+    },
+    {
+      "id": "cp07_decisions",
+      "path": "data/experiments/S02-CP07-trading-simulation-v1/decisions.parquet",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+      "actual_sha256": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+      "match": true
+    },
+    {
+      "id": "cp07_summary",
+      "path": "data/experiments/S02-CP07-trading-simulation-v1/summary.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+      "actual_sha256": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+      "match": true
+    },
+    {
+      "id": "cp07_fold_summary",
+      "path": "data/experiments/S02-CP07-trading-simulation-v1/fold_summary.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+      "actual_sha256": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+      "match": true
+    },
+    {
+      "id": "cp07_sensitivity",
+      "path": "data/experiments/S02-CP07-trading-simulation-v1/sensitivity.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+      "actual_sha256": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+      "match": true
+    },
+    {
+      "id": "cp07_manifest",
+      "path": "data/experiments/S02-CP07-trading-simulation-v1/manifest.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+      "actual_sha256": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+      "match": true
+    },
+    {
+      "id": "cp08_01_summary",
+      "path": "data/experiments/S02-CP08-simulator-integrity-audit-v1/summary.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+      "actual_sha256": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+      "match": true
+    },
+    {
+      "id": "cp08_01_manifest",
+      "path": "data/experiments/S02-CP08-simulator-integrity-audit-v1/manifest.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8",
+      "actual_sha256": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8",
+      "match": true
+    },
+    {
+      "id": "cp08_02_manifest",
+      "path": "data/experiments/S02-CP08-momentum-stability-v1/manifest.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "771fac0e1ec3e210d4875e32f982b7750949a5ce152c66336dedd150298d024b",
+      "actual_sha256": "771fac0e1ec3e210d4875e32f982b7750949a5ce152c66336dedd150298d024b",
+      "match": true
+    },
+    {
+      "id": "cp08_03_scenario_metrics",
+      "path": "data/experiments/S02-CP08-parameter-robustness-v1/scenario_metrics.parquet",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "c306c677dda72ecfbe8e0b7b108d53c3f944244b5dfa7bed26f8172a202af810",
+      "actual_sha256": "c306c677dda72ecfbe8e0b7b108d53c3f944244b5dfa7bed26f8172a202af810",
+      "match": true
+    },
+    {
+      "id": "cp08_03_checks",
+      "path": "data/experiments/S02-CP08-parameter-robustness-v1/checks.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "fc6c2c04077f5da8628c5e6e53f0046360f56f847f9717dc39bec17f9bb32f08",
+      "actual_sha256": "fc6c2c04077f5da8628c5e6e53f0046360f56f847f9717dc39bec17f9bb32f08",
+      "match": true
+    },
+    {
+      "id": "cp08_03_manifest",
+      "path": "data/experiments/S02-CP08-parameter-robustness-v1/manifest.json",
+      "role": "research_used",
+      "exists": true,
+      "expected_sha256": "f066d8ebee451de1a2205930ec2bb4a262748a4e29d7bb4f3244512deb756da6",
+      "actual_sha256": "f066d8ebee451de1a2205930ec2bb4a262748a4e29d7bb4f3244512deb756da6",
+      "match": true
+    }
+  ],
+  "frozen_artifacts_unchanged": true,
+  "original_artifacts_modified": false,
+  "data_registry": [
+    {
+      "id": "btcusdt_1h_snapshot_v1",
+      "role": "research_used",
+      "path": "data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json",
+      "sha256": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+      "coverage": {
+        "start_utc": "2021-01-01T00:00:00Z",
+        "end_exclusive_utc": "2026-10-23T16:00:00Z"
+      },
+      "rows_observed": 50906
+    },
+    {
+      "id": "research_unused_tail",
+      "role": "OBSERVED_NOT_INDEPENDENT",
+      "coverage": {
+        "start_utc": "2026-10-23T00:00:00Z",
+        "end_exclusive_utc": "2026-10-23T16:00:00Z"
+      },
+      "usable_as_independent_evidence": false,
+      "note": "These bars are present in the frozen snapshot and were therefore observed during the research phase, even if no decision used them. They are not independent evidence.\n"
+    },
+    {
+      "id": "independent_window",
+      "role": "independent_untouched",
+      "coverage": {
+        "start_utc": "2026-10-23T16:00:00Z",
+        "end_exclusive_utc": null
+      },
+      "available_in_repository": false,
+      "note": "No independent data exists in the repository: the protocol awaits genuinely new data."
+    }
+  ],
+  "data_separation": {
+    "last_used_target_end_utc": "2026-10-23T00:00:00+00:00",
+    "observed_unused_tail": [
+      "2026-10-23T00:00:00+00:00",
+      "2026-10-23T16:00:00+00:00"
+    ],
+    "independent_start_utc": "2026-10-23T16:00:00+00:00",
+    "research_target_before_tail": true,
+    "tail_before_independent_start": true,
+    "independent_after_research": true,
+    "no_overlap": true,
+    "tail_not_independent": true,
+    "all_ok": true
+  },
+  "primary_scenario": {
+    "id": "realistic_1h_cost20_carry",
+    "label": "Latency 1h + 0.20% per side + SHORT carry (hypothesis)",
+    "rationale": "Conservative but realistic: the decision is generated at the cutoff close and the order is filled on the next hourly open; fee+slippage are 0.20% per side; SHORT positions pay a funding/borrow hypothesis. It matches the CP08-03 conservative envelope, the only scenario that was close to break-even.\n",
+    "latency_hours": 1,
+    "latency_semantics": "entry and exit shifted on the real open of the bar N hours later; holding stays 24h",
+    "fee_rate": 0.001,
+    "slippage": 0.001,
+    "total_cost_per_side": 0.002,
+    "short_carry": {
+      "funding_pct_8h": 0.0003,
+      "borrow_pct_day": 0.0005,
+      "carry_pct_per_trade": 0.14,
+      "status": "HYPOTHESIS_NOT_HISTORICAL",
+      "applied_to": "SHORT_ONLY",
+      "note": "The repository contains spot prices only: no historical funding or borrow series exists. The carry is a fixed parametric hypothesis, charged at exit.\n"
+    },
+    "mark_to_market": "hourly_liquidation_value",
+    "mark_to_market_carry_accrual": "exit_only",
+    "bootstrap": {
+      "method": "moving_block",
+      "block": 10,
+      "draws": 2000,
+      "seed": 42,
+      "confidence": 0.95
+    }
+  },
+  "criteria_summary": {
+    "go": [
+      "net_return_positive",
+      "net_return_ci_low_positive",
+      "profit_factor_min",
+      "max_drawdown_mtm_limit",
+      "positive_folds",
+      "max_fold_share",
+      "leave_top5_positive",
+      "thresholds_in_grid",
+      "no_protocol_violation"
+    ],
+    "no_go": [
+      "net_return_non_positive",
+      "profit_factor_below_one",
+      "drawdown_breach",
+      "concentration_failure",
+      "majority_folds_negative",
+      "protocol_violation"
+    ],
+    "sample_requirements": {
+      "min_trades": 100,
+      "min_folds": 5,
+      "min_independent_days": 180
+    }
+  },
+  "independent_validation_status": "NOT_EVALUATED",
+  "independent_data_available": false,
+  "verdict": "NOT_EVALUATED",
+  "technical_gate": "PASS",
+  "strategic_gate": "NO-GO",
+  "checks_total": 15,
+  "checks_failed": [],
+  "confirmation_engine_status": "SPECIFICATION_ONLY",
+  "confirmation_engine_started": false,
+  "intern_decision_0_8b_started": false,
+  "outputs": {
+    "protocol.json": {
+      "path": "protocol.json",
+      "sha256": "546c20bfbf753d13f3a59b48579f406a31a24dc7ddbd4214d30f287d040b8a91"
+    },
+    "criteria.json": {
+      "path": "criteria.json",
+      "sha256": "6f87b9ed51c0327b31e142de7926cf30450cf7a404d22573ae48bf493c0ba3f9"
+    },
+    "data_registry.json": {
+      "path": "data_registry.json",
+      "sha256": "634145e6f018773ffc1992753ec0146a53c892486818384e4a4ed3c955e91462"
+    },
+    "frozen_benchmark.json": {
+      "path": "frozen_benchmark.json",
+      "sha256": "3c7904c670bdc59d54cf63d6228a8e3342c58e1cc1ad7aa2a88475bd925dfca6"
+    },
+    "confirmation_engine.json": {
+      "path": "confirmation_engine.json",
+      "sha256": "a83c0c3ce730adfc08bb5841ee1fe7bce3697f897f80c084dd0cd21d19726297"
+    },
+    "anti_reuse.json": {
+      "path": "anti_reuse.json",
+      "sha256": "4dd962209a77037da40058c5f7c99f5a4509fe8f47cc9fc06dbfafd78549fe57"
+    },
+    "checks.json": {
+      "path": "checks.json",
+      "sha256": "db335b834736568240d9f356da2c8d6fd132f9377d86992b6768f87a944fc0fa"
+    },
+    "summary.json": {
+      "path": "summary.json",
+      "sha256": "330b9c07af4718113850bde5af3e8b8c1a4472244e33838d8f30f77b39c26dce"
+    },
+    "momentum-independent-validation-v1.yaml": {
+      "path": "momentum-independent-validation-v1.yaml",
+      "sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e"
+    },
+    "momentum-confirmation-engine-v1.yaml": {
+      "path": "momentum-confirmation-engine-v1.yaml",
+      "sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67"
+    }
+  }
+}

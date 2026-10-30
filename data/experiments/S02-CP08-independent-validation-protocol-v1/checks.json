@@ -1,0 +1,294 @@
+[
+  {
+    "id": "CP08-04.1",
+    "check": "Protocollo caricato, schema valido e stato FROZEN",
+    "status": "PASS",
+    "detail": "Configurazione strutturalmente valida, immutabile e versionata.",
+    "evidence": {
+      "protocol_id": "momentum-independent-validation",
+      "protocol_version": "1.0.0",
+      "status": "FROZEN",
+      "canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4",
+      "config_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e"
+    }
+  },
+  {
+    "id": "CP08-04.2",
+    "check": "Sidecar SHA-256 di protocollo e specifica engine",
+    "status": "PASS",
+    "detail": "I due file YAML corrispondono byte-per-byte agli hash congelati nei sidecar.",
+    "evidence": {
+      "protocol": {
+        "path": "config\\protocols\\momentum-independent-validation-v1.yaml.sha256",
+        "sidecar_present": true,
+        "declared_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "actual_sha256": "b5a7d248bcfde6b02b879292097ca8f758f66e7b7528dc3d6db45237f246b80e",
+        "match": true
+      },
+      "engine": {
+        "path": "config\\protocols\\momentum-confirmation-engine-v1.yaml.sha256",
+        "sidecar_present": true,
+        "declared_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "actual_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+        "match": true
+      }
+    }
+  },
+  {
+    "id": "CP08-04.3",
+    "check": "Hash di tutti gli artefatti congelati",
+    "status": "PASS",
+    "detail": "Ogni artefatto CP07/CP08 dichiarato nel protocollo ha l'hash atteso.",
+    "evidence": {
+      "total": 17,
+      "matched": 17,
+      "mismatched": []
+    }
+  },
+  {
+    "id": "CP08-04.4",
+    "check": "Benchmark congelato riconciliato con l'archivio CP08-03",
+    "status": "PASS",
+    "detail": "Rendimento, PF, drawdown, CI e scenario primario coincidono con CP08-03 (gate tecnico PASS).",
+    "evidence": {
+      "all_match": true,
+      "max_abs_delta": 4.973799150320701e-14,
+      "cp08_03_technical_gate": "PASS",
+      "cp08_03_checks_failed": []
+    }
+  },
+  {
+    "id": "CP08-04.5",
+    "check": "Registro dei dati di ricerca coerente con gli artefatti",
+    "status": "PASS",
+    "detail": "500 finestre, 300 OOS, 5 fold, estremi temporali e snapshot coincidono con il dichiarato.",
+    "evidence": {
+      "mismatched": [],
+      "observed": {
+        "labels_rows": 500,
+        "labels_first_cutoff_utc": "2021-01-08T00:00:00+00:00",
+        "labels_last_cutoff_utc": "2026-10-22T00:00:00+00:00",
+        "labels_last_exit_utc": "2026-10-23T00:00:00+00:00",
+        "features_rows": 500,
+        "features_last_feature_bar_utc": "2026-10-21T23:00:00+00:00",
+        "decisions_rows": 1800,
+        "decision_policies": 6,
+        "oos_windows": 300,
+        "oos_first_cutoff_utc": "2023-06-10T00:00:00+00:00",
+        "oos_last_cutoff_utc": "2026-10-22T00:00:00+00:00",
+        "oos_last_exit_utc": "2026-10-23T00:00:00+00:00",
+        "folds": 5,
+        "snapshot_start_utc": "2021-01-01T00:00:00Z",
+        "snapshot_end_exclusive_utc": "2026-10-23T16:00:00Z",
+        "snapshot_observed_rows": 50906,
+        "snapshot_expected_rows": 50920,
+        "snapshot_missing_hours": 14
+      }
+    }
+  },
+  {
+    "id": "CP08-04.6",
+    "check": "Separazione temporale ricerca / coda osservata / validazione",
+    "status": "PASS",
+    "detail": "La validazione inizia dopo lo snapshot congelato; la coda osservata non \u00e8 utilizzabile come evidenza indipendente.",
+    "evidence": {
+      "last_used_target_end_utc": "2026-10-23T00:00:00+00:00",
+      "observed_unused_tail": [
+        "2026-10-23T00:00:00+00:00",
+        "2026-10-23T16:00:00+00:00"
+      ],
+      "independent_start_utc": "2026-10-23T16:00:00+00:00",
+      "research_target_before_tail": true,
+      "tail_before_independent_start": true,
+      "independent_after_research": true,
+      "no_overlap": true,
+      "tail_not_independent": true,
+      "all_ok": true
+    }
+  },
+  {
+    "id": "CP08-04.7",
+    "check": "Griglia soglie identica a CP08-03, chiusa, con selezione train-only",
+    "status": "PASS",
+    "detail": "La griglia non pu\u00f2 essere ampliata dopo il congelamento e la selezione avviene solo sul training.",
+    "evidence": {
+      "grid": [
+        0.0,
+        0.005,
+        0.01,
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08,
+        0.09,
+        0.1,
+        0.12,
+        0.15,
+        0.2
+      ],
+      "selection_rule": "argmax_train_compounded_net_multiple",
+      "selection_split": "train_only",
+      "frozen_reference_threshold": 0.05
+    }
+  },
+  {
+    "id": "CP08-04.8",
+    "check": "Scenario primario realistico completo e allineato a CP08-03",
+    "status": "PASS",
+    "detail": "Latenza 1h, fee 0,10%, slippage 0,10%, carry SHORT 0,14% dichiarato come ipotesi.",
+    "evidence": {
+      "primary_scenario": "realistic_1h_cost20_carry",
+      "fee_rate": 0.001,
+      "slippage": 0.001,
+      "latency_hours": 1,
+      "carry_short_pct": 14.000000000000002,
+      "carry_status": "HYPOTHESIS_NOT_HISTORICAL",
+      "matches_cp08_03_row": true
+    }
+  },
+  {
+    "id": "CP08-04.9",
+    "check": "Walk-forward e requisiti minimi di campione",
+    "status": "PASS",
+    "detail": "Fold espandenti con purge 24h, blocchi da 60 finestre e minimi di campione pre-registrati.",
+    "evidence": {
+      "walk_forward": {
+        "type": "expanding",
+        "min_train_windows": 200,
+        "test_windows_per_fold": 60,
+        "purge_hours": 24,
+        "folds_min_for_conclusive": 5,
+        "folds_max": 10,
+        "leftover_windows": "reported, not used for the verdict",
+        "history_allowed": "all windows with cutoff strictly before the test block (research + earlier independent)",
+        "future_train_window": "no window with exit_timestamp overlapping the test block (24h purge)",
+        "selection_recomputed_per_fold": true,
+        "evaluation_order": "chronological",
+        "interim_looks": {
+          "allowed": true,
+          "gating": false,
+          "note": "Interim looks are descriptive only and can never produce GO."
+        }
+      },
+      "sample_requirements": {
+        "min_trades": 100,
+        "min_folds": 5,
+        "min_independent_days": 180
+      }
+    }
+  },
+  {
+    "id": "CP08-04.10",
+    "check": "Criteri GO/NO-GO completi, non contraddittori e ordinati",
+    "status": "PASS",
+    "detail": "Ogni metrica ha soglie compatibili; nessun valore pu\u00f2 soddisfare GO e NO-GO insieme.",
+    "evidence": {
+      "go_criteria": [
+        "net_return_positive",
+        "net_return_ci_low_positive",
+        "profit_factor_min",
+        "max_drawdown_mtm_limit",
+        "positive_folds",
+        "max_fold_share",
+        "leave_top5_positive",
+        "thresholds_in_grid",
+        "no_protocol_violation"
+      ],
+      "no_go_criteria": [
+        "net_return_non_positive",
+        "profit_factor_below_one",
+        "drawdown_breach",
+        "concentration_failure",
+        "majority_folds_negative",
+        "protocol_violation"
+      ],
+      "decision_rule": [
+        "NO-GO if any no_go_criteria triggers, regardless of sample size.",
+        "INCONCLUSIVE if sample_requirements are not met and no no_go criterion triggers.",
+        "GO only if sample_requirements are met and every go_criterion passes.",
+        "INCONCLUSIVE otherwise (some GO criteria unmet, none hard-failing)."
+      ]
+    }
+  },
+  {
+    "id": "CP08-04.11",
+    "check": "Momentum Confirmation Engine: specifica versionata, nessuna regola attiva",
+    "status": "PASS",
+    "detail": "Configurazione pronta ma non eseguibile: nessuna regola derivata dal periodo OOS, nessun input di target.",
+    "evidence": {
+      "engine_id": "momentum-confirmation-engine",
+      "engine_version": "0.1.0",
+      "status": "SPECIFICATION_ONLY",
+      "active_rules": 0,
+      "engine_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67"
+    }
+  },
+  {
+    "id": "CP08-04.12",
+    "check": "Controlli anti-riuso attivi e registro pulito",
+    "status": "PASS",
+    "detail": "Registro append-only: dataset pinnato per hash, una sola valutazione finale, nessuna esecuzione registrata.",
+    "evidence": {
+      "controls": {
+        "one_final_evaluation_per_protocol_version": true,
+        "max_final_evaluations_per_version": 1,
+        "interim_looks_gating": false,
+        "require_dataset_registration": true,
+        "require_dataset_sha256_pin": true,
+        "require_boundary_check": true,
+        "require_protocol_hash_match": true,
+        "forbid_research_period_as_independent": true,
+        "forbid_observed_unused_tail": true,
+        "forbid_reuse_after_final_evaluation": true,
+        "registry_backend": "append_only_jsonl",
+        "registry_default_dir": "data/validation_registry",
+        "on_violation": "raise_and_abort",
+        "note": "Any attempt to evaluate the same protocol version twice, to swap the registered dataset, to use research windows, or to use the observed but unused snapshot tail as independent evidence aborts the evaluation.\n"
+      },
+      "registry_dir": "data\\validation_registry",
+      "registry_state": {
+        "datasets": 0,
+        "evaluations": 0,
+        "final_evaluations": 0,
+        "final_consumed": false,
+        "interim_evaluations": 0
+      }
+    }
+  },
+  {
+    "id": "CP08-04.13",
+    "check": "Nessun dato indipendente disponibile: verdetto NOT_EVALUATED",
+    "status": "WARN",
+    "detail": "Il protocollo \u00e8 pronto ma non esiste evidenza indipendente: nessun GO \u00e8 possibile.",
+    "evidence": {
+      "independent_start_utc": "2026-10-23T16:00:00Z",
+      "data_available": false,
+      "verdict": "NOT_EVALUATED",
+      "strategic_gate": "NO-GO"
+    }
+  },
+  {
+    "id": "CP08-04.14",
+    "check": "Nessun training, inferenza, download o modifica agli archivi",
+    "status": "PASS",
+    "detail": "Solo letture locali e output additivo; hash sorgente verificati prima e dopo la scrittura.",
+    "evidence": {
+      "training_performed": false,
+      "new_inference": false,
+      "data_downloaded": false,
+      "original_artifacts_modified": false
+    }
+  },
+  {
+    "id": "CP08-04.15",
+    "check": "Determinismo dell'hash canonico del protocollo",
+    "status": "PASS",
+    "detail": "L'hash canonico \u00e8 stabile e indipendente dalla formattazione del file.",
+    "evidence": {
+      "canonical_sha256": "7b32d50693906f8d818f2cb839ad70b489b5f124497635f203b0c98ebd792eb4"
+    }
+  }
+]

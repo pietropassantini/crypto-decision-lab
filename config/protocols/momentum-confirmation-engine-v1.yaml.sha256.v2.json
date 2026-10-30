@@ -1,0 +1,20 @@
+{
+  "schema_version": "cdl.protocol_integrity.sidecar.v2",
+  "artifact": "momentum-confirmation-engine-v1.yaml",
+  "hash_algorithm": "sha256",
+  "frozen_utc": null,
+  "representations": {
+    "crlf_sha256": "3953117d87ee059be2f1fb5b8d69390272369761b70f28e957cdea4f491f1e67",
+    "lf_sha256": "0f2a89a07a47d911b1ed4ffe2b3aba1f8573e21cc26272a51a427df8905b38d2"
+  },
+  "canonical_line_ending": "lf",
+  "canonical_rationale": "Git stores this artifact with text eol=lf; LF is the canonical representation on Linux checkouts. The CRLF hash is preserved as the original freeze evidence and remains verifiable byte-for-byte.",
+  "original_sidecar": "momentum-confirmation-engine-v1.yaml.sha256",
+  "original_sidecar_sha256": "16ed459d097eb149aceec50029859f2ed1e5d922cc5476433f20dff79a4c3bbf",
+  "migration": {
+    "id": "S02-CP08-05R",
+    "reason": "S02-CP08-05R: same line-ending reconciliation applied to the frozen confirmation-engine specification.",
+    "rules_unchanged": true,
+    "note": "No rule, value or comment of the frozen protocol was modified: the two hashes differ exclusively in line-ending encoding."
+  }
+}

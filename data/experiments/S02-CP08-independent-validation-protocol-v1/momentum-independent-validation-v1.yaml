@@ -1,0 +1,445 @@
+# S02-CP08-04 · Momentum Threshold · Independent Validation Protocol
+#
+# IMMUTABLE, VERSIONED PRE-REGISTRATION.
+#
+# This file was frozen before any genuinely independent (future) data existed
+# in the repository. Editing it in place is forbidden: a change requires a new
+# `protocol_version`, a new file name (`...-v2.yaml`) and a new protocol
+# archive. The sidecar `.sha256` pins the exact bytes of this file.
+#
+# It does NOT contain a new strategy and it does NOT authorise a new backtest on
+# the already-observed research period. It defines how a *single* independent
+# evaluation will be run and judged when new, untouched data arrives.
+schema_version: cdl.cp08.independent_validation.protocol.v1
+protocol_id: momentum-independent-validation
+protocol_version: "1.0.0"
+status: FROZEN
+created_utc: "2026-10-30T00:00:00Z"
+frozen_after_utc: "2026-10-30T00:00:00Z"
+supersedes: null
+owner: quantitative-research
+scope: "S02-CP08-04"
+purpose: >
+  Evaluate, at most once per protocol version, whether the frozen Momentum
+  Threshold (5%, 24h hold) retains a positive net edge in a realistic execution
+  scenario (latency 1h, 0.20% per side, SHORT carry hypothesis) on genuinely
+  new out-of-sample data, using a pre-registered walk-forward and pre-registered
+  GO / NO-GO / INCONCLUSIVE criteria. The protocol cannot promote a strategy
+  using data already observed during research.
+
+# ---------------------------------------------------------------------------
+# 1. Research phase: every period already observed / used for research.
+# ---------------------------------------------------------------------------
+research_phase:
+  label: "S02-CP07 + S02-CP08-01/02/03"
+  period_start_utc: "2021-01-01T00:00:00Z"
+  period_end_exclusive_utc: "2026-10-23T16:00:00Z"
+  last_used_target_end_utc: "2026-10-23T00:00:00Z"
+  first_label_cutoff_utc: "2021-01-08T00:00:00Z"
+  last_label_cutoff_utc: "2026-10-22T00:00:00Z"
+  oos_period_start_utc: "2023-06-10T00:00:00Z"
+  oos_period_end_utc: "2026-10-22T00:00:00Z"
+  windows: 500
+  oos_windows: 300
+  folds: 5
+  used_for:
+    - "CP07: selection of the frozen momentum threshold (5%) on train folds"
+    - "CP08-01: simulator integrity audit and parameter-surface diagnostics"
+    - "CP08-02: descriptive stability and profit concentration"
+    - "CP08-03: pre-registered threshold grid, cost/latency/carry sensitivity"
+  contamination_warning: >
+    The 300 out-of-sample windows of CP07 were already observed. They cannot be
+    reused as independent evidence, and no parameter may be chosen by looking at
+    them again. CP08-03 already used them for exploratory surfaces.
+
+  # Observed in the frozen snapshot but never used by any label, decision,
+  # target or metric (the snapshot extends 15 hours beyond the last label exit).
+  observed_unused_tail:
+    start_utc: "2026-10-23T00:00:00Z"
+    end_exclusive_utc: "2026-10-23T16:00:00Z"
+    status: OBSERVED_NOT_INDEPENDENT
+    usable_as_independent_evidence: false
+    reason: >
+      These bars are present in the frozen snapshot and were therefore observed
+      during the research phase, even if no decision used them. They are not
+      independent evidence.
+
+# ---------------------------------------------------------------------------
+# 2. Frozen artifacts and their exact hashes.
+# ---------------------------------------------------------------------------
+frozen_artifacts:
+  - id: snapshot_raw_manifest
+    path: data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json
+    sha256: 9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979
+    role: market_data_observed
+  - id: snapshot_anomalies
+    path: data/snapshots/BTCUSDT-1h-raw-v1/anomalies.json
+    sha256: bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad
+    role: market_data_observed
+  - id: cp07_labels
+    path: data/datasets/S02-CP07-decision-labels-v1/labels.parquet
+    sha256: 71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa
+    role: research_used
+  - id: cp07_labels_manifest
+    path: data/datasets/S02-CP07-decision-labels-v1/manifest.json
+    sha256: e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d
+    role: research_used
+  - id: cp06b_features
+    path: data/datasets/S02-CP06B-regime-features-v1/features.parquet
+    sha256: df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac
+    role: research_used
+  - id: cp06b_errors
+    path: data/datasets/S02-CP06B-regime-features-v1/errors.parquet
+    sha256: bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193
+    role: research_used
+  - id: cp07_decisions
+    path: data/experiments/S02-CP07-trading-simulation-v1/decisions.parquet
+    sha256: 66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8
+    role: research_used
+  - id: cp07_summary
+    path: data/experiments/S02-CP07-trading-simulation-v1/summary.json
+    sha256: 629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca
+    role: research_used
+  - id: cp07_fold_summary
+    path: data/experiments/S02-CP07-trading-simulation-v1/fold_summary.json
+    sha256: 37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9
+    role: research_used
+  - id: cp07_sensitivity
+    path: data/experiments/S02-CP07-trading-simulation-v1/sensitivity.json
+    sha256: dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1
+    role: research_used
+  - id: cp07_manifest
+    path: data/experiments/S02-CP07-trading-simulation-v1/manifest.json
+    sha256: ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac
+    role: research_used
+  - id: cp08_01_summary
+    path: data/experiments/S02-CP08-simulator-integrity-audit-v1/summary.json
+    sha256: 278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75
+    role: research_used
+  - id: cp08_01_manifest
+    path: data/experiments/S02-CP08-simulator-integrity-audit-v1/manifest.json
+    sha256: 621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8
+    role: research_used
+  - id: cp08_02_manifest
+    path: data/experiments/S02-CP08-momentum-stability-v1/manifest.json
+    sha256: 771fac0e1ec3e210d4875e32f982b7750949a5ce152c66336dedd150298d024b
+    role: research_used
+  - id: cp08_03_scenario_metrics
+    path: data/experiments/S02-CP08-parameter-robustness-v1/scenario_metrics.parquet
+    sha256: c306c677dda72ecfbe8e0b7b108d53c3f944244b5dfa7bed26f8172a202af810
+    role: research_used
+  - id: cp08_03_checks
+    path: data/experiments/S02-CP08-parameter-robustness-v1/checks.json
+    sha256: fc6c2c04077f5da8628c5e6e53f0046360f56f847f9717dc39bec17f9bb32f08
+    role: research_used
+  - id: cp08_03_manifest
+    path: data/experiments/S02-CP08-parameter-robustness-v1/manifest.json
+    sha256: f066d8ebee451de1a2205930ec2bb4a262748a4e29d7bb4f3244512deb756da6
+    role: research_used
+
+# ---------------------------------------------------------------------------
+# 3. Frozen benchmark (CP07) and the CP08-03 consolidated numbers.
+#    Values are read-only references for reconciliation, not optimisation targets.
+# ---------------------------------------------------------------------------
+frozen_benchmark:
+  policy_id: momentum_threshold_5pct
+  policy_label: "Momentum threshold 5%"
+  signal_column: momentum_168h
+  threshold: 0.05
+  direction: symmetric
+  horizon_hours: 24
+  entry_semantics: "open of the bar at cutoff (first price after the anchor close)"
+  exit_semantics: "open of the bar at cutoff + 24h"
+  initial_capital_usdt: 10000.0
+  sizing: "100% of current equity, no leverage, one position at a time"
+  overlap_rule: "a signal whose entry is before the previous exit is skipped and counted"
+  no_trade_rule: "flat, zero cost, no market occupancy"
+  reference_costs:
+    fee_rate: 0.001
+    slippage: 0.0005
+    total_per_side: 0.0015
+  reference_execution:
+    latency_hours: 0
+  expected:
+    trades: 106
+    total_return_pct: 39.17576428398106
+    final_equity_usdt: 13917.576428398108
+    profit_factor_usdt: 1.3295465337690715
+    profit_factor_pct: 1.4111430
+    max_drawdown_exit_pct: -21.180367003355915
+    max_drawdown_mtm_pct: -27.202366839386947
+    ci_return_low_pct: -24.005669250412755
+    ci_return_high_pct: 148.1896128077286
+    ci_return_p_positive: 0.844
+    threshold_selected_in_all_research_folds: 0.05
+  cp08_03_reference:
+    latency_1h:
+      scenario: latency_1h
+      total_return_pct: 23.590450507610083
+      profit_factor_usdt: 1.2216574750328155
+      max_drawdown_mtm_pct: -30.760345663708055
+      ci_return_p_low: -29.52546814442041
+      ci_return_p_high: 108.89530978921077
+    conservative_envelope:
+      scenario: conservative_1h_cost20_carry
+      total_return_pct: 3.785384260051061
+      profit_factor_usdt: 1.0348455284733935
+      max_drawdown_mtm_pct: -37.351215686603176
+      ci_return_p_low: -41.62734962096152
+      ci_return_p_high: 74.19061856731585
+      ci_return_p_positive: 0.518
+  note: >
+    These numbers are the frozen research result. They are NOT a validation
+    result and they are NOT a target: they only serve as a reconciliation anchor
+    for the simulator and the archive.
+
+# ---------------------------------------------------------------------------
+# 4. Primary execution scenario (gating) and secondary scenarios (descriptive).
+# ---------------------------------------------------------------------------
+primary_scenario:
+  id: realistic_1h_cost20_carry
+  label: "Latency 1h + 0.20% per side + SHORT carry (hypothesis)"
+  rationale: >
+    Conservative but realistic: the decision is generated at the cutoff close and
+    the order is filled on the next hourly open; fee+slippage are 0.20% per side;
+    SHORT positions pay a funding/borrow hypothesis. It matches the CP08-03
+    conservative envelope, the only scenario that was close to break-even.
+  latency_hours: 1
+  latency_semantics: "entry and exit shifted on the real open of the bar N hours later; holding stays 24h"
+  fee_rate: 0.001
+  slippage: 0.001
+  total_cost_per_side: 0.002
+  short_carry:
+    funding_pct_8h: 0.0003
+    borrow_pct_day: 0.0005
+    carry_pct_per_trade: 0.14
+    status: HYPOTHESIS_NOT_HISTORICAL
+    applied_to: SHORT_ONLY
+    note: >
+      The repository contains spot prices only: no historical funding or borrow
+      series exists. The carry is a fixed parametric hypothesis, charged at exit.
+  mark_to_market: hourly_liquidation_value
+  mark_to_market_carry_accrual: exit_only
+  bootstrap:
+    method: moving_block
+    block: 10
+    draws: 2000
+    seed: 42
+    confidence: 0.95
+
+sensitivity_scenarios:
+  scenarios:
+    - id: cp07_base_0h
+      label: "CP07 frozen reference (latency 0h, 0.15%/side, no carry)"
+      gating: false
+    - id: latency_1h_base
+      label: "Latency 1h, 0.15%/side, no carry"
+      gating: false
+    - id: realistic_1h_cost20
+      label: "Latency 1h, 0.20%/side, no carry"
+      gating: false
+  note: >
+    Secondary scenarios are descriptive only. They can never upgrade or downgrade
+    the verdict: only the primary scenario gates GO / NO-GO.
+
+# ---------------------------------------------------------------------------
+# 5. Pre-registered threshold grid and selection rule (copied from CP08-03).
+# ---------------------------------------------------------------------------
+threshold_preregistration:
+  grid: [0.0, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.12, 0.15, 0.20]
+  required_values: [0.05, 0.08, 0.10]
+  frozen_reference_threshold: 0.05
+  selection_rule: argmax_train_compounded_net_multiple
+  tie_break: lowest_threshold_in_grid_order
+  selection_split: train_only
+  refit_frequency: once_per_fold
+  train_window: "all windows with cutoff before the first test cutoff, purge applied"
+  grid_is_closed: true
+  widening_after_independent_data: forbidden
+  source: "S02-CP08-03 PREREGISTERED_THRESHOLD_GRID (verbatim)"
+
+# ---------------------------------------------------------------------------
+# 6. Walk-forward protocol for the independent period.
+# ---------------------------------------------------------------------------
+walk_forward:
+  type: expanding
+  min_train_windows: 200
+  test_windows_per_fold: 60
+  purge_hours: 24
+  folds_min_for_conclusive: 5
+  folds_max: 10
+  leftover_windows: "reported, not used for the verdict"
+  history_allowed: "all windows with cutoff strictly before the test block (research + earlier independent)"
+  future_train_window: "no window with exit_timestamp overlapping the test block (24h purge)"
+  selection_recomputed_per_fold: true
+  evaluation_order: chronological
+  interim_looks:
+    allowed: true
+    gating: false
+    note: "Interim looks are descriptive only and can never produce GO."
+
+independent_validation:
+  required_evidence: genuinely_new_market_data
+  start_utc: "2026-10-23T16:00:00Z"
+  min_first_decision_cutoff_utc: "2026-10-23T16:00:00Z"
+  min_last_target_end_utc: "2026-10-23T00:00:00Z"
+  feature_warmup_hours: 168
+  warmup_note: >
+    Features use only bars strictly before the cutoff. Warm-up bars may belong
+    to the frozen snapshot; the independent evidence is the decision and its
+    24h target, both after the boundary.
+  min_duration_days: 180
+  min_oos_windows: 300
+  min_trades: 100
+  allowed_sources:
+    - continuous_extension_of_frozen_snapshot
+  forbidden_sources:
+    - research_period_windows
+    - observed_unused_tail
+    - resampled_or_synthetic_research_data
+    - second_symbol_without_new_protocol_version
+  dataset_registration: required_before_evaluation
+  dataset_pinning: exact_sha256
+
+# ---------------------------------------------------------------------------
+# 7. GO / NO-GO / INCONCLUSIVE criteria (evaluated once, on the primary scenario).
+# ---------------------------------------------------------------------------
+go_nogo:
+  decision_rule:
+    - "NO-GO if any no_go_criteria triggers, regardless of sample size."
+    - "INCONCLUSIVE if sample_requirements are not met and no no_go criterion triggers."
+    - "GO only if sample_requirements are met and every go_criterion passes."
+    - "INCONCLUSIVE otherwise (some GO criteria unmet, none hard-failing)."
+  sample_requirements:
+    min_trades: 100
+    min_folds: 5
+    min_independent_days: 180
+  go_criteria:
+    - id: net_return_positive
+      metric: total_return_pct
+      operator: ">"
+      value: 0.0
+      description: "Net compounded return on the primary scenario must be positive."
+    - id: net_return_ci_low_positive
+      metric: ci_return_low_pct
+      operator: ">"
+      value: 0.0
+      description: "Bootstrap 95% lower bound of the compounded return must be positive."
+    - id: profit_factor_min
+      metric: profit_factor_usdt
+      operator: ">="
+      value: 1.10
+      description: "Monetary profit factor must be at least 1.10."
+    - id: max_drawdown_mtm_limit
+      metric: max_drawdown_mtm_pct
+      operator: ">="
+      value: -30.0
+      description: "Hourly mark-to-market max drawdown must be no worse than -30%."
+    - id: positive_folds
+      metric: positive_folds
+      operator: ">="
+      value: 3
+      description: "At least 3 of 5+ folds must have a positive compounded return."
+    - id: max_fold_share
+      metric: max_abs_fold_share_pct
+      operator: "<="
+      value: 60.0
+      description: "No single fold may explain more than 60% of net P&L."
+    - id: leave_top5_positive
+      metric: return_after_removing_top5_pct
+      operator: ">"
+      value: 0.0
+      description: "Return after removing the 5 best trades must stay positive."
+    - id: thresholds_in_grid
+      metric: selected_thresholds_in_grid
+      operator: "=="
+      value: 1
+      description: "Every selected threshold must belong to the pre-registered grid."
+    - id: no_protocol_violation
+      metric: protocol_violations
+      operator: "=="
+      value: 0
+      description: "No anti-reuse, boundary or hash violation may occur."
+  no_go_criteria:
+    - id: net_return_non_positive
+      metric: total_return_pct
+      operator: "<="
+      value: 0.0
+      description: "A non-positive net return is an automatic NO-GO."
+    - id: profit_factor_below_one
+      metric: profit_factor_usdt
+      operator: "<"
+      value: 1.0
+      description: "A monetary profit factor below 1.0 is an automatic NO-GO."
+    - id: drawdown_breach
+      metric: max_drawdown_mtm_pct
+      operator: "<"
+      value: -40.0
+      description: "A mark-to-market drawdown worse than -40% is an automatic NO-GO."
+    - id: concentration_failure
+      metric: return_after_removing_top5_pct
+      operator: "<="
+      value: 0.0
+      description: "A non-positive return without the 5 best trades is an automatic NO-GO."
+    - id: majority_folds_negative
+      metric: positive_folds
+      operator: "<="
+      value: 2
+      description: "Two or fewer positive folds is an automatic NO-GO."
+    - id: protocol_violation
+      metric: protocol_violations
+      operator: ">"
+      value: 0
+      description: "Any anti-reuse, boundary or hash violation is an automatic NO-GO."
+  risk_limits:
+    max_mark_to_market_drawdown_pct: -40.0
+    max_single_fold_share_pct: 60.0
+    min_trades: 100
+  note: >
+    Criteria are fixed before independent data exists. They are deliberately
+    stricter than a repeat of the research result. They cannot be relaxed after
+    seeing independent data; relaxing them requires a new protocol version and a
+    new independent period, and the old version remains archived as NO-GO.
+
+# ---------------------------------------------------------------------------
+# 8. Immutability and anti-reuse controls.
+# ---------------------------------------------------------------------------
+immutability:
+  hash_algorithm: sha256
+  sidecar_hash_file: momentum-independent-validation-v1.yaml.sha256
+  allowed_changes_after_freeze: none
+  change_process: "new protocol_version + new file + new archive; never edit in place"
+  archive_refuses_overwrite: true
+  source_artifacts_verified_before_and_after: true
+
+anti_reuse_controls:
+  one_final_evaluation_per_protocol_version: true
+  max_final_evaluations_per_version: 1
+  interim_looks_gating: false
+  require_dataset_registration: true
+  require_dataset_sha256_pin: true
+  require_boundary_check: true
+  require_protocol_hash_match: true
+  forbid_research_period_as_independent: true
+  forbid_observed_unused_tail: true
+  forbid_reuse_after_final_evaluation: true
+  registry_backend: append_only_jsonl
+  registry_default_dir: data/validation_registry
+  on_violation: raise_and_abort
+  note: >
+    Any attempt to evaluate the same protocol version twice, to swap the
+    registered dataset, to use research windows, or to use the observed but
+    unused snapshot tail as independent evidence aborts the evaluation.
+
+confirmation_engine:
+  config_path: config/protocols/momentum-confirmation-engine-v1.yaml
+  required_status: SPECIFICATION_ONLY
+  note: "Versioned configuration prepared for the future engine; no rule is active and no backtest is authorised by CP08-04."
+
+dashboard:
+  read_only: true
+  show_protocol_status: true
+  show_criteria: true
+  show_data_registry: true
+  show_anti_reuse_state: true
+  banner: "NESSUN DATO INDIPENDENTE · NON VALUTATO · NO-GO"

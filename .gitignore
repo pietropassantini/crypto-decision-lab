@@ -137,3 +137,16 @@ config/secrets.*
 # Operational files that are not evidence
 data/forward/*/registry/sync.lock
 var/log/
+
+# ==================================================
+# S02-CP08-05R · FROZEN PROTOCOL ARCHIVE (evidence, tracked)
+# ==================================================
+
+# The CP08-04 protocol archive is frozen evidence: its manifest pins every
+# file by SHA-256. The generic "experiments/" rule above hid it from clones
+# (Sirio reported ARCHIVE_MISSING), so exactly this archive is re-included.
+# Nothing else under data/experiments is un-ignored here.
+!data/experiments/
+data/experiments/*
+!data/experiments/S02-CP08-independent-validation-protocol-v1/
+!data/experiments/S02-CP08-independent-validation-protocol-v1/**

@@ -1,0 +1,141 @@
+{
+  "comparisons": [
+    {
+      "metric": "trades",
+      "observed": 106.0,
+      "declared": 106.0,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "total_return_pct",
+      "observed": 39.17576428398111,
+      "declared": 39.17576428398106,
+      "delta": 4.973799150320701e-14,
+      "match": true
+    },
+    {
+      "metric": "profit_factor_usdt",
+      "observed": 1.3295465337690715,
+      "declared": 1.3295465337690715,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "max_drawdown_exit_pct",
+      "observed": -21.180367003355915,
+      "declared": -21.180367003355915,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "max_drawdown_mtm_pct",
+      "observed": -27.202366839386947,
+      "declared": -27.202366839386947,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "ci_return_low_pct",
+      "observed": -24.005669250412755,
+      "declared": -24.005669250412755,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "ci_return_high_pct",
+      "observed": 148.1896128077286,
+      "declared": 148.1896128077286,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "ci_return_p_positive",
+      "observed": 0.844,
+      "declared": 0.844,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "latency_1h.total_return_pct",
+      "observed": 23.590450507610083,
+      "declared": 23.590450507610083,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "latency_1h.profit_factor_usdt",
+      "observed": 1.2216574750328155,
+      "declared": 1.2216574750328155,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "latency_1h.max_drawdown_mtm_pct",
+      "observed": -30.760345663708055,
+      "declared": -30.760345663708055,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "latency_1h.ci_return_low_pct",
+      "observed": -29.52546814442041,
+      "declared": -29.52546814442041,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "latency_1h.ci_return_high_pct",
+      "observed": 108.89530978921077,
+      "declared": 108.89530978921077,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.total_return_pct",
+      "observed": 3.785384260051061,
+      "declared": 3.785384260051061,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.profit_factor_usdt",
+      "observed": 1.0348455284733935,
+      "declared": 1.0348455284733935,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.max_drawdown_mtm_pct",
+      "observed": -37.351215686603176,
+      "declared": -37.351215686603176,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.ci_return_low_pct",
+      "observed": -41.62734962096152,
+      "declared": -41.62734962096152,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.ci_return_high_pct",
+      "observed": 74.19061856731585,
+      "declared": 74.19061856731585,
+      "delta": 0.0,
+      "match": true
+    },
+    {
+      "metric": "conservative_envelope.ci_return_p_positive",
+      "observed": 0.518,
+      "declared": 0.518,
+      "delta": 0.0,
+      "match": true
+    }
+  ],
+  "all_match": true,
+  "cp08_03_technical_gate": "PASS",
+  "cp08_03_checks_failed": [],
+  "cp08_03_gate_ok": true
+}
