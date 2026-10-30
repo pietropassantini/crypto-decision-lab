@@ -256,3 +256,92 @@ Verdetto: **INCONCLUSIVE**. Nessuna policy batte Always NO_TRADE in modo
 statisticamente stabile; il momentum threshold è positivo ma non significativo
 contro la baseline no-trade. Intern-Decision-0.8B non addestrato.
 La dashboard espone la vista "Trading Simulation".
+
+
+## S02-CP08 · Momentum robustness & independent validation
+
+Audit read-only dell'integrità del simulatore CP07 (10 requisiti, 42 controlli
+automatici) e diagnostica di robustezza del Momentum Threshold, senza nuovi
+modelli e senza riottimizzare sui dati di test:
+
+- report: [`docs/S02-CP08-momentum-robustness.md`](docs/S02-CP08-momentum-robustness.md)
+- esperimento: `data/experiments/S02-CP08-simulator-integrity-audit-v1/`
+- comando: `python -m crypto_decision_lab.simulator_integrity_audit`
+
+Risultato: **PASS WITH WARNINGS** (33 PASS, 8 WARN, 1 FIXED, 0 FAIL). Rendimenti,
+prezzi, metriche per fold e griglia costi sono riprodotti bit-per-bit; nessun
+look-ahead, nessuna sovrapposizione, artefatti CP07 intatti. Corretti due difetti
+latenti del simulatore (NO_TRADE che occupava il mercato, primo punto della
+curva equity) senza alcun impatto sui numeri CP07.
+
+Il Momentum Threshold resta **INCONCLUSIVE**: PF monetario 1,3295 (non 1,4111),
+drawdown mark-to-market −27,20% (non −21,18%), rendimento che dipende da 3–5
+trade (senza i 5 migliori: −5,79%), soglia 5% al bordo della griglia e +39,18% →
++23,59% con 1h di latenza. CI bootstrap del rendimento composto [−24,0%,
++148,2%]. Intern-Decision-0.8B non addestrato.
+
+### S02-CP08-02 · Momentum stability & profit concentration
+
+Analisi descrittiva read-only dei 106 trade Momentum OOS sui soli artefatti
+CP07 + CP08-01 (nessun training, nessuna inferenza, nessun download):
+
+- report: Parte II di [`docs/S02-CP08-momentum-robustness.md`](docs/S02-CP08-momentum-robustness.md)
+- archivio additivo: `data/experiments/S02-CP08-momentum-stability-v1/`
+- comando: `python -m crypto_decision_lab.momentum_stability` (`--no-write` disponibile)
+- dashboard: tab read-only "Momentum Stability"
+
+Risultato: **67 controlli di riconciliazione PASS, 0 FAIL** (delta massimo
+3,64e−12); P&L monetario additivo su finestra/fold/mese/trimestre/anno. Il
+quadro di stabilità è però negativo: mediana per trade −0,23%, senza i 5 trade
+migliori il rendimento è −5,79%, i top-3 mesi coprono il 104% del P&L netto,
+drawdown mark-to-market −27,20% con episodio **ancora aperto** da oltre 800
+giorni, volatilità alta negativa in entrambe le direzioni. Tutto descrittivo:
+il gate statistico resta invariato, **INCONCLUSIVE / NO-GO** al trading.
+
+### S02-CP08-03 · Parameter & execution robustness
+
+Robustezza di parametri, costi ed esecuzione del Momentum Threshold con griglia
+di soglie **pre-registrata** (0%–20%, inclusi 5%/8%/10%), selezione **solo sul
+training** di ogni fold e superficie OOS **esclusivamente esplorativa**:
+
+- report: Parte III di [`docs/S02-CP08-momentum-robustness.md`](docs/S02-CP08-momentum-robustness.md)
+- archivio additivo: `data/experiments/S02-CP08-parameter-robustness-v1/`
+- comando: `python -m crypto_decision_lab.parameter_robustness` (`--no-write` disponibile)
+- dashboard: tab read-only "Parameter Robustness"
+
+Risultato: **13 controlli, 12 PASS + 1 WARN, 0 FAIL**; policy congelata riprodotta
+bit-per-bit. Due esperimenti separati: con **decisioni congelate** l'effetto dei
+costi è **strettamente monotono** (+91,28% a 0 bp → −33,73% a 50 bp per lato;
+break-even ≈ 0,25–0,30%); con **refit della soglia sul training** la curva non è
+monotona ed è un confondimento (F10 chiuso). Il refit train-only sceglie 9% in
+5/5 fold e rende **meno** del 5% congelato (+35,19% vs +39,18%). Latenza 1h
+(scenario conservativo principale): +23,59% con PF 1,2217 e DD MTM **−30,76%**
+(peggiore della base). Carry SHORT: **ipotesi**, non dati storici. Envelope
+1h + 0,20%/lato + carry stressato: +3,79% con P(>0)=51,8%. Il 6% è la migliore
+soglia OOS solo come **osservazione esplorativa, non promossa**. Gate tecnico
+PASS, gate strategico **INCONCLUSIVE / NO-GO** invariato.
+
+### S02-CP08-04 · Independent validation protocol & research freeze
+
+Protocollo di validazione indipendente, pre-registrato e immutabile, per il
+Momentum Threshold congelato e per le future strategie di conferma. **Nessun
+nuovo backtest** sul periodo di ricerca, nessun training, nessuna inferenza,
+nessun download, nessun trading.
+
+- report: [`docs/S02-CP08-independent-validation-protocol.md`](docs/S02-CP08-independent-validation-protocol.md)
+- protocollo: `config/protocols/momentum-independent-validation-v1.yaml` (+ sidecar SHA-256)
+- engine spec: `config/protocols/momentum-confirmation-engine-v1.yaml` (`SPECIFICATION_ONLY`)
+- archivio additivo: `data/experiments/S02-CP08-independent-validation-protocol-v1/`
+- comando: `python -m crypto_decision_lab.independent_validation` (`--no-write` disponibile)
+- dashboard: tab read-only "Validation Protocol"
+
+Risultato: **15 controlli, 14 PASS + 1 WARN, 0 FAIL** (gate tecnico PASS). Sono
+congelati: benchmark CP07 (+39,175764%, PF 1,3295465, DD MTM −27,202367%), 17
+artefatti con hash, registro dei dati di ricerca (500 finestre, 300 OOS, 5 fold),
+coda osservata ma non indipendente (2026-10-23 00:00–16:00Z), scenario primario
+realistico (latenza 1h, 0,20% per lato, carry SHORT 0,14% come ipotesi), griglia
+soglie CP08-03 chiusa con selezione train-only, walk-forward espandente con purge
+24h, criteri GO/NO-GO/INCONCLUSIVE e controlli anti-riuso (dataset pinnato per
+hash, una sola valutazione finale, rifiuto del periodo di ricerca). La validazione
+indipendente **non è iniziata**: `NOT_EVALUATED`, gate strategico **NO-GO**.
+Intern-Decision-0.8B non avviato.

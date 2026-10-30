@@ -52,6 +52,9 @@ Ridge/HistGB restano selezionabili e coprono le 50 finestre CP05R comuni.
 | Policy CP06B | `data/experiments/S02-CP06B-selective-policy-v1/` |
 | Decision labels CP07 | `data/datasets/S02-CP07-decision-labels-v1/` |
 | Trading simulation CP07 | `data/experiments/S02-CP07-trading-simulation-v1/` |
+| Momentum stability CP08-02 | `data/experiments/S02-CP08-momentum-stability-v1/` |
+| Parameter robustness CP08-03 | `data/experiments/S02-CP08-parameter-robustness-v1/` |
+| Independent validation protocol CP08-04 | `data/experiments/S02-CP08-independent-validation-protocol-v1/` |
 | Diagnostica S02-CP03 | `data/diagnostics/S02-CP03-batch-100-v1/` (opzionale) |
 | Decision Model S03 | `data/experiments/S03-*/predictions.parquet` (opzionale, non presente) |
 
@@ -125,6 +128,36 @@ Equity curve out-of-sample, drawdown, segnali LONG/SHORT/NO_TRADE, performance
 per policy, sensitivity fee × slippage, trade log, dettaglio decisioni e
 controlli di leakage. Sola lettura; l'oracle è marcato come limite teorico.
 
+### Momentum Stability
+Vista read-only dell'archivio S02-CP08-02: equity exit-marked vs mark-to-market,
+underwater curve, distribuzione del P&L per trade, profit concentration (top
+1/3/5/10 con share cumulata), P&L monetario per mese/trimestre/anno/fold,
+drawdown per episodio e per fold, sequenze vinte/perse con runs test descrittivo,
+breakdown per volatilità/trend con feature al cutoff. La tab legge solo
+`data/experiments/S02-CP08-momentum-stability-v1/` (manifest + parquet + json) e
+**non** ricalcola metriche; distingue sempre descrizione e gate di promozione.
+
+### Parameter Robustness
+Vista read-only dell'archivio S02-CP08-03: costi con **decisioni congelate**
+(monotoni) vs **refit della soglia** sul training (confondimento), latenza
+0h/1h/2h con 1h come scenario conservativo principale, carry SHORT dichiarato
+come ipotesi, superficie della soglia con training per fold e OOS **esplorativo
+non promosso** (banda CI bootstrap, linee 5%/8%/10%), intervalli di confidenza
+degli scenari chiave, stabilità per fold e leave-top-k. La tab legge solo
+`data/experiments/S02-CP08-parameter-robustness-v1/` (manifest + parquet + json)
+e mostra sempre i due avvisi: superficie OOS non promuovibile, carry = ipotesi.
+
+### Validation Protocol
+Vista read-only dell'archivio S02-CP08-04: banner «NESSUN DATO INDIPENDENTE ·
+NON VALUTATO · NO-GO», timeline dei periodi (ricerca già osservata, coda
+2026-10-23 00:00–16:00Z non indipendente, finestra di validazione attesa), policy
+congelata e scenario primario realistico (latenza 1h, 0,20% per lato, carry SHORT
+come ipotesi), griglia soglie chiusa e walk-forward, riconciliazione del benchmark
+con CP08-03, criteri GO/NO-GO, registro dati, controlli anti-riuso, specifica del
+Momentum Confirmation Engine e i 15 controlli automatici. La tab legge solo
+`data/experiments/S02-CP08-independent-validation-protocol-v1/` e **non** esegue
+valutazioni né consuma dati indipendenti.
+
 ### Forecast Inspector
 Per una singola previsione: cutoff, target, prezzo al cutoff, actual al target, previsione,
 naive, residuo, errore assoluto/percentuale, direzioni, versione modello, sample id,
@@ -179,6 +212,9 @@ src/crypto_decision_lab/dashboard/
     config.py               YAML, path, colori, preset, regimi
     data_loader.py          manifest/chunk, validazione OHLCV, resampling, gap
     forecast_adapter.py     archivio Timestral/CP05/Decision, allineamento target
+    stability_adapter.py    archivio CP08-02 read-only (trade/period/concentration)
+    parameter_robustness_adapter.py  archivio CP08-03 read-only (scenari/superficie/fold)
+    validation_adapter.py   archivio CP08-04 read-only (protocollo/criteri/registro)
     indicators.py           registry causale indicatori
     metrics.py              metriche, direzione, regimi, campioni comuni
     charts.py               figure Plotly dark
@@ -190,7 +226,10 @@ src/crypto_decision_lab/dashboard/
         forecast_inspector.py
         regime_policy.py
         trading_simulation.py
-tests/dashboard/            27 test su fixture sintetiche
+        momentum_stability.py
+        parameter_robustness.py
+        validation_protocol.py
+tests/dashboard/            49 test su fixture sintetiche
 src/crypto_decision_lab/canonical.py   contratto canonico condiviso
 scripts/render_screenshots.py
 ```
@@ -198,8 +237,8 @@ scripts/render_screenshots.py
 ## Test
 
 ```bash
-pytest tests/dashboard -q     # 27 passed
-pytest -q                    # 112 passed (suite completa)
+pytest tests/dashboard -q     # 49 passed
+pytest -q                     # 220 passed (suite completa)
 ```
 
 I test dashboard usano fixture sintetiche, non i dati reali. Coprono SMA/EMA, RSI/MACD,
@@ -210,6 +249,16 @@ checksum, metriche comuni, regimi e grafici senza false traiettorie.
 
 - `docs/screenshots/overview.png`
 - `docs/screenshots/model_comparison.png`
+- `docs/screenshots/momentum_stability_equity.png`
+- `docs/screenshots/momentum_stability_underwater.png`
+- `docs/screenshots/momentum_stability_pnl_distribution.png`
+- `docs/screenshots/momentum_stability_concentration.png`
+- `docs/screenshots/momentum_stability_period_pnl.png`
+- `docs/screenshots/parameter_robustness_cost.png`
+- `docs/screenshots/parameter_robustness_latency.png`
+- `docs/screenshots/parameter_robustness_threshold_surface.png`
+- `docs/screenshots/parameter_robustness_intervals.png`
+- `docs/screenshots/validation_protocol_timeline.png`
 
 Per rigenerarli (richiede Chrome/Chromium e `kaleido`):
 

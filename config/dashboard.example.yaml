@@ -20,6 +20,12 @@ forecast:
   policy_results_dir: data/experiments/S02-CP06B-selective-policy-v1
   trading_label_dir: data/datasets/S02-CP07-decision-labels-v1
   trading_experiment_dir: data/experiments/S02-CP07-trading-simulation-v1
+  # Additive S02-CP08-02 stability archive (read-only in the dashboard).
+  momentum_stability_dir: data/experiments/S02-CP08-momentum-stability-v1
+  # Additive S02-CP08-03 parameter & execution robustness archive (read-only).
+  parameter_robustness_dir: data/experiments/S02-CP08-parameter-robustness-v1
+  # Additive S02-CP08-04 independent validation protocol archive (read-only).
+  validation_protocol_dir: data/experiments/S02-CP08-independent-validation-protocol-v1
   # Optional future S03 archive. Compatible columns are documented in
   # src/crypto_decision_lab/dashboard/forecast_adapter.py.
   decision_glob: data/experiments/S03-*

@@ -821,6 +821,245 @@ def make_drawdown_figure(
     return _apply_layout(fig, f"Drawdown · {name}", height)
 
 
+STABILITY_CURVE_COLORS = {"step": "#4cc9f0", "mark_to_market": "#f0b90b"}
+STABILITY_CURVE_LABELS = {"step": "Exit-marked (ledger)", "mark_to_market": "Mark-to-market orario"}
+
+
+def make_stability_equity_figure(
+    equity: pd.DataFrame,
+    *,
+    initial_capital: float = 10_000.0,
+    height: int = 460,
+) -> go.Figure:
+    """Equity curve of the momentum policy: ledger and mark-to-market."""
+
+    if equity.empty:
+        return empty_figure("Nessuna curva equity nell'archivio CP08-02", height=height)
+    fig = go.Figure()
+    # Mark-to-market is drawn first so the exit-marked step stays visible on top.
+    ordered = sorted(equity.groupby("curve", sort=False), key=lambda item: str(item[0]) != "mark_to_market")
+    for curve, group in ordered:
+        group = group.sort_values("timestamp")
+        color = STABILITY_CURVE_COLORS.get(str(curve), MUTED)
+        label = STABILITY_CURVE_LABELS.get(str(curve), str(curve))
+        fig.add_trace(
+            go.Scatter(
+                x=group["timestamp"],
+                y=group["equity"].to_numpy(dtype=float),
+                mode="lines",
+                name=label,
+                line={"color": color, "width": 2.4 if str(curve) == "step" else 1.2},
+                hovertemplate="%{x|%Y-%m-%d %H:%M}<br>equity %{y:,.2f} USDT<extra>" + label + "</extra>",
+            )
+        )
+    fig.add_hline(
+        y=float(initial_capital),
+        line={"color": MUTED, "width": 1, "dash": "dot"},
+        annotation_text="capitale iniziale",
+        annotation_position="bottom right",
+    )
+    fig.update_yaxes(title_text="Equity (USDT)")
+    return _apply_layout(fig, "Momentum · equity OOS (100% equity, nessuna leva)", height)
+
+
+def make_underwater_figure(equity: pd.DataFrame, *, height: int = 340) -> go.Figure:
+    """Underwater curve (drawdown from the running peak) per convention."""
+
+    if equity.empty:
+        return empty_figure("Nessuna curva underwater nell'archivio CP08-02", height=height)
+    fig = go.Figure()
+    for curve, group in equity.groupby("curve", sort=False):
+        group = group.sort_values("timestamp")
+        color = STABILITY_CURVE_COLORS.get(str(curve), RED)
+        label = STABILITY_CURVE_LABELS.get(str(curve), str(curve))
+        fig.add_trace(
+            go.Scatter(
+                x=group["timestamp"],
+                y=group["drawdown_pct"].to_numpy(dtype=float),
+                mode="lines",
+                name=label,
+                fill="tozeroy",
+                line={"color": color, "width": 1.3},
+                fillcolor=_with_alpha(color, 0.18),
+                hovertemplate="%{x|%Y-%m-%d %H:%M}<br>drawdown %{y:.2f}%<extra>" + label + "</extra>",
+            )
+        )
+    fig.update_yaxes(title_text="Drawdown from peak (%)", rangemode="tozero")
+    return _apply_layout(fig, "Underwater · mark-to-market vs exit-marked", height)
+
+
+def make_pnl_distribution_figure(
+    trades: pd.DataFrame,
+    *,
+    metric: str = "pnl_usdt",
+    title: str = "Distribuzione P&L per trade",
+    height: int = 360,
+) -> go.Figure:
+    """Win/loss histogram of the per-trade P&L (monetary by default)."""
+
+    if trades.empty or metric not in trades.columns:
+        return empty_figure("Nessun trade per la distribuzione P&L", height=height)
+    values = trades[metric].to_numpy(dtype=float)
+    wins = values[values > 0]
+    losses = values[values < 0]
+    unit = " USDT" if metric.endswith("usdt") else "%"
+    fig = go.Figure()
+    if len(wins):
+        fig.add_trace(
+            go.Histogram(
+                x=wins,
+                name=f"Vincite ({len(wins)})",
+                marker={"color": _with_alpha(GREEN, 0.75), "line": {"color": GREEN, "width": 0.6}},
+                opacity=0.85,
+                hovertemplate="%{x:.2f}" + unit + "<br>n %{y}<extra></extra>",
+            )
+        )
+    if len(losses):
+        fig.add_trace(
+            go.Histogram(
+                x=losses,
+                name=f"Perdite ({len(losses)})",
+                marker={"color": _with_alpha(RED, 0.75), "line": {"color": RED, "width": 0.6}},
+                opacity=0.85,
+                hovertemplate="%{x:.2f}" + unit + "<br>n %{y}<extra></extra>",
+            )
+        )
+    fig.add_vline(
+        x=float(np.mean(values)),
+        line={"color": TEXT, "width": 1.2, "dash": "dash"},
+        annotation_text=f"media {np.mean(values):+,.1f}{unit}",
+        annotation_position="top",
+    )
+    fig.add_vline(
+        x=float(np.median(values)),
+        line={"color": MUTED, "width": 1.2, "dash": "dot"},
+        annotation_text=f"mediana {np.median(values):+,.1f}{unit}",
+        annotation_position="bottom",
+    )
+    fig.update_layout(barmode="overlay", bargap=0.04)
+    fig.update_xaxes(title_text=f"P&L per trade ({unit.strip()})")
+    fig.update_yaxes(title_text="Numero di trade")
+    return _apply_layout(fig, title, height)
+
+
+def make_profit_concentration_figure(
+    curve: pd.DataFrame,
+    *,
+    top_k: Sequence[int] = (1, 3, 5, 10),
+    height: int = 420,
+) -> go.Figure:
+    """Ranked trade P&L and cumulative share of the net profit."""
+
+    if curve.empty or "pnl_usdt" not in curve.columns:
+        return empty_figure("Nessuna curva di concentrazione disponibile", height=height)
+    frame = curve.sort_values("rank").reset_index(drop=True)
+    ranks = frame["rank"].to_numpy(dtype=int)
+    pnl = frame["pnl_usdt"].to_numpy(dtype=float)
+    share = frame["share_of_net_pnl_pct"].to_numpy(dtype=float)
+    colors = np.where(pnl >= 0, _with_alpha(GREEN, 0.8), _with_alpha(RED, 0.8))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(
+            x=ranks,
+            y=pnl,
+            name="P&L per trade (USDT)",
+            marker={"color": colors},
+            hovertemplate="rank %{x}<br>P&L %{y:,.2f} USDT<extra></extra>",
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=ranks,
+            y=share,
+            mode="lines",
+            name="share cumulata del P&L netto (%)",
+            line={"color": "#b388ff", "width": 1.8},
+            hovertemplate="rank %{x}<br>share cumulata %{y:.1f}%<extra></extra>",
+        ),
+        secondary_y=True,
+    )
+    for k in top_k:
+        if k <= len(frame):
+            fig.add_vline(
+                x=k,
+                line={"color": MUTED, "width": 1, "dash": "dot"},
+                annotation_text=f"top {k}",
+                annotation_position="bottom",
+            )
+    # The cumulative curve peaks at the gross profit and then declines to the net
+    # P&L: annotate the peak instead of silently showing values above 100%.
+    peak_position = int(np.argmax(frame["cumulative_pnl_usdt"].to_numpy(dtype=float)))
+    peak_value = float(frame["cumulative_pnl_usdt"].iloc[peak_position])
+    peak_share = float(frame["share_of_net_pnl_pct"].iloc[peak_position])
+    fig.add_trace(
+        go.Scatter(
+            x=[frame["rank"].iloc[peak_position]],
+            y=[peak_value],
+            mode="markers+text",
+            name="profitto lordo cumulato",
+            marker={"color": "#b388ff", "size": 9, "symbol": "diamond"},
+            text=[f"profitto lordo {peak_value:,.0f} USDT ({peak_share:.0f}% del netto)"],
+            textposition="bottom center",
+            textfont={"color": "#b388ff", "size": 11},
+            hovertemplate="%{x}<br>cumulato %{y:,.2f} USDT<extra></extra>",
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.update_xaxes(title_text="Trade ordinati per P&L decrescente")
+    fig.update_yaxes(title_text="P&L (USDT)", secondary_y=False)
+    fig.update_yaxes(title_text="Share cumulata (% del P&L netto)", secondary_y=True)
+    return _apply_layout(fig, "Profit concentration · top 1/3/5/10 trade", height)
+
+
+def make_period_pnl_figure(
+    periods: pd.DataFrame,
+    *,
+    granularity: str = "month",
+    height: int = 380,
+) -> go.Figure:
+    """Monetary P&L per period with the cumulative attribution line."""
+
+    subset = periods[periods["granularity"] == granularity].sort_values("period_start")
+    if subset.empty:
+        return empty_figure(f"Nessun periodo '{granularity}' disponibile", height=height)
+    label = {"month": "mese", "quarter": "trimestre", "year": "anno", "fold": "fold", "window": "finestra"}.get(
+        granularity, granularity
+    )
+    pnl = subset["net_pnl_usdt"].to_numpy(dtype=float)
+    cumulative = np.cumsum(pnl)
+    colors = np.where(pnl >= 0, _with_alpha(GREEN, 0.85), _with_alpha(RED, 0.85))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(
+            x=subset["period"],
+            y=pnl,
+            name="P&L monetario nel periodo",
+            marker={"color": colors},
+            customdata=subset["trades"].to_numpy(dtype=int).reshape(-1, 1),
+            hovertemplate="%{x}<br>P&L %{y:,.2f} USDT<br>trade %{customdata[0]}<extra></extra>",
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=subset["period"],
+            y=cumulative,
+            mode="lines+markers",
+            name="P&L cumulato",
+            line={"color": "#b388ff", "width": 1.8},
+            marker={"size": 4},
+            hovertemplate="%{x}<br>cumulato %{y:,.2f} USDT<extra></extra>",
+        ),
+        secondary_y=True,
+    )
+    fig.update_xaxes(title_text=label)
+    fig.update_yaxes(title_text="P&L del periodo (USDT)", secondary_y=False)
+    fig.update_yaxes(title_text="P&L cumulato (USDT)", secondary_y=True)
+    return _apply_layout(fig, f"P&L per {label} · attribuzione monetaria", height)
+
+
 def make_trade_signal_figure(decisions: pd.DataFrame, *, policy: str, height: int = 380) -> go.Figure:
     if decisions.empty:
         return empty_figure("Nessun segnale disponibile", height=height)
@@ -924,3 +1163,379 @@ def make_policy_return_figure(
     fig.add_hline(y=0, line_width=1, line_color=MUTED)
     fig.update_yaxes(title_text="Total return OOS (%)")
     return _apply_layout(fig, title, height)
+
+
+# ---------------------------------------------------------------------------
+# S02-CP08-03 · parameter & execution robustness (read-only archive readers)
+# ---------------------------------------------------------------------------
+
+ROBUSTNESS_FROZEN_COLOR = "#4cc9f0"
+ROBUSTNESS_REFIT_COLOR = "#f0b90b"
+ROBUSTNESS_EXPLORATORY_COLOR = "#b388ff"
+
+
+def make_cost_sensitivity_figure(
+    scenarios: pd.DataFrame,
+    *,
+    height: int = 400,
+) -> go.Figure:
+    """Frozen-ledger cost curve vs threshold-refit cost curve.
+
+    Two different experiments on the same axes:
+    * ``cost_frozen``: decisions frozen, only costs change -> monotone.
+    * ``policy_refit``: threshold re-selected on training for each cost -> the
+      confound documented in CP08-01 (F10).
+    """
+
+    if scenarios is None or scenarios.empty:
+        return empty_figure("Sensitivity ai costi non disponibile", height=height)
+    fig = go.Figure()
+    definitions = (
+        ("cost_frozen", "Decisioni congelate (solo costo)", ROBUSTNESS_FROZEN_COLOR, "circle"),
+        ("policy_refit", "Soglia rifittata su training (costo + selezione)", ROBUSTNESS_REFIT_COLOR, "diamond"),
+    )
+    for family, label, color, symbol in definitions:
+        subset = scenarios[scenarios["family"] == family].sort_values("total_cost_per_side")
+        if subset.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=100.0 * subset["total_cost_per_side"].to_numpy(dtype=float),
+                y=subset["total_return_pct"].to_numpy(dtype=float),
+                mode="lines+markers",
+                name=label,
+                line={"color": color, "width": 2.4},
+                marker={"color": color, "size": 8, "symbol": symbol},
+                customdata=np.stack(
+                    [
+                        subset["trades"].to_numpy(dtype=float),
+                        subset["profit_factor_usdt"].to_numpy(dtype=float),
+                        subset["max_drawdown_mtm_pct"].to_numpy(dtype=float),
+                        subset["scenario"].astype(str).to_numpy(),
+                    ],
+                    axis=1,
+                ),
+                hovertemplate=(
+                    "costo %{x:.3f}% per lato<br>return %{y:+.2f}%<br>"
+                    "trade %{customdata[0]:.0f}<br>PF monetario %{customdata[1]:.4f}<br>"
+                    "DD MTM %{customdata[2]:.2f}%<br>%{customdata[3]}<extra>" + label + "</extra>"
+                ),
+            )
+        )
+    fig.add_hline(y=0, line_width=1, line_color=MUTED)
+    fig.add_vline(
+        x=0.15,
+        line={"color": MUTED, "width": 1, "dash": "dot"},
+        annotation_text="CP07 base 0,15%",
+        annotation_position="top right",
+    )
+    fig.update_xaxes(title_text="Costo totale per lato (%)")
+    fig.update_yaxes(title_text="Rendimento composto OOS (%)")
+    return _apply_layout(fig, "Costi · decisioni congelate vs refit della soglia", height)
+
+
+def make_latency_robustness_figure(
+    scenarios: pd.DataFrame,
+    *,
+    height: int = 400,
+) -> go.Figure:
+    """Return and mark-to-market drawdown as a function of execution latency."""
+
+    if scenarios is None or scenarios.empty:
+        return empty_figure("Scenari di latenza non disponibili", height=height)
+    subset = scenarios[scenarios["family"] == "latency"].sort_values("delay_hours")
+    if subset.empty:
+        return empty_figure("Scenari di latenza non disponibili", height=height)
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(
+            x=[f"{int(value)}h" for value in subset["delay_hours"]],
+            y=subset["total_return_pct"].to_numpy(dtype=float),
+            name="Rendimento composto",
+            marker={"color": [GREEN if value >= 0 else RED for value in subset["total_return_pct"]]},
+            customdata=np.stack(
+                [
+                    subset["profit_factor_usdt"].to_numpy(dtype=float),
+                    subset["trades"].to_numpy(dtype=float),
+                ],
+                axis=1,
+            ),
+            hovertemplate=(
+                "latenza %{x}<br>return %{y:+.2f}%<br>PF monetario %{customdata[0]:.4f}<br>"
+                "trade %{customdata[1]:.0f}<extra></extra>"
+            ),
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[f"{int(value)}h" for value in subset["delay_hours"]],
+            y=subset["max_drawdown_mtm_pct"].to_numpy(dtype=float),
+            mode="lines+markers",
+            name="Max DD mark-to-market",
+            line={"color": RED, "width": 2.4},
+            marker={"size": 9},
+            hovertemplate="latenza %{x}<br>max DD MTM %{y:.2f}%<extra></extra>",
+        ),
+        secondary_y=True,
+    )
+    fig.add_hline(y=0, line_width=1, line_color=MUTED, secondary_y=False)
+    fig.update_yaxes(title_text="Rendimento composto (%)", secondary_y=False)
+    fig.update_yaxes(title_text="Max drawdown MTM (%)", secondary_y=True)
+    fig.update_xaxes(title_text="Latenza di esecuzione (open + N ore)")
+    return _apply_layout(fig, "Latenza di esecuzione · 1h è lo scenario conservativo principale", height)
+
+
+def make_threshold_surface_figure(
+    surface: pd.DataFrame,
+    *,
+    frozen_threshold: float = 0.05,
+    height: int = 440,
+) -> go.Figure:
+    """Train multiples and OOS return of every pre-registered threshold.
+
+    The OOS band and line are explicitly exploratory: the figure never marks a
+    "best" configuration as selectable.
+    """
+
+    if surface is None or surface.empty:
+        return empty_figure("Superficie delle soglie non disponibile", height=height)
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    train = surface[surface["scope"] == "train"]
+    for fold, group in sorted(train.groupby("fold")):
+        group = group.sort_values("threshold")
+        fig.add_trace(
+            go.Scatter(
+                x=100.0 * group["threshold"].to_numpy(dtype=float),
+                y=group["total_return_pct"].to_numpy(dtype=float),
+                mode="lines",
+                name=f"Training fold {int(fold)}",
+                line={"color": "rgba(139,152,171,0.45)", "width": 1},
+                showlegend=bool(int(fold) == 0),
+                legendgroup="train",
+                hovertemplate="soglia %{x:.1f}%<br>training return %{y:+.1f}%<extra></extra>",
+            ),
+            secondary_y=True,
+        )
+    oos = surface[surface["scope"] == "test_all"].sort_values("threshold")
+    if not oos.empty:
+        thresholds = 100.0 * oos["threshold"].to_numpy(dtype=float)
+        lower = oos["ci_low_pct"].to_numpy(dtype=float)
+        upper = oos["ci_high_pct"].to_numpy(dtype=float)
+        fig.add_trace(
+            go.Scatter(
+                x=np.concatenate([thresholds, thresholds[::-1]]),
+                y=np.concatenate([lower, upper[::-1]]),
+                fill="toself",
+                fillcolor="rgba(179,136,255,0.14)",
+                line={"color": "rgba(0,0,0,0)"},
+                name="CI 95% OOS (bootstrap)",
+                hoverinfo="skip",
+            ),
+            secondary_y=False,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=thresholds,
+                y=oos["total_return_pct"].to_numpy(dtype=float),
+                mode="lines+markers",
+                name="OOS · esplorativo (non promosso)",
+                line={"color": ROBUSTNESS_EXPLORATORY_COLOR, "width": 2.8},
+                marker={"size": 7},
+                customdata=np.stack(
+                    [
+                        oos["trades"].to_numpy(dtype=float),
+                        oos["profit_factor_usdt"].to_numpy(dtype=float),
+                        oos["max_drawdown_mtm_pct"].to_numpy(dtype=float),
+                    ],
+                    axis=1,
+                ),
+                hovertemplate=(
+                    "soglia %{x:.1f}%<br>OOS return %{y:+.2f}%<br>trade %{customdata[0]:.0f}<br>"
+                    "PF monetario %{customdata[1]:.4f}<br>DD MTM %{customdata[2]:.2f}%<extra></extra>"
+                ),
+            ),
+            secondary_y=False,
+        )
+    fig.add_vline(
+        x=100.0 * float(frozen_threshold),
+        line={"color": ROBUSTNESS_FROZEN_COLOR, "width": 1.6, "dash": "dash"},
+        annotation_text="soglia congelata 5%",
+        annotation_position="top left",
+    )
+    for required in (8.0, 10.0):
+        fig.add_vline(
+            x=required,
+            line={"color": MUTED, "width": 1, "dash": "dot"},
+            annotation_text=f"{required:.0f}%",
+            annotation_position="bottom right",
+        )
+    fig.update_xaxes(title_text="Soglia momentum_168h (%)")
+    fig.update_yaxes(title_text="Rendimento OOS (%)", secondary_y=False)
+    fig.update_yaxes(title_text="Rendimento training (%)", secondary_y=True, showgrid=False)
+    return _apply_layout(fig, "Superficie soglia · training (grigio) vs OOS esplorativo (viola)", height)
+
+
+def make_scenario_interval_figure(
+    scenarios: pd.DataFrame,
+    *,
+    height: int = 400,
+) -> go.Figure:
+    """Bootstrap interval of selected scenarios (base, 1h, cost stress, carry)."""
+
+    if scenarios is None or scenarios.empty:
+        return empty_figure("Intervalli bootstrap non disponibili", height=height)
+    wanted = (
+        "cost_0015_base",
+        "conservative_1h",
+        "conservative_1h_cost20",
+        "conservative_1h_cost20_carry",
+        "carry_stressed",
+    )
+    subset = scenarios[scenarios["scenario"].isin(wanted)].copy()
+    if subset.empty:
+        return empty_figure("Intervalli bootstrap non disponibili", height=height)
+    order = {name: index for index, name in enumerate(wanted)}
+    subset["_order"] = subset["scenario"].map(order)
+    subset = subset.sort_values("_order", ascending=False)
+    point = subset["total_return_pct"].to_numpy(dtype=float)
+    lower = point - subset["ci_return_low_pct"].to_numpy(dtype=float)
+    upper = subset["ci_return_high_pct"].to_numpy(dtype=float) - point
+    fig = go.Figure(
+        go.Scatter(
+            x=point,
+            y=subset["scenario"].astype(str),
+            mode="markers",
+            marker={"color": ROBUSTNESS_FROZEN_COLOR, "size": 10},
+            error_x={
+                "type": "data",
+                "symmetric": False,
+                "array": upper,
+                "arrayminus": lower,
+                "color": MUTED,
+                "thickness": 1.6,
+            },
+            customdata=np.stack(
+                [
+                    subset["profit_factor_usdt"].to_numpy(dtype=float),
+                    subset["max_drawdown_mtm_pct"].to_numpy(dtype=float),
+                    subset["ci_return_p_positive"].to_numpy(dtype=float),
+                ],
+                axis=1,
+            ),
+            hovertemplate=(
+                "<b>%{y}</b><br>return %{x:+.2f}%<br>PF monetario %{customdata[0]:.4f}<br>"
+                "DD MTM %{customdata[1]:.2f}%<br>P(>0) %{customdata[2]:.1%}<extra></extra>"
+            ),
+        )
+    )
+    fig.add_vline(x=0, line={"color": MUTED, "width": 1})
+    fig.update_xaxes(title_text="Rendimento composto OOS (%) · CI 95% bootstrap")
+    return _apply_layout(fig, "Scenari chiave · intervallo bootstrap del rendimento", height)
+
+
+# ---------------------------------------------------------------------------
+# S02-CP08-04 · independent validation protocol timeline (read-only)
+# ---------------------------------------------------------------------------
+
+VALIDATION_RESEARCH_COLOR = "#4cc9f0"
+VALIDATION_TAIL_COLOR = "#f0b90b"
+VALIDATION_INDEPENDENT_COLOR = "#b388ff"
+
+
+def make_validation_timeline_figure(
+    data_registry: Mapping[str, Any],
+    *,
+    min_independent_days: int = 180,
+    height: int = 340,
+) -> go.Figure:
+    """Research period, observed-but-unused tail and the awaited independent window.
+
+    The independent window is drawn as an *expectation*: no independent data
+    exists in the repository, so nothing is marked as evaluated.
+    """
+
+    period = (data_registry or {}).get("research_period", {})
+    if not period:
+        return empty_figure("Registro dati del protocollo non disponibile", height=height)
+    research_start = pd.Timestamp(period["start_utc"])
+    research_end = pd.Timestamp(period["end_exclusive_utc"])
+    last_used = pd.Timestamp(period["last_used_target_end_utc"])
+    tail = (data_registry or {}).get("separation", {}).get("observed_unused_tail", [])
+    independent_start = pd.Timestamp(
+        (data_registry or {}).get("separation", {}).get("independent_start_utc", research_end)
+    )
+    independent_end = independent_start + pd.Timedelta(days=int(min_independent_days))
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[research_start, independent_end],
+            y=[0.0, 0.0],
+            mode="markers",
+            marker={"opacity": 0.0, "size": 1},
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
+    fig.add_shape(
+        type="rect",
+        x0=research_start,
+        x1=research_end,
+        y0=0.55,
+        y1=0.95,
+        line={"color": VALIDATION_RESEARCH_COLOR, "width": 1.2},
+        fillcolor="rgba(76,201,240,0.22)",
+    )
+    fig.add_shape(
+        type="rect",
+        x0=last_used,
+        x1=research_end,
+        y0=0.10,
+        y1=0.42,
+        line={"color": VALIDATION_TAIL_COLOR, "width": 1.2},
+        fillcolor="rgba(240,185,11,0.28)",
+    )
+    fig.add_shape(
+        type="rect",
+        x0=independent_start,
+        x1=independent_end,
+        y0=0.55,
+        y1=0.95,
+        line={"color": VALIDATION_INDEPENDENT_COLOR, "width": 2.0, "dash": "dash"},
+        fillcolor="rgba(179,136,255,0.10)",
+    )
+    fig.add_vline(
+        x=independent_start,
+        line={"color": VALIDATION_INDEPENDENT_COLOR, "width": 2, "dash": "dash"},
+    )
+    fig.add_annotation(
+        x=research_start + (research_end - research_start) / 2,
+        y=0.75,
+        text="RICERCA GIÀ OSSERVATA<br>500 finestre · 300 OOS · 5 fold",
+        showarrow=False,
+        font={"size": 12, "color": TEXT},
+    )
+    if len(tail) == 2:
+        fig.add_annotation(
+            x=pd.Timestamp(tail[0]) + (pd.Timestamp(tail[1]) - pd.Timestamp(tail[0])) / 2,
+            y=0.26,
+            text="coda osservata<br>non indipendente",
+            showarrow=False,
+            font={"size": 10, "color": VALIDATION_TAIL_COLOR},
+        )
+    fig.add_annotation(
+        x=independent_start + (independent_end - independent_start) / 2,
+        y=0.75,
+        text="VALIDAZIONE INDIPENDENTE<br>nessun dato disponibile",
+        showarrow=False,
+        font={"size": 12, "color": VALIDATION_INDEPENDENT_COLOR},
+    )
+    fig.update_yaxes(visible=False, range=[0.0, 1.05])
+    fig.update_xaxes(title_text="Tempo (UTC)")
+    return _apply_layout(
+        fig,
+        "Separazione temporale · ricerca, coda osservata, validazione attesa",
+        height,
+        legend=False,
+    )

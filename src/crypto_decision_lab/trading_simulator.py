@@ -8,7 +8,9 @@ Model
   (open of the entry bar to open of the exit bar).
 * A signal whose entry timestamp precedes the previous trade's exit is skipped
   (never re-entered retroactively); skipped signals are counted, not invented.
-* NO_TRADE keeps the equity flat: zero return, zero costs.
+* NO_TRADE keeps the equity flat: zero return, zero costs, no position and no
+  occupancy of the market (it never blocks a later signal).
+* ``equity_curve`` is a calendar-time step function starting at the first entry.
 """
 from __future__ import annotations
 
@@ -67,18 +69,21 @@ def simulate_sequence(
     for decision in ordered:
         entry = pd.Timestamp(decision.entry_timestamp)
         exit_ = pd.Timestamp(decision.exit_timestamp)
+        if decision.action == ACTION_NO_TRADE:
+            # A flat decision never occupies the market: it has no execution
+            # price, cannot be "skipped" and cannot block a later signal.
+            no_trade += 1
+            ledger_rows.append(_ledger_row(decision, equity, executed=True))
+            continue
         if last_exit is not None and entry < last_exit:
             skipped += 1
             ledger_rows.append(_ledger_row(decision, equity, executed=False))
             continue
         net = float(decision.net_return_pct) / 100.0
         equity *= 1.0 + net
+        trades += 1
+        exposure_hours += float(decision.horizon_hours)
         last_exit = exit_
-        if decision.action == ACTION_NO_TRADE:
-            no_trade += 1
-        else:
-            trades += 1
-            exposure_hours += float(decision.horizon_hours)
         ledger_rows.append(_ledger_row(decision, equity, executed=True))
     ledger = pd.DataFrame(ledger_rows)
     metrics = compute_metrics(
@@ -127,9 +132,11 @@ def equity_curve(ledger: pd.DataFrame, *, initial_capital: float) -> pd.Series:
         executed["equity_after"].to_numpy(dtype=float),
         index=pd.DatetimeIndex(pd.to_datetime(executed["exit_timestamp"], utc=True), name="exit_timestamp"),
     )
-    return pd.concat(
-        [pd.Series([initial_capital], index=[curve.index[0] - pd.Timedelta(hours=1)]), curve]
-    )
+    # The first observation is the initial capital at the first entry, not one
+    # hour before the first exit: the curve is a calendar-time step function.
+    first_entry = pd.Timestamp(executed["entry_timestamp"].iloc[0])
+    first_point = pd.Series([initial_capital], index=pd.DatetimeIndex([first_entry]))
+    return pd.concat([first_point, curve])
 
 
 def compute_metrics(

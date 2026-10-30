@@ -18,13 +18,26 @@ import pandas as pd
 
 from crypto_decision_lab.dashboard.charts import (
     make_actual_vs_predicted_figure,
+    make_cost_sensitivity_figure,
+    make_latency_robustness_figure,
     make_market_figure,
+    make_period_pnl_figure,
+    make_pnl_distribution_figure,
+    make_profit_concentration_figure,
+    make_scenario_interval_figure,
+    make_stability_equity_figure,
+    make_threshold_surface_figure,
+    make_underwater_figure,
+    make_validation_timeline_figure,
 )
 from crypto_decision_lab.dashboard.config import load_config
 from crypto_decision_lab.dashboard.data_loader import filter_range, load_market_data, resample_ohlcv
 from crypto_decision_lab.dashboard.forecast_adapter import align_models, load_forecasts
 from crypto_decision_lab.dashboard.indicators import IndicatorRequest, compute_indicators
 from crypto_decision_lab.dashboard.metrics import add_error_columns
+from crypto_decision_lab.dashboard.parameter_robustness_adapter import load_robustness_archive
+from crypto_decision_lab.dashboard.stability_adapter import load_stability_archive
+from crypto_decision_lab.dashboard.validation_adapter import load_validation_archive
 
 
 def main() -> None:
@@ -87,8 +100,88 @@ def main() -> None:
         height=520,
     )
     comparison.write_image(out / "model_comparison.png", width=1500, height=520, scale=1)
+
+    _render_stability(out, config)
+    _render_robustness(out, config)
+    _render_validation(out, config)
+
     print(f"Wrote {len(list(out.glob('*.png')))} screenshots to {out}")
     print("Note: kaleido needs a local Chrome/Chromium; the dashboard exports PNG from the Plotly toolbar as well.")
+
+
+def _render_stability(out: Path, config) -> None:
+    """S02-CP08-02 figures, only if the additive archive is present (read-only)."""
+
+    directory = config.momentum_stability_dir
+    if directory is None or not (Path(directory) / "manifest.json").is_file():
+        print("S02-CP08-02 archive not found: skipping momentum stability figures")
+        return
+    archive = load_stability_archive(directory)
+    figures = {
+        "momentum_stability_equity.png": make_stability_equity_figure(
+            archive.equity, initial_capital=archive.initial_capital, height=460
+        ),
+        "momentum_stability_underwater.png": make_underwater_figure(archive.equity, height=340),
+        "momentum_stability_pnl_distribution.png": make_pnl_distribution_figure(
+            archive.trades, metric="pnl_usdt"
+        ),
+        "momentum_stability_concentration.png": make_profit_concentration_figure(
+            archive.concentration_curve
+        ),
+        "momentum_stability_period_pnl.png": make_period_pnl_figure(
+            archive.periods, granularity="month"
+        ),
+    }
+    for filename, figure in figures.items():
+        figure.write_image(out / filename, width=1500, height=460, scale=1)
+    print(f"Wrote {len(figures)} S02-CP08-02 figures to {out}")
+
+
+def _render_robustness(out: Path, config) -> None:
+    """S02-CP08-03 figures, only if the additive archive is present (read-only)."""
+
+    directory = config.parameter_robustness_dir
+    if directory is None or not (Path(directory) / "manifest.json").is_file():
+        print("S02-CP08-03 archive not found: skipping parameter robustness figures")
+        return
+    archive = load_robustness_archive(directory)
+    figures = {
+        "parameter_robustness_cost.png": make_cost_sensitivity_figure(
+            archive.scenarios, height=460
+        ),
+        "parameter_robustness_latency.png": make_latency_robustness_figure(
+            archive.scenarios, height=460
+        ),
+        "parameter_robustness_threshold_surface.png": make_threshold_surface_figure(
+            archive.surface, height=460
+        ),
+        "parameter_robustness_intervals.png": make_scenario_interval_figure(
+            archive.scenarios, height=460
+        ),
+    }
+    for filename, figure in figures.items():
+        figure.write_image(out / filename, width=1500, height=460, scale=1)
+    print(f"Wrote {len(figures)} S02-CP08-03 figures to {out}")
+
+
+def _render_validation(out: Path, config) -> None:
+    """S02-CP08-04 figure, only if the additive protocol archive is present."""
+
+    directory = config.validation_protocol_dir
+    if directory is None or not (Path(directory) / "manifest.json").is_file():
+        print("S02-CP08-04 archive not found: skipping validation protocol figure")
+        return
+    archive = load_validation_archive(directory)
+    min_days = int(
+        archive.summary.get("criteria", {})
+        .get("sample_requirements", {})
+        .get("min_independent_days", 180)
+    )
+    figure = make_validation_timeline_figure(
+        archive.data_registry, min_independent_days=min_days, height=460
+    )
+    figure.write_image(out / "validation_protocol_timeline.png", width=1500, height=460, scale=1)
+    print(f"Wrote 1 S02-CP08-04 figure to {out}")
 
 
 if __name__ == "__main__":
