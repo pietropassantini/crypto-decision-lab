@@ -13,9 +13,17 @@ data/**/*.md text eol=lf
 *.parquet binary
 .gitattributes text eol=lf
 
-# S02-CP08-05R: the frozen CP08-04 archive is pinned byte-for-byte by SHA-256
-# in its own manifest (JSON files were written with CRLF endings, the YAML
-# copies preserve the original CRLF freeze). Git must never rewrite line
-# endings inside it, otherwise every pinned hash breaks on every clone.
-# This rule is LAST on purpose: in .gitattributes the last matching rule wins.
+# S02-CP08-05R: frozen evidence pinned by SHA-256 (the CP08-04 protocol pins
+# these files; the CP08-04 archive manifest pins its own outputs). The JSON
+# files were written with CRLF endings and the YAML copies keep the original
+# CRLF freeze: Git must never rewrite line endings inside them, otherwise
+# every pinned hash breaks on every clone.
+# These rules are LAST on purpose: in .gitattributes the last matching rule wins.
+data/snapshots/BTCUSDT-1h-raw-v1/** -text -eol
+data/datasets/S02-CP07-decision-labels-v1/** -text -eol
+data/datasets/S02-CP06B-regime-features-v1/** -text -eol
+data/experiments/S02-CP07-trading-simulation-v1/** -text -eol
+data/experiments/S02-CP08-simulator-integrity-audit-v1/*.json -text -eol
+data/experiments/S02-CP08-momentum-stability-v1/manifest.json -text -eol
+data/experiments/S02-CP08-parameter-robustness-v1/*.json -text -eol
 data/experiments/S02-CP08-independent-validation-protocol-v1/** -text -eol

@@ -142,10 +142,9 @@ completa PASS con `config_sha256 = cda9eab6…`).
 
 ## 9. Limitazioni residue (dichiarate)
 
-- Gli archivi di ricerca pinnati dal protocollo (CP06B, CP07, CP08-01/02/03,
-  snapshot e dataset) restano **local-only** (gitignored): su un clone pulito
-  il check CP08-04.3 segnalerebbe la loro *assenza* — un problema di
-  disponibilità, non di integrità del protocollo. Fuori dallo scope 05R.
+- ~~Gli archivi di ricerca pinnati dal protocollo restano **local-only**~~ —
+  risolto nell'addendum §12: le 17 evidenze pinnate sono ora tracciate in Git
+  byte-stable.
 - Il verdetto di validazione indipendente e il gate strategico **non** sono
   stati toccati: nessuna valutazione, nessun training, nessun uso del dataset
   forward per ricerca.
@@ -171,3 +170,29 @@ completa PASS con `config_sha256 = cda9eab6…`).
 | `tests/test_protocol_integrity.py` | 16 test: normalizzazione, tamper reale, archivio assente/corrotto, freeze preservato |
 | `data/reports/S02-CP08-05R-protocol-integrity-evidence.json` | evidenza macchina della riconciliazione |
 | `data/experiments/S02-CP08-independent-validation-protocol-v1/` | archivio autentico, ora tracciato byte-stable |
+
+---
+
+## 12. Addendum — verifica su clone pulito (Sirio)
+
+La prima verifica su Sirio (`git pull` + readiness) ha prodotto un **crash**
+(`ProtocolViolation: CP08-03 scenario metrics not found`): gli archivi di
+ricerca pinnati dal protocollo erano assenti sul clone perché gitignored, e il
+verificatore non degradava. Due correzioni, nello spirito 05R:
+
+1. **Readiness resiliente (fail closed, mai crash).** Le evidenze di ricerca
+   assenti degradano a controlli `BLOCKED` (nuovo stato, distinto da `FAIL`:
+   assenza ≠ manomissione), elencati in `checks_blocked`; il gate tecnico resta
+   chiuso. Nessun traceback, nessuna dichiarazione implicita di integrità.
+2. **Evidenze pinnate tracciate in Git.** Tutti i **17 artefatti**
+   `frozen_artifacts` (0,46 MB totali: snapshot, dataset CP06B/CP07-labels,
+   archivi CP07 e CP08-01/02/03) sono ora tracciati con regole byte-stable
+   (`-text -eol`). Per i due JSON dello snapshot — già tracciati dal primo
+   commit ma memorizzati **LF-normalizzati** — il blob è stato riallineato con
+   `git add --renormalize` ai **byte esatti pinnati** (CRLF): il contenuto non
+   è cambiato, è la codifica di storage a combaciare ora con l'hash pinnato
+   (verificato 17/17: `digest(blob staged) == sha256 pinnato`).
+
+Esito su clone locale simulato (= Sirio post-pull): readiness completa
+`technical_gate = PASS` con tutti i 17 artefatti verificati, protocollo
+`PROTOCOL_VERIFIED`, archivio `ARCHIVE_VERIFIED`, `NOT_EVALUATED`, `NO-GO`.

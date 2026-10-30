@@ -83,6 +83,10 @@ VERDICT_NOT_EVALUATED = "NOT_EVALUATED"
 STATUS_PASS = "PASS"
 STATUS_WARN = "WARN"
 STATUS_FAIL = "FAIL"
+# S02-CP08-05R: evidence ABSENT on this machine (e.g. research artifacts not
+# present in a fresh clone).  Distinct from FAIL (a present file mismatched)
+# and never silently ignored: blocked checks keep the technical gate closed.
+STATUS_BLOCKED = "BLOCKED"
 
 DEFAULT_CONFIG_PATH = Path("config/protocols/momentum-independent-validation-v1.yaml")
 DEFAULT_ENGINE_CONFIG_PATH = Path("config/protocols/momentum-confirmation-engine-v1.yaml")
@@ -1437,9 +1441,43 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
     validate_confirmation_engine(engine)
 
     artifacts = check_frozen_artifacts(paths, protocol)
-    benchmark = check_frozen_benchmark(paths, protocol)
-    data_registry = build_data_registry(paths, protocol)
-    separation = check_data_separation(data_registry, protocol)
+    absent_artifacts = [item["path"] for item in artifacts if not item["exists"]]
+    # S02-CP08-05R: absent research evidence must degrade to BLOCKED checks, never
+    # crash the readiness (fresh clones do not carry local-only archives) and
+    # never count as a hash mismatch.
+    try:
+        benchmark = check_frozen_benchmark(paths, protocol)
+    except (OSError, ValueError, KeyError, ProtocolViolation) as exc:
+        benchmark = {
+            "comparisons": [],
+            "all_match": False,
+            "cp08_03_technical_gate": None,
+            "cp08_03_checks_failed": [],
+            "cp08_03_gate_ok": False,
+            "blocked": True,
+            "blocked_reason": f"RESEARCH_ARTIFACTS_MISSING: {exc}",
+        }
+    try:
+        data_registry = build_data_registry(paths, protocol)
+    except (OSError, ValueError, KeyError, ProtocolViolation) as exc:
+        data_registry = {
+            "research_period": None,
+            "observed": None,
+            "declared": None,
+            "comparisons": [],
+            "all_match": False,
+            "datasets": [],
+            "blocked": True,
+            "blocked_reason": f"RESEARCH_ARTIFACTS_MISSING: {exc}",
+        }
+    if data_registry.get("blocked"):
+        separation = {
+            "blocked": True,
+            "blocked_reason": data_registry["blocked_reason"],
+            "all_ok": False,
+        }
+    else:
+        separation = check_data_separation(data_registry, protocol)
     sidecar = _sidecar_check(paths, loaded)
     engine_sidecar = _engine_sidecar_check(paths)
     # S02-CP08-05R: archive presence/integrity is a SEPARATE control.
@@ -1456,14 +1494,17 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
     grid = [float(value) for value in protocol["threshold_preregistration"]["grid"]]
     criteria = protocol["go_nogo"]
     primary = protocol["primary_scenario"]
-    scenarios = _frozen_scenarios(paths, protocol)
-    primary_row = scenarios[scenarios["scenario"] == "conservative_1h_cost20_carry"].iloc[0]
-    primary_matches = bool(
-        float(primary_row["fee_rate"]) == float(primary["fee_rate"])
-        and float(primary_row["slippage"]) == float(primary["slippage"])
-        and int(primary_row["delay_hours"]) == int(primary["latency_hours"])
-        and abs(float(primary_row["carry_short_pct"]) - float(primary["short_carry"]["carry_pct_per_trade"])) < 1e-9
-    )
+    if benchmark.get("blocked"):
+        primary_matches = None  # requires the CP08-03 scenario archive
+    else:
+        scenarios = _frozen_scenarios(paths, protocol)
+        primary_row = scenarios[scenarios["scenario"] == "conservative_1h_cost20_carry"].iloc[0]
+        primary_matches = bool(
+            float(primary_row["fee_rate"]) == float(primary["fee_rate"])
+            and float(primary_row["slippage"]) == float(primary["slippage"])
+            and int(primary_row["delay_hours"]) == int(primary["latency_hours"])
+            and abs(float(primary_row["carry_short_pct"]) - float(primary["short_carry"]["carry_pct_per_trade"])) < 1e-9
+        )
 
     engine_rules = engine["rules"].get("active", [])
     checks = [
@@ -1492,43 +1533,52 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
         _check(
             "CP08-04.3",
             "Hash di tutti gli artefatti congelati",
-            bool(artifacts and all(item["match"] for item in artifacts)),
-            "Ogni artefatto CP07/CP08 dichiarato nel protocollo ha l'hash atteso.",
+            bool(artifacts and not absent_artifacts and all(item["match"] for item in artifacts)),
+            "Ogni artefatto CP07/CP08 dichiarato nel protocollo ha l'hash atteso. "
+            "Un artefatto ASSENTE è BLOCKED (evidenza non disponibile su questa "
+            "macchina), non una manomissione.",
+            status=STATUS_BLOCKED if absent_artifacts else None,
             evidence={
                 "total": len(artifacts),
                 "matched": sum(1 for item in artifacts if item["match"]),
-                "mismatched": [item["id"] for item in artifacts if not item["match"]],
+                "mismatched": [item["id"] for item in artifacts if item["exists"] and not item["match"]],
+                "absent": absent_artifacts,
             },
         ),
         _check(
             "CP08-04.4",
             "Benchmark congelato riconciliato con l'archivio CP08-03",
-            bool(benchmark["all_match"] and benchmark["cp08_03_gate_ok"]),
+            bool(benchmark.get("all_match") and benchmark.get("cp08_03_gate_ok")),
             "Rendimento, PF, drawdown, CI e scenario primario coincidono con CP08-03 (gate tecnico PASS).",
+            status=STATUS_BLOCKED if benchmark.get("blocked") else None,
             evidence={
-                "all_match": benchmark["all_match"],
+                "all_match": benchmark.get("all_match"),
                 "max_abs_delta": max((abs(row["delta"]) for row in benchmark["comparisons"]), default=0.0),
-                "cp08_03_technical_gate": benchmark["cp08_03_technical_gate"],
-                "cp08_03_checks_failed": benchmark["cp08_03_checks_failed"],
+                "cp08_03_technical_gate": benchmark.get("cp08_03_technical_gate"),
+                "cp08_03_checks_failed": benchmark.get("cp08_03_checks_failed"),
+                "blocked_reason": benchmark.get("blocked_reason"),
             },
         ),
         _check(
             "CP08-04.5",
             "Registro dei dati di ricerca coerente con gli artefatti",
-            bool(data_registry["all_match"]),
+            bool(data_registry.get("all_match")),
             "500 finestre, 300 OOS, 5 fold, estremi temporali e snapshot coincidono con il dichiarato.",
+            status=STATUS_BLOCKED if data_registry.get("blocked") else None,
             evidence={
                 "mismatched": [
                     row["field"] for row in data_registry["comparisons"] if not row["match"]
                 ],
-                "observed": data_registry["observed"],
+                "observed": data_registry.get("observed"),
+                "blocked_reason": data_registry.get("blocked_reason"),
             },
         ),
         _check(
             "CP08-04.6",
             "Separazione temporale ricerca / coda osservata / validazione",
-            bool(separation["all_ok"]),
+            bool(separation.get("all_ok")),
             "La validazione inizia dopo lo snapshot congelato; la coda osservata non è utilizzabile come evidenza indipendente.",
+            status=STATUS_BLOCKED if separation.get("blocked") else None,
             evidence=separation,
         ),
         _check(
@@ -1552,6 +1602,7 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
             "Scenario primario realistico completo e allineato a CP08-03",
             bool(primary_matches),
             "Latenza 1h, fee 0,10%, slippage 0,10%, carry SHORT 0,14% dichiarato come ipotesi.",
+            status=STATUS_BLOCKED if primary_matches is None else None,
             evidence={
                 "primary_scenario": primary["id"],
                 "fee_rate": primary["fee_rate"],
@@ -1560,6 +1611,7 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
                 "carry_short_pct": 100.0 * float(primary["short_carry"]["carry_pct_per_trade"]),
                 "carry_status": primary["short_carry"]["status"],
                 "matches_cp08_03_row": primary_matches,
+                "blocked_reason": benchmark.get("blocked_reason") if primary_matches is None else None,
             },
         ),
         _check(
@@ -1670,7 +1722,10 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
         ),
     ]
     failed = [check["id"] for check in checks if check["status"] == STATUS_FAIL]
-    technical_gate = STATUS_PASS if not failed else STATUS_FAIL
+    blocked = [check["id"] for check in checks if check["status"] == STATUS_BLOCKED]
+    # Fail closed: BLOCKED (absent evidence) keeps the technical gate closed,
+    # exactly like FAIL, but is reported distinctly and never crashes.
+    technical_gate = STATUS_PASS if not failed and not blocked else STATUS_FAIL
     return {
         "schema_version": VALIDATION_SCHEMA,
         "generated_utc": _now_iso(),
@@ -1726,6 +1781,7 @@ def build_readiness(paths: ValidationPaths = ValidationPaths()) -> dict[str, Any
         },
         "checks": checks,
         "checks_failed": failed,
+        "checks_blocked": blocked,
         "technical_gate": technical_gate,
         "strategic_gate": VERDICT_NO_GO,
         "confirmation_engine_started": False,
@@ -1873,6 +1929,7 @@ def write_artifacts(
             "strategic_gate": report["strategic_gate"],
             "checks_total": len(report["checks"]),
             "checks_failed": report["checks_failed"],
+            "checks_blocked": report.get("checks_blocked", []),
             "confirmation_engine_status": report["confirmation_engine"]["status"],
             "confirmation_engine_started": False,
             "intern_decision_0_8b_started": False,
@@ -1913,6 +1970,7 @@ def _printable(report: Mapping[str, Any]) -> dict[str, Any]:
             "verdict": report["independent_validation"]["verdict"],
             "checks_total": len(report["checks"]),
             "checks_failed": report["checks_failed"],
+            "checks_blocked": report.get("checks_blocked", []),
             "frozen_benchmark": {
                 "trades": report["frozen_benchmark"]["comparisons"][0]["observed"],
                 "total_return_pct": report["frozen_benchmark"]["comparisons"][1]["observed"],

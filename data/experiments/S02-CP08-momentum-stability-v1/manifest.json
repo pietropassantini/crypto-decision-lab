@@ -1,0 +1,226 @@
+{
+  "schema_version": "cdl.cp08.momentum_stability.v1",
+  "created_utc": "2026-10-29T14:13:42.331072+00:00",
+  "read_only": true,
+  "analysis": "S02-CP08-02 momentum stability & profit concentration",
+  "policy": "momentum_threshold",
+  "policy_frozen": {
+    "threshold": 0.05,
+    "threshold_reselected": false,
+    "training_performed": false,
+    "new_inference": false,
+    "data_downloaded": false,
+    "oos_threshold_optimisation": false
+  },
+  "method": {
+    "reconstruction": "simulator_integrity_audit.contract_frame + reconstruct_returns + replay_policy",
+    "metrics": "monetary P&L (USDT) for capital-dependent metrics, percent per trade for behaviour",
+    "periods": [
+      "window",
+      "fold",
+      "month",
+      "quarter",
+      "year"
+    ],
+    "regime_buckets": "train-only terciles of cutoff-only momentum_168h and volatility_168h",
+    "concentration": "top-k, HHI/Gini, temporal concentration, leave-top-k",
+    "drawdown": "calendar-time step (exit-marked) and hourly mark-to-market"
+  },
+  "initial_capital": 10000.0,
+  "source_hashes": {
+    "trading_decisions": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+    "trading_summary": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+    "trading_fold_summary": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+    "trading_sensitivity": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+    "trading_manifest": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_anomalies": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+    "audit_summary": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+    "audit_checks": "541066f75e58ee8d3c76ddc14af2376e1339b6154ae590a8bcd1037b2201812b",
+    "audit_metrics": "68273750aed882cc5bf43e2711c4a90fbcb86683b734eb4e9707869168d3a81f",
+    "audit_equity": "3de4a500ac7ea46306619c2f1a08963075a9b9756a4c53b365c321488efd8981",
+    "audit_thresholds": "d658bc5593fa4051e0075d3333b4b1f9823003580f49137589c53f05a4f7921e",
+    "audit_manifest": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8"
+  },
+  "source_hashes_after": {
+    "trading_decisions": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+    "trading_summary": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+    "trading_fold_summary": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+    "trading_sensitivity": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+    "trading_manifest": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_anomalies": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+    "audit_summary": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+    "audit_checks": "541066f75e58ee8d3c76ddc14af2376e1339b6154ae590a8bcd1037b2201812b",
+    "audit_metrics": "68273750aed882cc5bf43e2711c4a90fbcb86683b734eb4e9707869168d3a81f",
+    "audit_equity": "3de4a500ac7ea46306619c2f1a08963075a9b9756a4c53b365c321488efd8981",
+    "audit_thresholds": "d658bc5593fa4051e0075d3333b4b1f9823003580f49137589c53f05a4f7921e",
+    "audit_manifest": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8"
+  },
+  "source_hashes_unchanged": true,
+  "original_artifacts_modified": false,
+  "reconciliation": {
+    "checks_total": 67,
+    "checks_failed": 0,
+    "all_match": true,
+    "by_family": {
+      "cp07": {
+        "checks": 53,
+        "failed": 0,
+        "max_abs_delta": 3.637978807091713e-12
+      },
+      "cp08": {
+        "checks": 14,
+        "failed": 0,
+        "max_abs_delta": 0.0
+      }
+    },
+    "max_abs_delta": 3.637978807091713e-12,
+    "failed_labels": [],
+    "period_attribution": {
+      "per_granularity": {
+        "window": {
+          "rows": 300,
+          "net_pnl_usdt_sum": 3917.576428398108,
+          "abs_error_usdt": 1.3642420526593924e-12
+        },
+        "fold": {
+          "rows": 5,
+          "net_pnl_usdt_sum": 3917.5764283981093,
+          "abs_error_usdt": 0.0
+        },
+        "month": {
+          "rows": 41,
+          "net_pnl_usdt_sum": 3917.576428398109,
+          "abs_error_usdt": 4.547473508864641e-13
+        },
+        "quarter": {
+          "rows": 15,
+          "net_pnl_usdt_sum": 3917.5764283981084,
+          "abs_error_usdt": 9.094947017729282e-13
+        },
+        "year": {
+          "rows": 4,
+          "net_pnl_usdt_sum": 3917.5764283981084,
+          "abs_error_usdt": 9.094947017729282e-13
+        }
+      },
+      "max_abs_error_usdt": 1.3642420526593924e-12,
+      "additive": true
+    },
+    "cp08_audit_hash_chain": {
+      "audit_reference_decisions_sha256": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+      "local_decisions_sha256": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+      "match": true
+    },
+    "diagnostics": {
+      "contract": {
+        "rows": 300,
+        "policies": 1,
+        "archive_columns": [
+          "action",
+          "cutoff",
+          "decision_id",
+          "entry_timestamp",
+          "execution_price",
+          "exit_price",
+          "exit_timestamp",
+          "fee_rate",
+          "fold",
+          "gross_return_pct",
+          "net_return_pct",
+          "policy",
+          "reference_price",
+          "regime",
+          "slippage",
+          "threshold",
+          "uses_target",
+          "window_index"
+        ],
+        "missing_contract_columns": [
+          "decision_timestamp",
+          "horizon_hours",
+          "policy_version"
+        ],
+        "label_timestamp_mismatches": 0,
+        "label_rows_missing": 0
+      },
+      "reconstruction": {
+        "entry_open_missing": 0,
+        "exit_open_missing": 0,
+        "max_abs_net_error_pct": 0.0,
+        "max_abs_gross_error_pct": 0.0,
+        "max_rel_entry_price_error": 0.0,
+        "max_rel_exit_price_error": 0.0,
+        "no_trade_rows_with_prices": 0
+      },
+      "window_frame": {
+        "windows": 300,
+        "trades": 106,
+        "no_trade": 194,
+        "skipped": 0,
+        "feature_cutoff_guard": {
+          "feature_bar_equals_cutoff_minus_hour": true,
+          "rows_checked": 500
+        },
+        "fold_assignment_matches": 300,
+        "fold_assignment_total": 300,
+        "trend_regime_matches_archive": 300,
+        "threshold_values_archived": [
+          0.05
+        ],
+        "pnl_attribution_error_usdt": -1.8189894035458565e-12
+      }
+    }
+  },
+  "headline": {
+    "windows": 300,
+    "trades": 106,
+    "no_trade": 194,
+    "total_return_pct": 39.17576428398108,
+    "final_equity_usdt": 13917.576428398108,
+    "profit_factor_usdt": 1.329546533769072,
+    "max_drawdown_exit_marked_pct": -21.180367003355915,
+    "max_drawdown_mark_to_market_pct": -27.202366839386947,
+    "max_win_streak": 8,
+    "max_loss_streak": 6
+  },
+  "outputs": {
+    "trade_attribution": {
+      "path": "trade_attribution.parquet",
+      "sha256": "87e0f72f1039d82f04905a3111fbf0930fc97a23f777ccbe33a57197a4be287a"
+    },
+    "period_summary": {
+      "path": "period_summary.parquet",
+      "sha256": "851cff37dbae2e8bafcee26894b00bcabf297a3aa3d40de80d59d66130b6a292"
+    },
+    "regime_breakdown": {
+      "path": "regime_breakdown.parquet",
+      "sha256": "83ca519c6b4559a06e9e9edb4997aba95960c6ee242ad41f53bae99c7e2630bf"
+    },
+    "equity_curves": {
+      "path": "equity_curves.parquet",
+      "sha256": "f70d1e1bc2377efdf11931d173ce1aa7e1f8372e8692f5699128e9d61379137b"
+    },
+    "concentration": {
+      "path": "concentration_summary.json",
+      "sha256": "f79fd1d4909d0c0120a61d915f46a2bc30254b57175363bc42ac55c784bab97f"
+    },
+    "drawdown": {
+      "path": "drawdown_analysis.json",
+      "sha256": "b94b74d7cc29e121169be3d72ab6a47181f739a98831152e6b33549765579e18"
+    },
+    "streaks": {
+      "path": "streak_analysis.json",
+      "sha256": "0852b8204ff5a50f39f3b5c9b66bb3afcd3c656d8e1f5405826d484fdfeab80c"
+    }
+  }
+}

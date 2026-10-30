@@ -1,0 +1,112 @@
+{
+  "scenarios": [
+    {
+      "fee_rate": 0.0,
+      "slippage": 0.0,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": 25.550661637513805,
+        "always_short": -20.350877728771266,
+        "timestral_threshold": -42.52730559103498,
+        "momentum_threshold": 119.09705022423505,
+        "oracle_retrospective": 17733.64301980044
+      }
+    },
+    {
+      "fee_rate": 0.0,
+      "slippage": 0.0005,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -6.9897845655374935,
+        "always_short": -40.99448043530418,
+        "timestral_threshold": -56.36108722280269,
+        "momentum_threshold": 63.94233648479113,
+        "oracle_retrospective": 13705.771223563659
+      }
+    },
+    {
+      "fee_rate": 0.0,
+      "slippage": 0.001,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -31.096349754766038,
+        "always_short": -56.2876436353498,
+        "timestral_threshold": -50.8956904856331,
+        "momentum_threshold": 11.397140753071033,
+        "oracle_retrospective": 10587.625319685041
+      }
+    },
+    {
+      "fee_rate": 0.0005,
+      "slippage": 0.0,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -6.9897845655374935,
+        "always_short": -40.99448043530418,
+        "timestral_threshold": -56.36108722280269,
+        "momentum_threshold": 63.94233648479113,
+        "oracle_retrospective": 13705.771223563659
+      }
+    },
+    {
+      "fee_rate": 0.0005,
+      "slippage": 0.0005,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -31.096339419207887,
+        "always_short": -56.28763707848936,
+        "timestral_threshold": -50.89568658183639,
+        "momentum_threshold": 11.397152895371644,
+        "oracle_retrospective": 10587.626687702508
+      }
+    },
+    {
+      "fee_rate": 0.0005,
+      "slippage": 0.001,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -48.954921702975774,
+        "always_short": -67.61709074570643,
+        "timestral_threshold": -58.11420332953785,
+        "momentum_threshold": 39.17576428398135,
+        "oracle_retrospective": 8173.739130188625
+      }
+    },
+    {
+      "fee_rate": 0.001,
+      "slippage": 0.0,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -31.096349754766038,
+        "always_short": -56.2876436353498,
+        "timestral_threshold": -50.8956904856331,
+        "momentum_threshold": 11.397140753071033,
+        "oracle_retrospective": 10587.625319685041
+      }
+    },
+    {
+      "fee_rate": 0.001,
+      "slippage": 0.0005,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -48.95492170297575,
+        "always_short": -67.61709074570652,
+        "timestral_threshold": -58.11420332953774,
+        "momentum_threshold": 39.17576428398106,
+        "oracle_retrospective": 8173.739130188632
+      }
+    },
+    {
+      "fee_rate": 0.001,
+      "slippage": 0.001,
+      "total_return_pct": {
+        "always_no_trade": 0.0,
+        "always_long": -62.18488253909011,
+        "always_short": -76.01015498396274,
+        "timestral_threshold": -46.02356444944699,
+        "momentum_threshold": 25.17810507163274,
+        "oracle_retrospective": 6305.047743029865
+      }
+    }
+  ]
+}

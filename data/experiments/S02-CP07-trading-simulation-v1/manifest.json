@@ -1,0 +1,76 @@
+{
+  "schema_version": "cdl.cp07.simulation.v1",
+  "created_utc": "2026-10-29T08:42:48.352113+00:00",
+  "source_hashes": {
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193"
+  },
+  "source_hashes_after": {
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193"
+  },
+  "source_hashes_unchanged": true,
+  "original_artifacts_modified": false,
+  "outputs": {
+    "decisions": {
+      "path": "decisions.parquet",
+      "sha256": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8"
+    },
+    "fold_summary": {
+      "path": "fold_summary.json",
+      "sha256": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9"
+    },
+    "sensitivity": {
+      "path": "sensitivity.json",
+      "sha256": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1"
+    },
+    "summary": {
+      "path": "summary.json",
+      "sha256": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca"
+    }
+  },
+  "execution": {
+    "entry": "open of the bar at cutoff (never the anchor bar)",
+    "exit": "open of the bar at cutoff + 24h",
+    "sizing": "100% of equity per trade, no leverage, single position at a time",
+    "purge_hours": 24
+  },
+  "policy_catalog": {
+    "always_no_trade": {
+      "label": "Always NO_TRADE",
+      "uses_target": false,
+      "trainable": false
+    },
+    "always_long": {
+      "label": "Always LONG",
+      "uses_target": false,
+      "trainable": false
+    },
+    "always_short": {
+      "label": "Always SHORT",
+      "uses_target": false,
+      "trainable": false
+    },
+    "timestral_threshold": {
+      "label": "Timestral directional threshold",
+      "uses_target": false,
+      "trainable": true,
+      "signal": "timestral_return_24h"
+    },
+    "momentum_threshold": {
+      "label": "Momentum threshold",
+      "uses_target": false,
+      "trainable": true,
+      "signal": "momentum_168h"
+    },
+    "oracle_retrospective": {
+      "label": "Oracle retrospective",
+      "uses_target": true,
+      "trainable": false
+    }
+  }
+}

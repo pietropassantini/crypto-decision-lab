@@ -1,0 +1,30 @@
+{
+  "schema_version": "cdl.cp07.label.v1",
+  "created_utc": "2026-10-29T08:40:42.759346+00:00",
+  "source_hashes": {
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_report": "8b00ab6286fd5e65d4e30a97bdfdf126e47785485629d437693adc8c5be84f59",
+    "expansion_manifest": "2ec314659eb80afd232d6d4789d0274c78789484dd28304e0cc1d97688ed5156",
+    "expansion_canonical": "fce620e2b425cb97c679927cb2ad523b5bf554295942ec915bd0cf0ba700f67a"
+  },
+  "source_hashes_after": {
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_report": "8b00ab6286fd5e65d4e30a97bdfdf126e47785485629d437693adc8c5be84f59",
+    "expansion_manifest": "2ec314659eb80afd232d6d4789d0274c78789484dd28304e0cc1d97688ed5156",
+    "expansion_canonical": "fce620e2b425cb97c679927cb2ad523b5bf554295942ec915bd0cf0ba700f67a"
+  },
+  "source_hashes_unchanged": true,
+  "original_artifacts_modified": false,
+  "outputs": {
+    "labels": {
+      "path": "labels.parquet",
+      "sha256": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa"
+    }
+  },
+  "execution_semantics": {
+    "entry": "open of the bar at cutoff (first price after the anchor close)",
+    "exit": "open of the bar at cutoff + 24h",
+    "reference": "anchor close at cutoff - 1h (the price used to generate the decision)",
+    "no_lookahead": "entry bar is strictly after the bar whose close generated the decision"
+  }
+}

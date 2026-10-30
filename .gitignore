@@ -139,14 +139,54 @@ data/forward/*/registry/sync.lock
 var/log/
 
 # ==================================================
-# S02-CP08-05R · FROZEN PROTOCOL ARCHIVE (evidence, tracked)
+# S02-CP08-05R · FROZEN EVIDENCE PINNED BY THE PROTOCOL (tracked)
 # ==================================================
 
-# The CP08-04 protocol archive is frozen evidence: its manifest pins every
-# file by SHA-256. The generic "experiments/" rule above hid it from clones
-# (Sirio reported ARCHIVE_MISSING), so exactly this archive is re-included.
-# Nothing else under data/experiments is un-ignored here.
+# The CP08-04 protocol pins every research artifact below by SHA-256; a fresh
+# clone (Sirio) must be able to verify them. The generic ignores above
+# ("experiments/", "data/snapshots/", "data/datasets/", "*.parquet") would
+# hide this evidence, so exactly these frozen artifacts are re-included.
+# Nothing else inside those directories is un-ignored.
+
+# CP08-04 protocol archive: its manifest pins every file
 !data/experiments/
 data/experiments/*
 !data/experiments/S02-CP08-independent-validation-protocol-v1/
 !data/experiments/S02-CP08-independent-validation-protocol-v1/**
+# research archives: exactly the files pinned by frozen_artifacts, nothing else
+!data/experiments/S02-CP07-trading-simulation-v1/
+data/experiments/S02-CP07-trading-simulation-v1/*
+!data/experiments/S02-CP07-trading-simulation-v1/manifest.json
+!data/experiments/S02-CP07-trading-simulation-v1/summary.json
+!data/experiments/S02-CP07-trading-simulation-v1/fold_summary.json
+!data/experiments/S02-CP07-trading-simulation-v1/sensitivity.json
+!data/experiments/S02-CP07-trading-simulation-v1/decisions.parquet
+!data/experiments/S02-CP08-simulator-integrity-audit-v1/
+data/experiments/S02-CP08-simulator-integrity-audit-v1/*
+!data/experiments/S02-CP08-simulator-integrity-audit-v1/manifest.json
+!data/experiments/S02-CP08-simulator-integrity-audit-v1/summary.json
+!data/experiments/S02-CP08-momentum-stability-v1/
+data/experiments/S02-CP08-momentum-stability-v1/*
+!data/experiments/S02-CP08-momentum-stability-v1/manifest.json
+!data/experiments/S02-CP08-parameter-robustness-v1/
+data/experiments/S02-CP08-parameter-robustness-v1/*
+!data/experiments/S02-CP08-parameter-robustness-v1/manifest.json
+!data/experiments/S02-CP08-parameter-robustness-v1/checks.json
+!data/experiments/S02-CP08-parameter-robustness-v1/scenario_metrics.parquet
+# frozen snapshot and research datasets: exactly the pinned files
+!data/snapshots/
+data/snapshots/*
+!data/snapshots/BTCUSDT-1h-raw-v1/
+data/snapshots/BTCUSDT-1h-raw-v1/*
+!data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json
+!data/snapshots/BTCUSDT-1h-raw-v1/anomalies.json
+!data/datasets/
+data/datasets/*
+!data/datasets/S02-CP07-decision-labels-v1/
+data/datasets/S02-CP07-decision-labels-v1/*
+!data/datasets/S02-CP07-decision-labels-v1/labels.parquet
+!data/datasets/S02-CP07-decision-labels-v1/manifest.json
+!data/datasets/S02-CP06B-regime-features-v1/
+data/datasets/S02-CP06B-regime-features-v1/*
+!data/datasets/S02-CP06B-regime-features-v1/features.parquet
+!data/datasets/S02-CP06B-regime-features-v1/errors.parquet

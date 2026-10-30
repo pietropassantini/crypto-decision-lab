@@ -19,6 +19,7 @@ import pytest
 from crypto_decision_lab.independent_validation import (
     ValidationPaths,
     _sidecar_check,
+    build_readiness,
     load_protocol,
 )
 from crypto_decision_lab.protocol_integrity import (
@@ -277,6 +278,39 @@ def test_reconcile_on_real_repo_keeps_gates_honest():
 # ---------------------------------------------------------------------------
 # integration with the versioned readiness verifier
 # ---------------------------------------------------------------------------
+
+
+def test_readiness_degrades_gracefully_when_research_artifacts_absent(tmp_path):
+    """Fresh-clone scenario with no data/ tree: readiness must never crash.
+
+    Absent research evidence is reported as BLOCKED (distinct from a hash
+    mismatch), the technical gate stays closed (fail closed) and the protocol
+    integrity check still verifies: absence is not tampering.
+    """
+    root = tmp_path
+    for name in ("momentum-independent-validation-v1.yaml", "momentum-confirmation-engine-v1.yaml"):
+        source = PROTOCOL_DIR / name
+        target = root / "config" / "protocols" / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+        for suffix in (".sha256", ".sha256.v2.json"):
+            shutil.copyfile(source.with_suffix(".yaml" + suffix), target.with_suffix(".yaml" + suffix))
+    paths = ValidationPaths(repo_root=root, registry_dir=root / "registry", output_dir=root / "archive")
+    report = build_readiness(paths)  # must not raise
+    statuses = {c["id"]: c["status"] for c in report["checks"]}
+    assert statuses["CP08-04.2"] == "PASS"   # protocol integrity verified
+    assert statuses["CP08-04.3"] == "BLOCKED"  # absent research artifacts
+    assert statuses["CP08-04.4"] == "BLOCKED"
+    assert statuses["CP08-04.5"] == "BLOCKED"
+    assert statuses["CP08-04.6"] == "BLOCKED"
+    assert statuses["CP08-04.8"] == "BLOCKED"
+    assert statuses["CP08-04.16"] == "WARN"   # ARCHIVE_MISSING
+    assert report["checks_blocked"] == ["CP08-04.3", "CP08-04.4", "CP08-04.5", "CP08-04.6", "CP08-04.8"]
+    assert report["checks_failed"] == []      # nothing mismatched: just absent
+    assert report["technical_gate"] == "FAIL"  # fail closed
+    assert report["archive"]["status"] == ARCHIVE_MISSING
+    assert report["strategic_gate"] == "NO-GO"
+    assert report["independent_validation"]["status"] == "NOT_EVALUATED"
 
 
 def test_readiness_sidecar_check_passes_on_lf_checkout(tmp_path):

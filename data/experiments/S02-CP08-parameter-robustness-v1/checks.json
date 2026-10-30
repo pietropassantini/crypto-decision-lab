@@ -1,0 +1,586 @@
+[
+  {
+    "id": "CP08-03.1",
+    "check": "Griglia di soglie pre-registrata, ordinata e con 5%/8%/10%",
+    "status": "PASS",
+    "detail": "La griglia \u00e8 una costante del modulo, registrata nel manifest prima dell'esecuzione.",
+    "evidence": {
+      "grid": [
+        0.0,
+        0.005,
+        0.01,
+        0.02,
+        0.03,
+        0.04,
+        0.05,
+        0.06,
+        0.07,
+        0.08,
+        0.09,
+        0.1,
+        0.12,
+        0.15,
+        0.2
+      ],
+      "required_values": [
+        0.05,
+        0.08,
+        0.1
+      ],
+      "contains_required": true
+    }
+  },
+  {
+    "id": "CP08-03.2",
+    "check": "Policy CP07 congelata riprodotta (soglia 5%, costi 0,10%/0,05%)",
+    "status": "PASS",
+    "detail": "Stesse 106 operazioni, stesso rendimento composto, stesso PF monetario del riferimento congelato.",
+    "evidence": {
+      "trades": 106,
+      "total_return_pct": 39.17576428398111,
+      "profit_factor_usdt": 1.3295465337690715,
+      "max_drawdown_mtm_pct": -27.202366839386947
+    }
+  },
+  {
+    "id": "CP08-03.3",
+    "check": "Griglia costi CP07 riprodotta sulla griglia CP07 (anchor di regressione)",
+    "status": "PASS",
+    "detail": "La sensitivity archiviata in CP07 \u00e8 ricalcolata con la griglia CP07: delta massimo entro 1e-9.",
+    "evidence": {
+      "max_abs_delta_pct": 0.0,
+      "scenarios": [
+        {
+          "fee_rate": 0.0,
+          "slippage": 0.0,
+          "archive_total_return_pct": 119.09705022423505,
+          "recomputed_total_return_pct": 119.09705022423505,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.002,
+            0.002,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.0,
+          "slippage": 0.0005,
+          "archive_total_return_pct": 63.94233648479113,
+          "recomputed_total_return_pct": 63.94233648479113,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.002,
+            0.002,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.0,
+          "slippage": 0.001,
+          "archive_total_return_pct": 11.397140753071033,
+          "recomputed_total_return_pct": 11.397140753071033,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.05,
+            0.05,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.0005,
+          "slippage": 0.0,
+          "archive_total_return_pct": 63.94233648479113,
+          "recomputed_total_return_pct": 63.94233648479113,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.002,
+            0.002,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.0005,
+          "slippage": 0.0005,
+          "archive_total_return_pct": 11.397152895371644,
+          "recomputed_total_return_pct": 11.397152895371644,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.05,
+            0.05,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.0005,
+          "slippage": 0.001,
+          "archive_total_return_pct": 39.17576428398135,
+          "recomputed_total_return_pct": 39.17576428398135,
+          "selected_thresholds": [
+            0.05,
+            0.05,
+            0.05,
+            0.05,
+            0.05
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.001,
+          "slippage": 0.0,
+          "archive_total_return_pct": 11.397140753071033,
+          "recomputed_total_return_pct": 11.397140753071033,
+          "selected_thresholds": [
+            0.002,
+            0.002,
+            0.05,
+            0.05,
+            0.001
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.001,
+          "slippage": 0.0005,
+          "archive_total_return_pct": 39.17576428398106,
+          "recomputed_total_return_pct": 39.17576428398106,
+          "selected_thresholds": [
+            0.05,
+            0.05,
+            0.05,
+            0.05,
+            0.05
+          ],
+          "delta_pct": 0.0
+        },
+        {
+          "fee_rate": 0.001,
+          "slippage": 0.001,
+          "archive_total_return_pct": 25.17810507163274,
+          "recomputed_total_return_pct": 25.17810507163274,
+          "selected_thresholds": [
+            0.05,
+            0.05,
+            0.05,
+            0.05,
+            0.05
+          ],
+          "delta_pct": 0.0
+        }
+      ]
+    }
+  },
+  {
+    "id": "CP08-03.4",
+    "check": "Selezione soglia solo su training, nessun leakage",
+    "status": "PASS",
+    "detail": "Avvelenando con NaN l'intero test block di ciascun fold, la soglia scelta non cambia.",
+    "evidence": {
+      "folds": [
+        {
+          "fold": 0,
+          "baseline_threshold": 0.09,
+          "perturbed_threshold": 0.09,
+          "identical": true,
+          "train_test_overlap": 0,
+          "max_train_cutoff": "2023-06-05 00:00:00+00:00",
+          "min_test_cutoff": "2023-06-10 00:00:00+00:00"
+        },
+        {
+          "fold": 1,
+          "baseline_threshold": 0.09,
+          "perturbed_threshold": 0.09,
+          "identical": true,
+          "train_test_overlap": 0,
+          "max_train_cutoff": "2024-02-07 00:00:00+00:00",
+          "min_test_cutoff": "2024-02-12 00:00:00+00:00"
+        },
+        {
+          "fold": 2,
+          "baseline_threshold": 0.09,
+          "perturbed_threshold": 0.09,
+          "identical": true,
+          "train_test_overlap": 0,
+          "max_train_cutoff": "2024-10-11 00:00:00+00:00",
+          "min_test_cutoff": "2024-10-16 00:00:00+00:00"
+        },
+        {
+          "fold": 3,
+          "baseline_threshold": 0.09,
+          "perturbed_threshold": 0.09,
+          "identical": true,
+          "train_test_overlap": 0,
+          "max_train_cutoff": "2025-06-15 00:00:00+00:00",
+          "min_test_cutoff": "2025-06-20 00:00:00+00:00"
+        },
+        {
+          "fold": 4,
+          "baseline_threshold": 0.09,
+          "perturbed_threshold": 0.09,
+          "identical": true,
+          "train_test_overlap": 0,
+          "max_train_cutoff": "2026-02-17 00:00:00+00:00",
+          "min_test_cutoff": "2026-02-22 00:00:00+00:00"
+        }
+      ],
+      "all_identical": true,
+      "poisoned_columns": [
+        "entry_open",
+        "exit_open",
+        "momentum_168h",
+        "timestral_return_24h",
+        "best_action",
+        "best_net_pct",
+        "long_net_pct",
+        "short_net_pct",
+        "long_gross_pct",
+        "short_gross_pct"
+      ]
+    }
+  },
+  {
+    "id": "CP08-03.5",
+    "check": "Effetto dei costi monotono sul medesimo trade ledger",
+    "status": "PASS",
+    "detail": "Con decisioni congelate, aumentare il costo per lato non aumenta mai il rendimento composto.",
+    "evidence": {
+      "monotone": true,
+      "strictly_monotone": true,
+      "steps": [
+        {
+          "from": 0.0,
+          "to": 0.0005,
+          "delta_return_pct": -19.238041805631312,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.0005,
+          "to": 0.001,
+          "delta_return_pct": -17.303170992768855,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.001,
+          "to": 0.0015,
+          "delta_return_pct": -15.562904694478917,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.0015,
+          "to": 0.002,
+          "delta_return_pct": -13.99765921234848,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.002,
+          "to": 0.0025,
+          "delta_return_pct": -12.589850866864861,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.0025,
+          "to": 0.003,
+          "delta_return_pct": -11.32363638592475,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.003,
+          "to": 0.004,
+          "delta_return_pct": -19.345188288572924,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        },
+        {
+          "from": 0.004,
+          "to": 0.005,
+          "delta_return_pct": -15.649598218743812,
+          "non_increasing": true,
+          "strictly_decreasing": true
+        }
+      ],
+      "returns_by_cost": {
+        "0.000000": 91.2798817768602,
+        "0.000500": 72.04183997122888,
+        "0.001000": 54.738668978460026,
+        "0.001500": 39.17576428398111,
+        "0.002000": 25.17810507163263,
+        "0.002500": 12.588254204767768,
+        "0.003000": 1.2646178188430168,
+        "0.004000": -18.080570469729906,
+        "0.005000": -33.73016868847372
+      }
+    }
+  },
+  {
+    "id": "CP08-03.6",
+    "check": "La sensitivity con refit della soglia \u00e8 un esperimento diverso (confondimento)",
+    "status": "WARN",
+    "detail": "La curva con refit non \u00e8 monotona: misura costo + ri-selezione della soglia, non il solo costo.",
+    "evidence": {
+      "refit_monotone": false,
+      "returns_by_cost": {
+        "0.000000": 119.84734001559403,
+        "0.000500": 33.62522245846999,
+        "0.001000": 40.57117279829969,
+        "0.001500": 35.19442204862606,
+        "0.002000": 30.02332831986676,
+        "0.002500": 25.05002049535012,
+        "0.003000": 20.266931428025515,
+        "0.004000": 0.7216516915227178,
+        "0.005000": -6.482736353509244
+      },
+      "selected_thresholds_by_scenario": {
+        "refit_cost_0000": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "refit_cost_0005": [
+          0.09,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "refit_cost_0010": [
+          0.09,
+          0.09,
+          0.09,
+          0.09,
+          0.09
+        ],
+        "refit_cost_0015_base": [
+          0.09,
+          0.09,
+          0.09,
+          0.09,
+          0.09
+        ],
+        "refit_cost_0020": [
+          0.09,
+          0.09,
+          0.09,
+          0.09,
+          0.09
+        ],
+        "refit_cost_0025": [
+          0.09,
+          0.09,
+          0.09,
+          0.09,
+          0.09
+        ],
+        "refit_cost_0030": [
+          0.09,
+          0.09,
+          0.09,
+          0.09,
+          0.09
+        ],
+        "refit_cost_0040": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.12
+        ],
+        "refit_cost_0050": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ]
+      }
+    }
+  },
+  {
+    "id": "CP08-03.7",
+    "check": "Selezione soglia dentro la griglia pre-registrata",
+    "status": "PASS",
+    "detail": "Ogni soglia scelta su training appartiene alla griglia dichiarata: nessun valore inventato.",
+    "evidence": {
+      "selected_thresholds": [
+        0.0,
+        0.09,
+        0.12,
+        0.15
+      ]
+    }
+  },
+  {
+    "id": "CP08-03.8",
+    "check": "Latenza 0h/1h/2h con barre reali e 1h come scenario principale",
+    "status": "PASS",
+    "detail": "Entry/exit spostati sugli open reali; nessuna barra mancante; 1h \u00e8 lo scenario conservativo principale.",
+    "evidence": {
+      "scenarios": [
+        {
+          "scenario": "latency_0h",
+          "delay_hours": 0,
+          "missing_bars": 0,
+          "total_return_pct": 39.17576428398111,
+          "max_drawdown_mtm_pct": -27.202366839386947,
+          "primary": false
+        },
+        {
+          "scenario": "latency_1h",
+          "delay_hours": 1,
+          "missing_bars": 0,
+          "total_return_pct": 23.590450507610083,
+          "max_drawdown_mtm_pct": -30.760345663708055,
+          "primary": true
+        },
+        {
+          "scenario": "latency_2h",
+          "delay_hours": 2,
+          "missing_bars": 0,
+          "total_return_pct": 23.897290922673207,
+          "max_drawdown_mtm_pct": -30.027258367091235,
+          "primary": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "CP08-03.9",
+    "check": "Carry SHORT: ipotesi dichiarate, applicate solo agli SHORT",
+    "status": "PASS",
+    "detail": "Funding/borrow sono ipotesi parametriche (nessun dato storico) e non toccano i LONG.",
+    "evidence": {
+      "long_unaffected": true,
+      "order_by_carry": [
+        "carry_credit",
+        "carry_neutral",
+        "carry_stressed",
+        "carry_severe"
+      ],
+      "return_non_increasing_in_carry": true,
+      "base_total_return_pct": 39.17576428398111,
+      "scenarios": {
+        "carry_credit": {
+          "carry_short_pct": -0.030000000000000002,
+          "total_return_pct": 41.236447854051896,
+          "short_trades": 49,
+          "profit_factor_usdt": 1.3474409931462885
+        },
+        "carry_neutral": {
+          "carry_short_pct": 0.05,
+          "total_return_pct": 35.80655704667532,
+          "short_trades": 49,
+          "profit_factor_usdt": 1.3004227502527932
+        },
+        "carry_stressed": {
+          "carry_short_pct": 0.13999999999999999,
+          "total_return_pct": 29.94217719782071,
+          "short_trades": 49,
+          "profit_factor_usdt": 1.2500470244816941
+        },
+        "carry_severe": {
+          "carry_short_pct": 0.25,
+          "total_return_pct": 23.110736229458073,
+          "short_trades": 49,
+          "profit_factor_usdt": 1.191820758057736
+        }
+      }
+    }
+  },
+  {
+    "id": "CP08-03.10",
+    "check": "Metriche complete per ogni scenario (rendimento, PF, DD MTM, trade, CI)",
+    "status": "PASS",
+    "detail": "Ogni scenario riporta rendimento composto, PF monetario, DD mark-to-market, trade e intervallo bootstrap.",
+    "evidence": {
+      "scenarios": 28,
+      "ci_draws": 2000,
+      "ci_block": 10,
+      "ci_seed": 42
+    }
+  },
+  {
+    "id": "CP08-03.11",
+    "check": "Superficie OOS marcata esplorativa e non promossa",
+    "status": "PASS",
+    "detail": "Ogni riga OOS della superficie \u00e8 esplorativa; nessuna configurazione OOS viene promossa: la migliore soglia OOS \u00e8 solo un'osservazione.",
+    "evidence": {
+      "best_oos_threshold_exploratory": 0.06,
+      "best_oos_return_pct_exploratory": 54.53458559292537,
+      "frozen_threshold_oos_return_pct": 39.17576428398111
+    }
+  },
+  {
+    "id": "CP08-03.12",
+    "check": "Concentrazione e stabilit\u00e0 per fold documentate",
+    "status": "PASS",
+    "detail": "Leave-top-k su rendimento monetario e ricomposto; metriche per fold per gli scenari chiave.",
+    "evidence": {
+      "top_k_frozen": {
+        "1": {
+          "pnl_usdt": 1044.3992518331195,
+          "share_of_net_pnl_pct": 26.659320396722233,
+          "share_of_gross_profit_pct": 6.607882015587187,
+          "return_pct_after_removal_monetary": 28.731771765649896,
+          "return_pct_after_removal_recompounded": 27.531605018887273
+        },
+        "2": {
+          "pnl_usdt": 2036.9114670318647,
+          "share_of_net_pnl_pct": 51.99417303684244,
+          "share_of_gross_profit_pct": 12.887476342709828,
+          "return_pct_after_removal_monetary": 18.80664961366245,
+          "return_pct_after_removal_recompounded": 17.18251481805806
+        },
+        "3": {
+          "pnl_usdt": 2990.456151344737,
+          "share_of_net_pnl_pct": 76.33434103971086,
+          "share_of_gross_profit_pct": 18.920524297761972,
+          "return_pct_after_removal_monetary": 9.271202770533726,
+          "return_pct_after_removal_recompounded": 8.696570174701934
+        },
+        "5": {
+          "pnl_usdt": 4793.451891766796,
+          "share_of_net_pnl_pct": 122.3575845775351,
+          "share_of_gross_profit_pct": 30.328023016670393,
+          "return_pct_after_removal_monetary": -8.758754633686861,
+          "return_pct_after_removal_recompounded": -5.790145813970637
+        },
+        "10": {
+          "pnl_usdt": 8146.554038708806,
+          "share_of_net_pnl_pct": 207.9488221252117,
+          "share_of_gross_profit_pct": 51.5429973996138,
+          "return_pct_after_removal_monetary": -42.28977610310696,
+          "return_pct_after_removal_recompounded": -27.607826931445565
+        }
+      },
+      "fold_rows": 140
+    }
+  },
+  {
+    "id": "CP08-03.13",
+    "check": "Nessun training, inferenza, download o modifica agli archivi",
+    "status": "PASS",
+    "detail": "Solo letture locali e output additivo; gli hash sorgente sono verificati prima/dopo la scrittura.",
+    "evidence": {
+      "training_performed": false,
+      "new_inference": false,
+      "data_downloaded": false,
+      "original_artifacts_modified": false
+    }
+  }
+]

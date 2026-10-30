@@ -1,0 +1,230 @@
+{
+  "schema_version": "cdl.cp08.parameter_robustness.v1",
+  "created_utc": "2026-10-29T15:15:18.027842+00:00",
+  "read_only": true,
+  "analysis": "S02-CP08-03 momentum parameter & execution robustness",
+  "policy": "momentum_threshold",
+  "initial_capital": 10000.0,
+  "preregistration": {
+    "threshold_grid": [
+      0.0,
+      0.005,
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.12,
+      0.15,
+      0.2
+    ],
+    "required_grid_values": [
+      0.05,
+      0.08,
+      0.1
+    ],
+    "cost_scenarios": [
+      {
+        "id": "cost_0000",
+        "fee_rate": 0.0,
+        "slippage": 0.0,
+        "total_per_side": 0.0
+      },
+      {
+        "id": "cost_0005",
+        "fee_rate": 0.00025,
+        "slippage": 0.00025,
+        "total_per_side": 0.0005
+      },
+      {
+        "id": "cost_0010",
+        "fee_rate": 0.0005,
+        "slippage": 0.0005,
+        "total_per_side": 0.001
+      },
+      {
+        "id": "cost_0015_base",
+        "fee_rate": 0.001,
+        "slippage": 0.0005,
+        "total_per_side": 0.0015
+      },
+      {
+        "id": "cost_0020",
+        "fee_rate": 0.001,
+        "slippage": 0.001,
+        "total_per_side": 0.002
+      },
+      {
+        "id": "cost_0025",
+        "fee_rate": 0.0015,
+        "slippage": 0.001,
+        "total_per_side": 0.0025
+      },
+      {
+        "id": "cost_0030",
+        "fee_rate": 0.002,
+        "slippage": 0.001,
+        "total_per_side": 0.003
+      },
+      {
+        "id": "cost_0040",
+        "fee_rate": 0.0026666667,
+        "slippage": 0.0013333333,
+        "total_per_side": 0.004
+      },
+      {
+        "id": "cost_0050",
+        "fee_rate": 0.0033333333,
+        "slippage": 0.0016666667,
+        "total_per_side": 0.005
+      }
+    ],
+    "latency_hours": [
+      0,
+      1,
+      2
+    ],
+    "primary_latency_hours": 1,
+    "short_carry_hypotheses": [
+      {
+        "id": "carry_neutral",
+        "funding_pct_8h": 0.0001,
+        "borrow_pct_day": 0.0002,
+        "carry_pct_per_trade": 0.05
+      },
+      {
+        "id": "carry_stressed",
+        "funding_pct_8h": 0.0003,
+        "borrow_pct_day": 0.0005,
+        "carry_pct_per_trade": 0.13999999999999999
+      },
+      {
+        "id": "carry_severe",
+        "funding_pct_8h": 0.0005,
+        "borrow_pct_day": 0.001,
+        "carry_pct_per_trade": 0.25
+      },
+      {
+        "id": "carry_credit",
+        "funding_pct_8h": -0.0001,
+        "borrow_pct_day": 0.0,
+        "carry_pct_per_trade": -0.030000000000000002
+      }
+    ],
+    "selection_rule": "argmax del multiplo composto sul training del fold; soglia pi\u00f9 bassa vince i pareggi",
+    "declared_before_computation": true,
+    "oos_already_observed_in_cp07_cp08": true,
+    "note": "La griglia \u00e8 fissata prima di eseguire CP08-03. I dati OOS erano gi\u00e0 stati osservati in CP07/CP08-01/CP08-02: per questo la superficie OOS \u00e8 esplorativa e nessuna configurazione pu\u00f2 essere promossa."
+  },
+  "policy_frozen": {
+    "threshold": 0.05,
+    "fee_rate": 0.001,
+    "slippage": 0.0005,
+    "threshold_reselected_on_oos": false,
+    "training_performed": false,
+    "new_inference": false,
+    "data_downloaded": false,
+    "promotion_on_oos": false
+  },
+  "method": {
+    "simulator": "reuse of S02-CP08-01 simulator_integrity_audit (contract, replay, dollar metrics, calendar curves, concentration, bootstrap)",
+    "frozen_reference": "CP07 momentum_threshold @ 5%, fee 0.10%, slippage 0.05%",
+    "threshold_selection": "training rows of each fold only",
+    "cost_frozen": "same trade ledger, only the cost model changes (monotone by construction)",
+    "policy_refit": "threshold re-selected on training for each cost scenario (cost + selection confound)",
+    "latency": "entry/exit shifted on real market opens (0h/1h/2h, 1h primary)",
+    "short_carry": "parametric hypotheses, SHORT only, no historical funding data",
+    "mark_to_market": "hourly liquidation-value mark-to-market; carry accrues at exit only"
+  },
+  "source_hashes": {
+    "trading_decisions": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+    "trading_summary": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+    "trading_fold_summary": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+    "trading_sensitivity": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+    "trading_manifest": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_anomalies": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+    "audit_summary": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+    "audit_checks": "541066f75e58ee8d3c76ddc14af2376e1339b6154ae590a8bcd1037b2201812b",
+    "audit_manifest": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8",
+    "audit_thresholds": "d658bc5593fa4051e0075d3333b4b1f9823003580f49137589c53f05a4f7921e",
+    "stability_manifest": "771fac0e1ec3e210d4875e32f982b7750949a5ce152c66336dedd150298d024b",
+    "stability_concentration": "f79fd1d4909d0c0120a61d915f46a2bc30254b57175363bc42ac55c784bab97f"
+  },
+  "source_hashes_after": {
+    "trading_decisions": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+    "trading_summary": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+    "trading_fold_summary": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+    "trading_sensitivity": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+    "trading_manifest": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_anomalies": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad",
+    "audit_summary": "278fb37b3c63a512fb8d8835d6f85e9154b03e957b2859ab461b404b2c8eab75",
+    "audit_checks": "541066f75e58ee8d3c76ddc14af2376e1339b6154ae590a8bcd1037b2201812b",
+    "audit_manifest": "621e9046c3aafe935dba9dcca4afa3457a37f6ab9d194bfd98e739a28e6969c8",
+    "audit_thresholds": "d658bc5593fa4051e0075d3333b4b1f9823003580f49137589c53f05a4f7921e",
+    "stability_manifest": "771fac0e1ec3e210d4875e32f982b7750949a5ce152c66336dedd150298d024b",
+    "stability_concentration": "f79fd1d4909d0c0120a61d915f46a2bc30254b57175363bc42ac55c784bab97f"
+  },
+  "source_hashes_unchanged": true,
+  "original_artifacts_modified": false,
+  "technical_gate": "PASS",
+  "strategic_gate": "INCONCLUSIVE",
+  "promotion": "NO-GO",
+  "headline": {
+    "trades": 106,
+    "total_return_pct": 39.17576428398111,
+    "profit_factor_usdt": 1.3295465337690715,
+    "max_drawdown_mtm_pct": -27.202366839386947,
+    "primary_scenario": "conservative_1h",
+    "primary_total_return_pct": 23.590450507610083,
+    "primary_max_drawdown_mtm_pct": -30.760345663708055,
+    "cost_sensitivity_monotone": true,
+    "refit_monotone": false
+  },
+  "checks_total": 13,
+  "checks_failed": [],
+  "outputs": {
+    "scenario_metrics": {
+      "path": "scenario_metrics.parquet",
+      "sha256": "c306c677dda72ecfbe8e0b7b108d53c3f944244b5dfa7bed26f8172a202af810"
+    },
+    "threshold_surface": {
+      "path": "threshold_surface.parquet",
+      "sha256": "db84b34bf12e9ae37f148314383cc05fdef86d918144cbc4de1b3652d77bdd78"
+    },
+    "threshold_selection": {
+      "path": "threshold_selection.parquet",
+      "sha256": "1fe36befbb5b884eb78904c362e8c47c3a3da109756a9ef9d161bfe6f1bd0a7e"
+    },
+    "fold_stability": {
+      "path": "fold_stability.parquet",
+      "sha256": "edb48eed343872c10cf81281e88ed3c025984b52c4e33e3f3f4ee7188b232b49"
+    },
+    "concentration": {
+      "path": "concentration.json",
+      "sha256": "ceff139cd528fd8eab8d277c84360ea96533ba0fc671708c46e8e09db5442a8b"
+    },
+    "checks": {
+      "path": "checks.json",
+      "sha256": "fc6c2c04077f5da8628c5e6e53f0046360f56f847f9717dc39bec17f9bb32f08"
+    },
+    "summary": {
+      "path": "summary.json",
+      "sha256": "218b0e135b17fc3429d20e2cd044f02d0c1bd61adc5c8b04cd97af5353c747e9"
+    }
+  }
+}

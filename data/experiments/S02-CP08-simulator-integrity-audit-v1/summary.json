@@ -1,0 +1,629 @@
+{
+  "schema_version": "cdl.cp08.integrity_audit.v1",
+  "audit": "S02-CP08-01",
+  "source_schema": "cdl.cp07.simulation.v1",
+  "integrity_verdict": "PASS WITH WARNINGS",
+  "status_counts": {
+    "PASS": 33,
+    "WARN": 8,
+    "FAIL": 0,
+    "FIXED": 1
+  },
+  "items": {
+    "CP08-01.1": {
+      "label": "no look-ahead",
+      "checks": 5,
+      "fail": 0,
+      "warn": 0,
+      "fixed": 0
+    },
+    "CP08-01.2": {
+      "label": "entry/exit timestamps",
+      "checks": 4,
+      "fail": 0,
+      "warn": 1,
+      "fixed": 0
+    },
+    "CP08-01.3": {
+      "label": "execution price availability",
+      "checks": 7,
+      "fail": 0,
+      "warn": 1,
+      "fixed": 0
+    },
+    "CP08-01.4": {
+      "label": "no overlapping positions",
+      "checks": 3,
+      "fail": 0,
+      "warn": 0,
+      "fixed": 0
+    },
+    "CP08-01.5": {
+      "label": "skipped signal chronology",
+      "checks": 2,
+      "fail": 0,
+      "warn": 0,
+      "fixed": 1
+    },
+    "CP08-01.6": {
+      "label": "equity compounding",
+      "checks": 3,
+      "fail": 0,
+      "warn": 0,
+      "fixed": 0
+    },
+    "CP08-01.7": {
+      "label": "fees and slippage on both sides",
+      "checks": 6,
+      "fail": 0,
+      "warn": 1,
+      "fixed": 0
+    },
+    "CP08-01.8": {
+      "label": "SHORT exposure and collateral",
+      "checks": 3,
+      "fail": 0,
+      "warn": 1,
+      "fixed": 0
+    },
+    "CP08-01.9": {
+      "label": "calendar-time equity curve",
+      "checks": 4,
+      "fail": 0,
+      "warn": 1,
+      "fixed": 0
+    },
+    "CP08-01.10": {
+      "label": "max drawdown and profit factor",
+      "checks": 5,
+      "fail": 0,
+      "warn": 3,
+      "fixed": 0
+    }
+  },
+  "contract_diagnostics": {
+    "rows": 1800,
+    "policies": 6,
+    "archive_columns": [
+      "action",
+      "cutoff",
+      "decision_id",
+      "entry_timestamp",
+      "execution_price",
+      "exit_price",
+      "exit_timestamp",
+      "fee_rate",
+      "fold",
+      "gross_return_pct",
+      "net_return_pct",
+      "policy",
+      "reference_price",
+      "regime",
+      "slippage",
+      "threshold",
+      "uses_target",
+      "window_index"
+    ],
+    "missing_contract_columns": [
+      "decision_timestamp",
+      "horizon_hours",
+      "policy_version"
+    ],
+    "label_timestamp_mismatches": 0,
+    "label_rows_missing": 0
+  },
+  "reconstruction": {
+    "entry_open_missing": 0,
+    "exit_open_missing": 0,
+    "max_abs_net_error_pct": 0.0,
+    "max_abs_gross_error_pct": 0.0,
+    "max_rel_entry_price_error": 0.0,
+    "max_rel_exit_price_error": 0.0,
+    "no_trade_rows_with_prices": 0
+  },
+  "metrics": {
+    "always_long": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 300,
+      "final_equity": 5104.507829702423,
+      "gross_profit_usdt": 19730.117171296064,
+      "gross_loss_usdt": 24625.609341593638,
+      "net_pnl_usdt": -4895.492170297574,
+      "profit_factor_usdt": 0.8012032066947115,
+      "profit_factor_pct": 0.8027575848116234,
+      "win_rate_trade_pct": 43.333333333333336,
+      "win_rate_window_pct": 43.333333333333336,
+      "avg_net_per_trade_pct": -0.1935377870748534,
+      "avg_net_per_window_pct": -0.1935377870748534,
+      "avg_win_pct": 1.817723321757472,
+      "avg_loss_pct": -1.7315609879466318,
+      "best_trade_pct": 11.856591757414625,
+      "worst_trade_pct": -8.66458192054187,
+      "min_equity": 5100.633814873443,
+      "no_trade": 0,
+      "skipped": 0,
+      "total_return_pct": -48.954921702975774,
+      "max_drawdown_pct": -58.29523241868849,
+      "profit_factor": 0.8027575848116234,
+      "concentration": {
+        "trades": 300,
+        "leave_out": {
+          "0": -48.95492170297575,
+          "1": -54.36560555346925,
+          "2": -58.18361337713935,
+          "3": -61.211808689535,
+          "5": -66.33426665690861,
+          "10": -74.1635776373718
+        }
+      }
+    },
+    "always_no_trade": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 0,
+      "final_equity": 10000.0,
+      "gross_profit_usdt": 0.0,
+      "gross_loss_usdt": 0.0,
+      "net_pnl_usdt": 0.0,
+      "profit_factor_usdt": null,
+      "profit_factor_pct": null,
+      "win_rate_trade_pct": 0.0,
+      "win_rate_window_pct": 0.0,
+      "avg_net_per_trade_pct": 0.0,
+      "avg_net_per_window_pct": 0.0,
+      "avg_win_pct": 0.0,
+      "avg_loss_pct": 0.0,
+      "best_trade_pct": 0.0,
+      "worst_trade_pct": 0.0,
+      "min_equity": 10000.0,
+      "no_trade": 300,
+      "skipped": 0,
+      "total_return_pct": 0.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": null,
+      "concentration": {
+        "trades": 0,
+        "leave_out": {}
+      }
+    },
+    "always_short": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 300,
+      "final_equity": 3238.290925429343,
+      "gross_profit_usdt": 10719.90120514919,
+      "gross_loss_usdt": 17481.61027971984,
+      "net_pnl_usdt": -6761.709074570648,
+      "profit_factor_usdt": 0.6132101696366719,
+      "profit_factor_pct": 0.6730057631044915,
+      "win_rate_trade_pct": 42.0,
+      "win_rate_window_pct": 42.0,
+      "avg_net_per_trade_pct": -0.34505767632025197,
+      "avg_net_per_window_pct": -0.34505767632025197,
+      "avg_win_pct": 1.6909123170730216,
+      "avg_loss_pct": -1.8193807749843465,
+      "best_trade_pct": 8.831599336212825,
+      "worst_trade_pct": -11.134610223181795,
+      "min_equity": 3083.473645662844,
+      "no_trade": 0,
+      "skipped": 0,
+      "total_return_pct": -67.61709074570656,
+      "max_drawdown_pct": -69.81617733107844,
+      "profit_factor": 0.6730057631044915,
+      "concentration": {
+        "trades": 300,
+        "leave_out": {
+          "0": -67.61709074570652,
+          "1": -70.24493855479126,
+          "2": -72.33579514880888,
+          "3": -74.22882003395527,
+          "5": -77.18285774929183,
+          "10": -81.49730428572532
+        }
+      }
+    },
+    "momentum_threshold": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 106,
+      "final_equity": 13917.57642839811,
+      "gross_profit_usdt": 15805.355624835753,
+      "gross_loss_usdt": 11887.779196437648,
+      "net_pnl_usdt": 3917.576428398108,
+      "profit_factor_usdt": 1.3295465337690715,
+      "profit_factor_pct": 1.4111430063530157,
+      "win_rate_trade_pct": 43.39622641509434,
+      "win_rate_window_pct": 15.333333333333332,
+      "avg_net_per_trade_pct": 0.3555809770516541,
+      "avg_net_per_window_pct": 0.12563861189158446,
+      "avg_win_pct": 2.8123195963947607,
+      "avg_loss_pct": -1.5279186311113937,
+      "best_trade_pct": 9.130410664375631,
+      "worst_trade_pct": -11.134610223181795,
+      "min_equity": 10000.0,
+      "no_trade": 194,
+      "skipped": 0,
+      "total_return_pct": 39.17576428398111,
+      "max_drawdown_pct": -21.180367003355915,
+      "profit_factor": 1.4111430063530157,
+      "concentration": {
+        "trades": 106,
+        "leave_out": {
+          "0": 39.17576428398106,
+          "1": 27.531605018887273,
+          "2": 17.18251481805806,
+          "3": 8.696570174701934,
+          "5": -5.790145813970637,
+          "10": -27.607826931445565
+        }
+      }
+    },
+    "oracle_retrospective": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 256,
+      "final_equity": 827373.9130188632,
+      "gross_profit_usdt": 817373.9130188632,
+      "gross_loss_usdt": 0.0,
+      "net_pnl_usdt": 817373.9130188631,
+      "profit_factor_usdt": null,
+      "profit_factor_pct": null,
+      "win_rate_trade_pct": 100.0,
+      "win_rate_window_pct": 85.33333333333334,
+      "avg_net_per_trade_pct": 1.7553085303893439,
+      "avg_net_per_window_pct": 1.4978632792655737,
+      "avg_win_pct": 1.7553085303893439,
+      "avg_loss_pct": 0.0,
+      "best_trade_pct": 11.856591757414625,
+      "worst_trade_pct": 0.008411697342824986,
+      "min_equity": 10000.0,
+      "no_trade": 44,
+      "skipped": 0,
+      "total_return_pct": 8173.739130188632,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": null,
+      "concentration": {
+        "trades": 256,
+        "leave_out": {
+          "0": 8173.739130188632,
+          "1": 7296.738091333978,
+          "2": 6677.888991989801,
+          "3": 6127.868590859269,
+          "5": 5270.933895775532,
+          "10": 3713.3776126466673
+        }
+      }
+    },
+    "timestral_threshold": {
+      "windows": 300,
+      "executed_rows": 300,
+      "trades": 159,
+      "final_equity": 4188.5796670462205,
+      "gross_profit_usdt": 8010.192520818902,
+      "gross_loss_usdt": 13821.612853772674,
+      "net_pnl_usdt": -5811.420332953771,
+      "profit_factor_usdt": 0.5795410858026226,
+      "profit_factor_pct": 0.5664386543171717,
+      "win_rate_trade_pct": 40.25157232704403,
+      "win_rate_window_pct": 21.333333333333336,
+      "avg_net_per_trade_pct": -0.5128508590443808,
+      "avg_net_per_window_pct": -0.2718109552935218,
+      "avg_win_pct": 1.6646025839057375,
+      "avg_loss_pct": -1.9797668627160396,
+      "best_trade_pct": 7.34551110054158,
+      "worst_trade_pct": -11.134610223181795,
+      "min_equity": 4141.576080563745,
+      "no_trade": 141,
+      "skipped": 0,
+      "total_return_pct": -58.114203329537794,
+      "max_drawdown_pct": -59.5208307200215,
+      "profit_factor": 0.5664386543171717,
+      "concentration": {
+        "trades": 159,
+        "leave_out": {
+          "0": -58.11420332953774,
+          "1": -60.9803929004248,
+          "2": -63.599523985082264,
+          "3": -65.23931730824528,
+          "5": -68.17744314728156,
+          "10": -73.23951905704035
+        }
+      }
+    }
+  },
+  "calendar_metrics": {
+    "always_long": {
+      "step_max_drawdown_pct": -58.2952324186885,
+      "mark_to_market_max_drawdown_pct": -58.68974421604659
+    },
+    "always_no_trade": {
+      "step_max_drawdown_pct": 0.0,
+      "mark_to_market_max_drawdown_pct": 0.0
+    },
+    "always_short": {
+      "step_max_drawdown_pct": -69.81617733107844,
+      "mark_to_market_max_drawdown_pct": -70.35762139510963
+    },
+    "momentum_threshold": {
+      "step_max_drawdown_pct": -21.180367003355915,
+      "mark_to_market_max_drawdown_pct": -27.202366839386947
+    },
+    "oracle_retrospective": {
+      "step_max_drawdown_pct": 0.0,
+      "mark_to_market_max_drawdown_pct": -9.617997188334105
+    },
+    "timestral_threshold": {
+      "step_max_drawdown_pct": -59.5208307200215,
+      "mark_to_market_max_drawdown_pct": -60.336182377144155
+    }
+  },
+  "generated_utc": "2026-10-29T13:36:08.720170+00:00",
+  "initial_capital": 10000.0,
+  "source_hashes": {
+    "trading_decisions": "66c45b672f96c33f31049941957bb6aef5141d0d237b7d593a89055b354e9cf8",
+    "trading_summary": "629136fc08a6185d494516d92d9ee09fe0af9be27257d0b002e6aa57c92b18ca",
+    "trading_fold_summary": "37014ddf2a9697a501f9f07f37f171d2b1e1de160db243c7993c8a70baa396a9",
+    "trading_sensitivity": "dede55898022afe9c058d99b97d3380d71f886a3dd34ac5c428d52e99c9e9db1",
+    "trading_manifest": "ad8dc38402fbc73514e682cf4de1538408b0d66e7d4feb4223059af93b2f79ac",
+    "labels": "71c1e9cfad30c21a16de884ff147bb0dc41a4d609d6086c20f2fa39fce87e7aa",
+    "labels_manifest": "e686dcaff08ece75be904571ce93cc418890a87f516c116dc36587c611246d4d",
+    "regime_features": "df70249cbd6fa5e9b9f2440cb1b7e8c496187610b7c61ffd324f3061ed1d27ac",
+    "regime_errors": "bfc237901f002cb519eae9c35c816e2cb3b37886ca45e11baf0b62152fef9193",
+    "snapshot_raw_manifest": "9df5546de54f754b701e8ea2c366e80e739dc120cede757ce9e76ead8f243979",
+    "snapshot_anomalies": "bb718725138d8bcf93fcef19bad723e9bd748e9bad7580d95d14a8c75ce965ad"
+  },
+  "robustness": {
+    "momentum_threshold": {
+      "bootstrap": {
+        "draws": 2000,
+        "block": 10,
+        "total_return_pct": {
+          "point": 39.17576428398106,
+          "ci_low": -24.005669250412755,
+          "ci_high": 148.1896128077286,
+          "median": 37.034174108040474,
+          "p_positive": 0.844
+        },
+        "profit_factor_pct": {
+          "point": 1.4111430063530157,
+          "ci_low": 0.7984126100861836,
+          "ci_high": 2.2964067045483705,
+          "p_above_one": 0.877
+        },
+        "mean_net_pct": {
+          "point": 0.12563861189158446,
+          "ci_low": -0.07927755722674411,
+          "ci_high": 0.32716723834460926,
+          "draws": 2000
+        }
+      },
+      "concentration": {
+        "trades": 106,
+        "leave_out": {
+          "0": 39.17576428398106,
+          "1": 27.531605018887273,
+          "2": 17.18251481805806,
+          "3": 8.696570174701934,
+          "5": -5.790145813970637,
+          "10": -27.607826931445565
+        }
+      },
+      "execution_delay": {
+        "0": {
+          "total_return_pct": 39.17576428398111,
+          "missing_bars": 0
+        },
+        "1": {
+          "total_return_pct": 23.590450507610083,
+          "missing_bars": 0
+        },
+        "2": {
+          "total_return_pct": 23.897290922673207,
+          "missing_bars": 0
+        }
+      },
+      "long_short_split": {
+        "LONG": {
+          "trades": 57,
+          "compounded_pct": 27.882893000836262
+        },
+        "SHORT": {
+          "trades": 49,
+          "compounded_pct": 8.830634823901718
+        }
+      },
+      "deflated_metrics": {
+        "total_return_pct": 39.175764283981096,
+        "pf_usdt": 1.3295465337690715,
+        "pf_pct": 1.4111430063530157,
+        "max_drawdown_exit_marked_pct": -21.180367003355915,
+        "max_drawdown_mark_to_market_pct": -27.202366839386947
+      }
+    }
+  },
+  "findings": [
+    {
+      "id": "CP08-01.3.e",
+      "item": "CP08-01.3",
+      "item_label": "execution price availability",
+      "status": "WARN",
+      "finding": "execution at the cutoff open is documented and stress-tested with 1-2h delay",
+      "detail": "momentum total return: 0h=39.18%, 1h=23.59%, 2h=23.90%",
+      "evidence": {
+        "delay_stress": {
+          "0": {
+            "total_return_pct": 39.17576428398111,
+            "missing_bars": 0
+          },
+          "1": {
+            "total_return_pct": 23.590450507610083,
+            "missing_bars": 0
+          },
+          "2": {
+            "total_return_pct": 23.897290922673207,
+            "missing_bars": 0
+          }
+        },
+        "retained_share_one_hour": 0.6021695029765167
+      }
+    },
+    {
+      "id": "CP08-01.5.b",
+      "item": "CP08-01.5",
+      "item_label": "skipped signal chronology",
+      "status": "FIXED",
+      "finding": "NO_TRADE does not occupy the market and cannot block a later signal",
+      "detail": "trades=1 skipped=0 (defect found in CP07 and fixed with a regression test)",
+      "evidence": {}
+    },
+    {
+      "id": "CP08-01.7.f",
+      "item": "CP08-01.7",
+      "item_label": "fees and slippage on both sides",
+      "status": "WARN",
+      "finding": "cost sensitivity isolates costs from threshold re-selection",
+      "detail": "momentum total return by round-trip cost per side: 0.00% -> 119.10%, 0.05% -> 63.94%, 0.10% -> 11.40%, 0.15% -> 39.18%, 0.20% -> 25.18%; NOT monotone because the threshold is re-fitted on train rows for every cost scenario",
+      "evidence": {
+        "total_return_by_total_cost": {
+          "0.0": 119.09705022423505,
+          "0.0005": 63.94233648479113,
+          "0.001": 11.397140753071033,
+          "0.0015": 39.17576428398106,
+          "0.002": 25.17810507163274
+        }
+      }
+    },
+    {
+      "id": "CP08-01.8.c",
+      "item": "CP08-01.8",
+      "item_label": "SHORT exposure and collateral",
+      "status": "WARN",
+      "finding": "borrow/funding costs and margin liquidation are explicitly NOT modeled",
+      "detail": "spot snapshot only: short proceeds are reused as collateral (no funding, no borrow rate, no liquidation engine). A perp funding cost of 0.01%/8h over 24h holding would drag momentum by roughly 0.03% per trade (approx. -1.4% cumulative on 49 SHORT trades).",
+      "evidence": {
+        "momentum_short_trades": 49,
+        "funding_drag_proxy_pct_per_trade": 0.03
+      }
+    },
+    {
+      "id": "CP08-01.9.d",
+      "item": "CP08-01.9",
+      "item_label": "calendar-time equity curve",
+      "status": "WARN",
+      "finding": "trade-level equity curve hides intra-hold excursion (mark-to-market stress)",
+      "detail": "momentum max drawdown: exit-marked -21.18% vs hourly mark-to-market -27.20% (-6.02 pct points)",
+      "evidence": {
+        "exit_marked_pct": -21.180367003355915,
+        "mark_to_market_pct": -27.202366839386947,
+        "delta_pct_points": -6.021999836031032
+      }
+    },
+    {
+      "id": "CP08-01.10.c",
+      "item": "CP08-01.10",
+      "item_label": "max drawdown and profit factor",
+      "status": "WARN",
+      "finding": "profit factor convention is explicit: monetary P&L vs percentage sums",
+      "detail": "momentum PF: monetary (equity-weighted) = 1.3295, percentage sums = 1.4111; CP07 reports the percentage variant, which overstates the portfolio PF by 6.14%",
+      "evidence": {
+        "policy": "momentum_threshold",
+        "pf_usdt": 1.3295465337690715,
+        "pf_pct": 1.4111430063530157,
+        "gross_profit_usdt": 15805.355624835753,
+        "gross_loss_usdt": 11887.779196437648,
+        "pf_by_policy": {
+          "always_long": {
+            "pf_usdt": 0.8012032066947115,
+            "pf_pct": 0.8027575848116234
+          },
+          "always_no_trade": {
+            "pf_usdt": null,
+            "pf_pct": null
+          },
+          "always_short": {
+            "pf_usdt": 0.6132101696366719,
+            "pf_pct": 0.6730057631044915
+          },
+          "momentum_threshold": {
+            "pf_usdt": 1.3295465337690715,
+            "pf_pct": 1.4111430063530157
+          },
+          "oracle_retrospective": {
+            "pf_usdt": null,
+            "pf_pct": null
+          },
+          "timestral_threshold": {
+            "pf_usdt": 0.5795410858026226,
+            "pf_pct": 0.5664386543171717
+          }
+        }
+      }
+    },
+    {
+      "id": "CP08-01.10.d",
+      "item": "CP08-01.10",
+      "item_label": "max drawdown and profit factor",
+      "status": "WARN",
+      "finding": "win rate and average return are defined per trade in the aggregate and per window in the folds",
+      "detail": "momentum: trade win rate 43.40% vs window win rate 15.33%; avg per trade 0.3556% vs avg per window 0.1256% (CP07 documents the window average as 'avg net/trade')",
+      "evidence": {
+        "win_rate_trade_pct": 43.39622641509434,
+        "win_rate_window_pct": 15.333333333333332,
+        "avg_net_per_trade_pct": 0.3555809770516541,
+        "avg_net_per_window_pct": 0.12563861189158446
+      }
+    },
+    {
+      "id": "CP08-01.10.e",
+      "item": "CP08-01.10",
+      "item_label": "max drawdown and profit factor",
+      "status": "WARN",
+      "finding": "drawdown convention: trade-close peak, zero when every trade wins",
+      "detail": "oracle (all winners) trade-level DD = 0.00% but hourly mark-to-market DD = -9.62%; momentum trade-level DD = -21.18%",
+      "evidence": {
+        "oracle_trade_level_dd_pct": 0.0,
+        "oracle_mark_to_market_dd_pct": -9.617997188334105
+      }
+    },
+    {
+      "id": "CP08-01.2.d",
+      "item": "CP08-01.2",
+      "item_label": "entry/exit timestamps",
+      "status": "WARN",
+      "finding": "archived decision log is contract-consumable without manual renaming",
+      "detail": "missing contract columns in decisions.parquet: ['decision_timestamp', 'horizon_hours', 'policy_version']; the audit reconstructs them explicitly (policy->policy_version, cutoff->decision_timestamp, horizon_hours=24) and validates the result",
+      "evidence": {
+        "rows": 1800,
+        "policies": 6,
+        "archive_columns": [
+          "action",
+          "cutoff",
+          "decision_id",
+          "entry_timestamp",
+          "execution_price",
+          "exit_price",
+          "exit_timestamp",
+          "fee_rate",
+          "fold",
+          "gross_return_pct",
+          "net_return_pct",
+          "policy",
+          "reference_price",
+          "regime",
+          "slippage",
+          "threshold",
+          "uses_target",
+          "window_index"
+        ],
+        "missing_contract_columns": [
+          "decision_timestamp",
+          "horizon_hours",
+          "policy_version"
+        ],
+        "label_timestamp_mismatches": 0,
+        "label_rows_missing": 0
+      }
+    }
+  ]
+}
