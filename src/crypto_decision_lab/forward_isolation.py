@@ -63,12 +63,24 @@ class ForwardIsolationViolation(RuntimeError):
 
 
 def _resolve(path: str | Path, repo_root: str | Path | None) -> Path:
-    candidate = Path(path).expanduser()
+    """Resolve paths consistently across Linux and Windows.
+
+    Both POSIX and Windows separators are accepted for repository paths.
+    """
+
+    raw = str(path)
+
+    # Normalize Windows separators when running on POSIX.
+    if isinstance(path, str):
+        raw = raw.replace("\\", "/")
+
+    candidate = Path(raw).expanduser()
+
     if not candidate.is_absolute():
         base = Path(repo_root) if repo_root is not None else Path.cwd()
         candidate = base / candidate
-    return candidate.resolve()
 
+    return candidate.resolve()
 
 def forward_root(repo_root: str | Path | None = None) -> Path:
     """Absolute path of the forward archive root."""

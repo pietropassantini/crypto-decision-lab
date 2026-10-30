@@ -44,6 +44,15 @@ from datetime import datetime, timezone
 import errno
 import hashlib
 import json
+
+# Import del progetto
+from .protocol_integrity import (
+    ARCHIVE_VERIFIED,
+    PROTOCOL_VERIFIED,
+    verify_archive,
+    verify_protocol_integrity,
+)
+
 import os
 from pathlib import Path
 import sys
@@ -351,22 +360,24 @@ def _resolve_config_path(
         f"Forward collection config not found: {default} (copy {EXAMPLE_CONFIG_PATH})"
     )
 
-
 def protocol_authority(paths: ForwardPaths) -> dict[str, Any]:
-    """Load and fully validate the frozen protocol; verify its hash sidecar."""
+    """Use CP08-05R as the single protocol integrity authority."""
 
-    loaded = iv.load_protocol(paths.validation_paths())
+    validation_paths = paths.validation_paths()
+
+    loaded = iv.load_protocol(validation_paths)
     protocol = loaded["config"]
     iv.validate_protocol(protocol)
-    sidecar = iv._sidecar_for(paths.validation_paths().config_file, loaded["config_sha256"])
-    archive_match = None
+
+    config_file = validation_paths.config_file
     archive_manifest = paths.resolve(paths.protocol_archive_manifest)
-    if archive_manifest.is_file():
-        manifest = _read_json(archive_manifest)
-        archive_match = bool(
-            manifest.get("canonical_sha256") == loaded["canonical_sha256"]
-            and manifest.get("config_sha256") == loaded["config_sha256"]
-        )
+
+    protocol_result = verify_protocol_integrity(config_file)
+    archive_result = verify_archive(archive_manifest.parent)
+
+    protocol_ok = protocol_result["status"] == PROTOCOL_VERIFIED
+    archive_ok = archive_result["status"] == ARCHIVE_VERIFIED
+
     meta = {
         "protocol_id": protocol["protocol_id"],
         "protocol_version": protocol["protocol_version"],
@@ -376,14 +387,20 @@ def protocol_authority(paths: ForwardPaths) -> dict[str, Any]:
         "canonical_sha256": loaded["canonical_sha256"],
         "engine_config_path": loaded["engine_config_path"],
         "engine_config_sha256": loaded["engine_config_sha256"],
-        "sidecar_path": sidecar.get("path"),
-        "sidecar_match": bool(sidecar.get("match")),
+        "sidecar_path": str(config_file) + ".sha256.v2.json",
+        "sidecar_match": protocol_ok,
+        "protocol_integrity_status": protocol_result["status"],
         "archive_manifest": str(archive_manifest),
-        "archive_manifest_match": archive_match,
-        "hash_ok": bool(sidecar.get("match") and archive_match is not False),
+        "archive_manifest_match": archive_ok,
+        "archive_status": archive_result["status"],
+        "hash_ok": protocol_ok and archive_ok,
     }
-    return {"config": protocol, "meta": meta, "loaded": loaded}
 
+    return {
+        "config": protocol,
+        "meta": meta,
+        "loaded": loaded,
+    }
 
 def protocol_requirements(protocol: Mapping[str, Any]) -> dict[str, Any]:
     """Values the forward pipeline must respect, read from the frozen protocol."""

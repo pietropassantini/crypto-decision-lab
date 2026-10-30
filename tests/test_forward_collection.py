@@ -89,16 +89,47 @@ def make_repo(tmp_path: Path, *, protocol_copy: bool = True) -> Path:
     repo = tmp_path / "repo"
     protocols = repo / "config" / "protocols"
     protocols.mkdir(parents=True)
+
     if protocol_copy:
-        for name in ("momentum-independent-validation-v1.yaml", "momentum-confirmation-engine-v1.yaml"):
-            for suffix in ("", ".sha256"):
-                shutil.copy(REPO / "config" / "protocols" / f"{name}{suffix}", protocols / f"{name}{suffix}")
-        archive = repo / "data" / "experiments" / "S02-CP08-independent-validation-protocol-v1"
-        archive.mkdir(parents=True)
-        shutil.copy(
-            REPO / "data" / "experiments" / "S02-CP08-independent-validation-protocol-v1" / "manifest.json",
-            archive / "manifest.json",
-        )
+    for name in (
+        "momentum-independent-validation-v1.yaml",
+        "momentum-confirmation-engine-v1.yaml",
+    ):
+        for suffix in ("", ".sha256", ".sha256.v2.json"):
+            source = REPO / "config" / "protocols" / f"{name}{suffix}"
+            shutil.copy(source, protocols / source.name)
+
+    source_archive = (
+        REPO
+        / "data"
+        / "experiments"
+        / "S02-CP08-independent-validation-protocol-v1"
+    )
+    archive = (
+        repo
+        / "data"
+        / "experiments"
+        / "S02-CP08-independent-validation-protocol-v1"
+    )
+
+    manifest = json.loads(
+        (source_archive / "manifest.json").read_text(encoding="utf-8")
+    )
+
+    archive.mkdir(parents=True, exist_ok=True)
+
+    shutil.copy(
+        source_archive / "manifest.json",
+        archive / "manifest.json",
+    )
+
+    for name in manifest["outputs"]:
+        source_file = source_archive / name
+        destination = archive / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_file, destination)
+
+
 
     snapshot_dir = repo / "data" / "snapshots" / "BTCUSDT-1h-raw-v1"
     chunk_dir = repo / "data" / "chunks" / "BTCUSDT" / "1h"
