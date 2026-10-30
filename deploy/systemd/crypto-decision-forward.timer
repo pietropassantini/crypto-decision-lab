@@ -1,0 +1,34 @@
+# S02-CP08-05 · Forward collection timer (example unit)
+#
+# Cadence is external to the code.  Hourly at :05 UTC, i.e. five minutes after the
+# hourly candle closes, with a small randomised delay to avoid a thundering herd.
+#
+# Install (NON automatico):
+#   sudo cp deploy/systemd/crypto-decision-forward.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now crypto-decision-forward.timer
+#
+# Verify:
+#   systemctl list-timers crypto-decision-forward.timer
+#   journalctl -u crypto-decision-forward.service -n 50 --no-pager
+#
+# Rollback:
+#   sudo systemctl disable --now crypto-decision-forward.timer
+#   sudo systemctl stop crypto-decision-forward.service
+#   sudo rm /etc/systemd/system/crypto-decision-forward.{service,timer}
+#   sudo systemctl daemon-reload
+#
+# The archive is untouched by the rollback: data already collected stays valid.
+
+[Unit]
+Description=Crypto Decision Lab · hourly forward collection trigger (S02-CP08-05)
+
+[Timer]
+OnCalendar=*-*-* *:05:00
+AccuracySec=30s
+RandomizedDelaySec=120
+Persistent=true
+Unit=crypto-decision-forward.service
+
+[Install]
+WantedBy=timers.target

@@ -17,6 +17,7 @@ import pandas as pd
 import streamlit as st
 
 from crypto_decision_lab.dashboard.components.forecast_inspector import render_forecast_inspector
+from crypto_decision_lab.dashboard.components.forward_status import render_forward_status
 from crypto_decision_lab.dashboard.components.market_explorer import render_market_explorer
 from crypto_decision_lab.dashboard.components.model_comparison import render_model_comparison
 from crypto_decision_lab.dashboard.components.momentum_stability import render_momentum_stability
@@ -383,6 +384,7 @@ def main() -> None:
             "Momentum Stability",
             "Parameter Robustness",
             "Validation Protocol",
+            "Forward Data Status",
         ]
     )
     with tabs[0]:
@@ -442,6 +444,8 @@ def main() -> None:
         render_parameter_robustness(config)
     with tabs[8]:
         render_validation_protocol(config)
+    with tabs[9]:
+        render_forward_status(config)
 
     st.divider()
     st.caption(

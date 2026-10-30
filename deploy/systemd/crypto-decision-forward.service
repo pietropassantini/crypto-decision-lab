@@ -1,0 +1,53 @@
+# S02-CP08-05 · Forward BTCUSDT 1h collection (example unit)
+#
+# Install (NON automatico):
+#   sudo cp deploy/systemd/crypto-decision-forward.service /etc/systemd/system/
+#   sudo cp deploy/systemd/crypto-decision-forward.timer   /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl start crypto-decision-forward.service   # one-shot smoke test
+#   sudo systemctl enable --now crypto-decision-forward.timer
+#
+# The timer is intentionally NEVER enabled by the repository or by CP08-05.
+
+[Unit]
+Description=Crypto Decision Lab · forward BTCUSDT 1h collection (S02-CP08-05)
+Documentation=file:///home/sirio/projects/crypto-decision-lab/docs/S02-CP08-forward-data-collection.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=sirio
+Group=sirio
+WorkingDirectory=/home/sirio/projects/crypto-decision-lab
+
+# Frequency/configuration live outside the code: change the YAML, not the unit.
+Environment=PYTHONUNBUFFERED=1
+Environment=CDL_FORWARD_CONFIG=/etc/crypto-decision/forward-collection.yaml
+
+ExecStart=/home/sirio/projects/crypto-decision-lab/.venv/bin/python -m crypto_decision_lab.forward_collection sync --config ${CDL_FORWARD_CONFIG} --log-file /home/sirio/projects/crypto-decision-lab/var/log/crypto-decision-forward.jsonl --lock-timeout 10
+
+# The module takes an exclusive flock: a second instance exits with 75 (EX_TEMPFAIL).
+# 75 is a normal outcome (timer overlap) and must not mark the unit as failed.
+SuccessExitStatus=0 75
+
+# Controlled retries happen inside the adapter (429/418/5xx with backoff);
+# systemd does not restart the unit: the next timer tick is the retry.
+Restart=no
+TimeoutStartSec=900
+Nice=10
+IOSchedulingClass=best-effort
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+# The service must not be able to write the research archives:
+# ReadWritePaths keeps the unit confined to the forward archive and its logs.
+ReadWritePaths=/home/sirio/projects/crypto-decision-lab/data/forward /home/sirio/projects/crypto-decision-lab/var/log
+
+[Install]
+WantedBy=multi-user.target

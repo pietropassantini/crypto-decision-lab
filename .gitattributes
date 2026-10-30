@@ -1,0 +1,14 @@
+# Byte-stability across platforms: protocol/data hashes are pinned and verified
+# at runtime, so Git must never rewrite line endings on these artefacts.
+config/protocols/*.yaml text eol=lf
+config/protocols/*.sha256 text eol=lf
+data/**/*.json text eol=lf
+data/**/*.jsonl text eol=lf
+data/**/*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
+*.parquet binary
+.gitattributes text eol=lf

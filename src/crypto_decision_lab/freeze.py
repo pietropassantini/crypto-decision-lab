@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 from .market import HOUR_MS, utc_ms
+from .forward_isolation import guard_research_output
 from .sync import digest
 from .quality import check_quality
 
@@ -160,6 +161,9 @@ def generate_windows(snapshot: dict, root: Path, lookback: int, horizon: int, st
 def freeze(root: str, manifest: str, output: str, lookback: int, horizon: int, stride: int) -> dict:
     base = Path(root).resolve()
     manifest_path = Path(manifest).resolve()
+    # S02-CP08-05: the research freeze must not read from or write into the forward archive.
+    guard_research_output(base, purpose="research freeze input")
+    guard_research_output(output, purpose="research freeze output")
     snapshot = inventory(base,manifest_path)
     out = Path(output)
     if out.exists():

@@ -38,6 +38,8 @@ class DashboardConfig:
     momentum_stability_dir: Path | None
     parameter_robustness_dir: Path | None
     validation_protocol_dir: Path | None
+    forward_dataset_dir: Path | None
+    forward_config_path: Path | None
     decision_glob: str | None
     default_timeframe: str = "1D"
     default_days: int = 3650
@@ -182,6 +184,12 @@ def load_config(
                 "data/experiments/S02-CP08-independent-validation-protocol-v1",
             ),
             root,
+        ),
+        forward_dataset_dir=_resolve(
+            forecast.get("forward_dataset_dir", "data/forward/BTCUSDT-1h-forward-v1"), root
+        ),
+        forward_config_path=_resolve(
+            forecast.get("forward_config_path", "config/forward-collection.yaml"), root
         ),
         decision_glob=forecast.get("decision_glob", "data/experiments/S03-*"),
         default_timeframe=str(display.get("default_timeframe", "1D")),

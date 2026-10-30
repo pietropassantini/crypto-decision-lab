@@ -1539,3 +1539,185 @@ def make_validation_timeline_figure(
         height,
         legend=False,
     )
+
+
+FORWARD_ACQUIRED_COLOR = "#2dd4bf"
+FORWARD_EXPECTED_COLOR = "#3b4759"
+FORWARD_GAP_COLOR = "#ff6b6b"
+FORWARD_QUARANTINE_COLOR = "#f0b90b"
+FORWARD_BOUNDARY_COLOR = "#b388ff"
+
+
+def make_forward_coverage_figure(
+    status: Mapping[str, Any],
+    readiness: Mapping[str, Any],
+    *,
+    height: int = 340,
+) -> go.Figure:
+    """Coverage timeline of the forward dataset: acquired, gaps, quarantine.
+
+    This figure shows *data availability only*: no price, no signal, no
+    performance.  An empty archive renders an explicit "nothing acquired" panel
+    instead of inventing a series.
+    """
+
+    status = status or {}
+    readiness = readiness or {}
+    boundary = status.get("boundary_utc")
+    if not boundary:
+        return empty_figure("Boundary forward non disponibile", height=height)
+    boundary_ts = pd.Timestamp(boundary)
+    expected_ts = pd.Timestamp(status.get("last_closed_bar_utc") or boundary) + pd.Timedelta(hours=1)
+    acquired_end = status.get("last_acquired_end_utc")
+    acquired_end_ts = pd.Timestamp(acquired_end) if acquired_end else None
+    coverage = readiness.get("coverage") or {}
+    coverage_start = pd.Timestamp(coverage["start_utc"]) if coverage.get("start_utc") else boundary_ts
+
+    fig = go.Figure()
+    span_end = max(expected_ts, acquired_end_ts or boundary_ts) + pd.Timedelta(hours=1)
+
+    # expected window: what the source should have produced up to the last closed hour
+    fig.add_shape(
+        type="rect",
+        x0=boundary_ts,
+        x1=expected_ts,
+        y0=0.42,
+        y1=0.62,
+        line={"color": FORWARD_EXPECTED_COLOR, "width": 1},
+        fillcolor="rgba(59,71,89,0.45)",
+        layer="below",
+    )
+    fig.add_annotation(
+        x=boundary_ts + (expected_ts - boundary_ts) / 2,
+        y=0.52,
+        text="atteso dalla sorgente",
+        showarrow=False,
+        font={"size": 10, "color": MUTED},
+    )
+
+    if acquired_end_ts is not None and acquired_end_ts > coverage_start:
+        fig.add_shape(
+            type="rect",
+            x0=coverage_start,
+            x1=acquired_end_ts,
+            y0=0.66,
+            y1=0.92,
+            line={"color": FORWARD_ACQUIRED_COLOR, "width": 1.2},
+            fillcolor="rgba(45,212,191,0.32)",
+        )
+        fig.add_annotation(
+            x=coverage_start + (acquired_end_ts - coverage_start) / 2,
+            y=0.79,
+            text=f"ACQUISITO<br>{int(status.get('hours_available', 0))} ore",
+            showarrow=False,
+            font={"size": 12, "color": FORWARD_ACQUIRED_COLOR},
+        )
+
+    gaps = status.get("gaps", [])
+    if gaps:
+        fig.add_trace(
+            go.Scatter(
+                x=[pd.Timestamp(item["start_utc"]) for item in gaps],
+                y=[0.24] * len(gaps),
+                mode="markers",
+                name="gap registrati",
+                marker={"symbol": "line-ns-open", "size": 14, "color": FORWARD_GAP_COLOR, "line": {"width": 2}},
+                customdata=[
+                    [pd.Timestamp(item["start_utc"]).isoformat(), int(item.get("hours", 0))] for item in gaps
+                ],
+                hovertemplate="gap da %{customdata[0]}<br>%{customdata[1]} ore<extra></extra>",
+            )
+        )
+
+    quarantine = status.get("quarantine", [])
+    if quarantine:
+        fig.add_trace(
+            go.Scatter(
+                x=[pd.Timestamp(item["start_utc"]) for item in quarantine],
+                y=[0.12] * len(quarantine),
+                mode="markers",
+                name="quarantena",
+                marker={"symbol": "diamond", "size": 11, "color": FORWARD_QUARANTINE_COLOR},
+                customdata=[
+                    [item.get("chunk_id", "?"), ", ".join(item.get("issues") or [])] for item in quarantine
+                ],
+                hovertemplate="%{customdata[0]}<br>%{customdata[1]}<extra></extra>",
+            )
+        )
+
+    fig.add_vline(x=boundary_ts, line={"color": FORWARD_BOUNDARY_COLOR, "width": 2, "dash": "dash"})
+    fig.add_annotation(
+        x=boundary_ts,
+        y=1.0,
+        text=f"boundary congelato<br>{boundary_ts:%Y-%m-%d %H:%M} UTC",
+        showarrow=False,
+        yshift=8,
+        font={"size": 10, "color": FORWARD_BOUNDARY_COLOR},
+    )
+    window = readiness.get("eligible_windows") or {}
+    first = (window.get("first") or {}).get("cutoff_utc")
+    if first:
+        fig.add_trace(
+            go.Scatter(
+                x=[pd.Timestamp(first)],
+                y=[0.0],
+                mode="markers+text",
+                name="prima finestra eleggibile",
+                marker={"symbol": "triangle-up", "size": 12, "color": TEXT},
+                text=["cutoff eleggibile"],
+                textposition="top center",
+                textfont={"size": 9, "color": MUTED},
+                hovertemplate="prima finestra eleggibile: %{x}<extra></extra>",
+            )
+        )
+
+    fig.update_yaxes(visible=False, range=[-0.15, 1.12])
+    fig.update_xaxes(title_text="Tempo (UTC)", range=[boundary_ts - pd.Timedelta(hours=6), span_end])
+    return _apply_layout(
+        fig,
+        "Copertura forward · dati acquisiti, gap e quarantena (nessuna valutazione)",
+        height,
+    )
+
+
+def make_forward_readiness_figure(
+    readiness: Mapping[str, Any],
+    *,
+    height: int = 300,
+) -> go.Figure:
+    """Bar view of the pre-registered sample requirements still missing."""
+
+    readiness = readiness or {}
+    rows = [item for item in (readiness.get("sample_requirements") or []) if item.get("id") != "protocol"]
+    if not rows:
+        return empty_figure("Requisiti di campione non disponibili", height=height)
+    labels = [str(item.get("label", item["id"]))[:38] for item in rows]
+    observed = [
+        float(item["observed"]) if item.get("observed") is not None else 0.0 for item in rows
+    ]
+    required = [float(item["required"]) for item in rows]
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            y=labels,
+            x=required,
+            orientation="h",
+            name="richiesto",
+            marker={"color": FORWARD_EXPECTED_COLOR},
+            hovertemplate="%{y}<br>richiesto %{x:,.0f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            y=labels,
+            x=observed,
+            orientation="h",
+            name="osservato",
+            marker={"color": [FORWARD_ACQUIRED_COLOR if item.get("met") else FORWARD_GAP_COLOR for item in rows]},
+            customdata=[str(item.get("observed")) for item in rows],
+            hovertemplate="%{y}<br>osservato %{customdata}<extra></extra>",
+        )
+    )
+    fig.update_layout(barmode="overlay")
+    fig.update_xaxes(title_text="Valore")
+    return _apply_layout(fig, "Requisiti minimi del campione indipendente", height)

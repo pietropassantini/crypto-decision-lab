@@ -1,0 +1,75 @@
+# S02-CP08-05 · Forward data collection (BTCUSDT 1h) — example configuration
+#
+# Copy to config/forward-collection.yaml (recommended, git-ignored) or point
+# CDL_FORWARD_CONFIG to this file.  If neither exists the example is used and a
+# WARN is reported by the CLI.
+#
+# ONLY operational choices belong here.  The frozen protocol
+# (config/protocols/momentum-independent-validation-v1.yaml) is the authority
+# for the boundary, the feature lookback, the holding horizon, the execution
+# latency, the purge and the sample requirements: this file may *declare* them,
+# but a value that diverges from the protocol is a hard configuration error.
+#
+# No credentials: the pipeline only uses the public Binance data endpoint.
+
+dataset:
+  dataset_id: BTCUSDT-1h-forward-v1
+  symbol: BTCUSDT
+  interval: 1h
+  # Immutable grid step. 24 keeps one chunk per day and stays aligned with the
+  # 24h holding period; the trailing, still-incomplete grid cell is stored as an
+  # immutable "tail" chunk and later superseded by the complete one.
+  chunk_hours: 24
+  # Declared only for cross-checking: must equal independent_validation.start_utc.
+  boundary_utc: "2026-10-23T16:00:00Z"
+
+archive:
+  # Archive root; the dataset directory (dataset_id) is created inside it.
+  root: data/forward
+
+source:
+  provider: binance-spot
+  source_id: binance-spot
+  # Reuses crypto_decision_lab.market.fetch_klines (public, unauthenticated).
+  base_url: https://data-api.binance.vision
+  endpoint: /api/v3/klines
+  data_source: "binance-spot:data-api.binance.vision"
+  request_limit: 1000
+
+acquisition:
+  # Pause between chunk requests (the adapter also honours 429/418 with backoff).
+  pause_seconds: 0.2
+  max_attempts: 3
+  backoff_seconds: [2, 4, 8]
+  # 0 = fail fast when another sync holds the lock (systemd timer overlap guard).
+  lock_timeout_seconds: 0
+
+quality:
+  # Soft anomalies are classified REQUIRES_REVIEW and never promoted.
+  zero_volume_requires_review: true
+  flat_ohlc_requires_review: true
+
+windows:
+  # Only the cadence is a local choice; lookback/horizon/latency come from the
+  # protocol and are validated against it.
+  stride_hours: 24
+  lookback_hours: 168
+  horizon_hours: 24
+  latency_hours: 1
+
+readiness:
+  # Copied from the protocol and validated against it (never widened here).
+  min_windows: 300
+  min_folds: 5
+  min_days: 180
+  min_trades: 100
+
+data_root: data
+snapshot_manifest: data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json
+protocol_archive_manifest: data/experiments/S02-CP08-independent-validation-protocol-v1/manifest.json
+
+automation:
+  # Used by deploy/systemd/crypto-decision-forward.{service,timer}; the timer
+  # cadence is external to the code and is never enabled automatically.
+  log_file: var/log/crypto-decision-forward.jsonl
+  max_runtime_seconds: 900

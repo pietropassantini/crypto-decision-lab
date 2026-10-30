@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 from .market import HOUR_MS, fetch_klines, utc_ms
+from .forward_isolation import guard_research_output
 from .source_quality import assess_source_quality
 from .quality import check_quality
 
@@ -59,6 +60,8 @@ def sync(symbol: str, start: str, end: str, output_dir: str = 'data', *, downloa
     if not symbol.isalnum() or symbol.upper() != symbol:
         raise ValueError('symbol must be uppercase alphanumeric')
     root = Path(output_dir)
+    # S02-CP08-05: research collection must never write inside the forward archive.
+    guard_research_output(root, purpose="research sync output")
     chunkdir = root / 'chunks' / symbol / '1h'
     chunkdir.mkdir(parents=True, exist_ok=True)
     entries = []

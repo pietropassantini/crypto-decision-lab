@@ -11,6 +11,7 @@ import sys
 
 import pandas as pd
 from .market import fetch_klines, utc_ms
+from .forward_isolation import guard_research_output
 from .quality import check_quality
 
 
@@ -19,6 +20,8 @@ def execute(args) -> int:
     if start_ms >= end_ms:
         raise ValueError("start must precede end")
     root = Path(args.output_dir)
+    # S02-CP08-05: a research ingest must never write inside the forward archive.
+    guard_research_output(root, purpose="research ingest output")
     target = root / "processed" / f"{args.symbol}_1h_{args.start[:10]}_{args.end[:10]}.parquet"
     report = root / "reports" / (target.stem + ".json")
     if (target.exists() or report.exists()) and not args.force:
