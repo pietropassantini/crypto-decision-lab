@@ -190,3 +190,6 @@ data/datasets/S02-CP07-decision-labels-v1/*
 data/datasets/S02-CP06B-regime-features-v1/*
 !data/datasets/S02-CP06B-regime-features-v1/features.parquet
 !data/datasets/S02-CP06B-regime-features-v1/errors.parquet
+
+# S02-CP08-07 - Local operational monitoring reports
+data/monitoring/forward/

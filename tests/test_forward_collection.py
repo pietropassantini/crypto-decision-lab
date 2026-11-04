@@ -754,3 +754,153 @@ def test_real_adapter_enforces_closed_candles_without_network() -> None:
     now_hour_ms = int(pd.Timestamp.now(tz="UTC").floor("h").timestamp() * 1000)
     with pytest.raises(ValueError, match="unfinished"):
         fetch_klines(now_hour_ms, now_hour_ms + 2 * HOUR_MS, session=Session())
+
+# ---------------------------------------------------------------------------
+# S02-CP08-07: forward monitoring fault injection and preservation
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("fault,expected_failures", [
+    ("unreadable_parquet", {"AUDIT_EXCEPTION"}),
+    ("modified_price", {
+        "CHUNK[0].FILE_HASH",
+        "CHUNK[0].DATA_HASH",
+        "CHUNK[0].RECORD_HASHES",
+    }),
+    ("modified_checksum", {
+        "CHUNK[0].FILE_HASH",
+        "CHUNK[0].RECORD_CHAIN",
+        "CHUNK[0].RECORD_HASHES",
+    }),
+    ("manifest_tampering", {
+        "LATEST_HASH",
+        "NO_DECLARED_GAPS",
+    }),
+    ("missing_candle", {
+        "CHUNK[0].ROWS",
+        "TIMESTAMPS",
+    }),
+])
+def test_cp08_07_monitor_detects_corruption(
+    cfg, fault, expected_failures
+):
+    from crypto_decision_lab.forward_monitoring import audit
+
+    result = fc.sync(
+        cfg,
+        now=clock(30),
+        downloader=lambda s, e, **k: frame_for(s, e),
+        sleep=lambda _: None,
+    )
+    assert result.status == "SYNCED"
+
+    root = cfg.archive_dir
+    latest_path = root / "manifests/latest.json"
+    latest = json.loads(latest_path.read_text())
+    manifest_path = root / "manifests" / latest["manifest"]
+    manifest = json.loads(manifest_path.read_text())
+
+    chunk_id = manifest["chunks"][0]["chunk_id"]
+    parquet = root / "chunks" / f"{chunk_id}.parquet"
+
+    # Baseline: valid synthetic archive.
+    baseline = audit(root, now=clock(31))
+    assert baseline["gate"] == "PASS", baseline["failures"]
+
+    if fault == "unreadable_parquet":
+        with parquet.open("ab") as handle:
+            handle.write(b"CP08-07-CORRUPTION")
+
+    elif fault == "modified_price":
+        frame = pd.read_parquet(parquet)
+        frame.loc[0, "close"] += 1.0
+        frame.to_parquet(parquet, index=False)
+
+    elif fault == "modified_checksum":
+        frame = pd.read_parquet(parquet)
+        original = frame.loc[0, "record_checksum"]
+        frame.loc[0, "record_checksum"] = (
+            "f" * 64 if original == "0" * 64 else "0" * 64
+        )
+        frame.to_parquet(parquet, index=False)
+
+    elif fault == "manifest_tampering":
+        manifest["missing_hours"] = 1
+        manifest_path.write_text(json.dumps(manifest))
+
+    elif fault == "missing_candle":
+        frame = pd.read_parquet(parquet)
+        frame = frame.drop(frame.index[10]).reset_index(drop=True)
+        frame.to_parquet(parquet, index=False)
+
+    report = audit(root, now=clock(31))
+
+    failed = {
+        c["name"]
+        for c in report["checks"]
+        if c["status"] == "FAIL"
+    }
+
+    assert report["gate"] == "FAIL"
+    assert expected_failures <= failed, (
+        f"fault={fault}, expected={expected_failures}, actual={failed}"
+    )
+
+    if fault == "modified_checksum":
+        statuses = {
+            c["name"]: c["status"]
+            for c in report["checks"]
+        }
+        assert statuses["CHUNK[0].DATA_HASH"] == "PASS"
+
+
+def test_cp08_07_historical_chunk_preservation(cfg):
+    import hashlib
+
+    from crypto_decision_lab.forward_monitoring import audit
+
+    downloader = lambda s, e, **k: frame_for(s, e)
+
+    fc.sync(
+        cfg, now=clock(8),
+        downloader=downloader,
+        sleep=lambda _: None,
+    )
+    fc.sync(
+        cfg, now=clock(30),
+        downloader=downloader,
+        sleep=lambda _: None,
+    )
+
+    root = cfg.archive_dir
+    manifests = sorted(
+        (root / "manifests").glob("dataset-manifest-*.json")
+    )
+
+    assert len(manifests) >= 2
+
+    references = set()
+
+    for path in manifests:
+        manifest = json.loads(path.read_text())
+
+        for chunk in manifest["chunks"]:
+            cid = chunk["chunk_id"]
+            references.add(cid)
+
+            parquet = root / "chunks" / f"{cid}.parquet"
+            metadata = root / "chunks" / f"{cid}.json"
+
+            assert parquet.is_file()
+            assert metadata.is_file()
+
+            actual = hashlib.sha256(
+                parquet.read_bytes()
+            ).hexdigest()
+
+            assert actual == chunk["sha256"]
+
+            meta = json.loads(metadata.read_text())
+            assert meta["sha256"] == chunk["sha256"]
+
+    assert references
+    assert audit(root, now=clock(31))["gate"] == "PASS"
