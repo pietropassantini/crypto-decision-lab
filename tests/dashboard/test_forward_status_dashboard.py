@@ -63,7 +63,7 @@ def _repo(tmp_path: Path) -> Path:
     protocols = repo / "config" / "protocols"
     protocols.mkdir(parents=True)
     for name in ("momentum-independent-validation-v1.yaml", "momentum-confirmation-engine-v1.yaml"):
-        for suffix in ("", ".sha256"):
+        for suffix in ("", ".sha256", ".sha256.v2.json"):
             shutil.copy(REPO / "config" / "protocols" / f"{name}{suffix}", protocols / f"{name}{suffix}")
     archive = repo / "data" / "experiments" / "S02-CP08-independent-validation-protocol-v1"
     archive.mkdir(parents=True)
