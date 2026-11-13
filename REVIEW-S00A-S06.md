@@ -36,7 +36,7 @@ Nota ambientale: con un basetemp lungo, 8 test della raccolta forward e del moni
 | Step | Esito | Motivazione |
 |---|---|---|
 | S00A | **VERIFIED** dopo correzione | Rilievo bloccante: `report.json` e `forecast-windows.parquet` dello snapshot di riferimento erano stati tolti dal tracking, pur essendo letti da 6 moduli forecast e non rigenerabili sul posto. Il prompt di S00A chiede di conservare gli snapshot di riferimento. Su decisione dell'utente sono stati ripristinati, byte-identici a `0daf402` (commit `9e3f930`). CP00A.1–4 superati. |
-| S01 | **RINVIATO** (IN_PROGRESS) | Il banner CP08-07 mostra "Tutti i controlli CP08-07 superati." con `NO_AUDIT` (riprodotto con AppTest), con `AUDIT_READ_ERROR` e con `AUDIT_FAILED` senza elenco di fallimenti. Contraddice CP01.2 e R01. Il commit è annullato da revert (`1842b00`) e il lavoro resta su `prd/integration`. |
+| S01 | **RINVIATO**, poi **VERIFIED** (vedi seguito) | Il banner CP08-07 mostra "Tutti i controlli CP08-07 superati." con `NO_AUDIT` (riprodotto con AppTest), con `AUDIT_READ_ERROR` e con `AUDIT_FAILED` senza elenco di fallimenti. Contraddice CP01.2 e R01. Il commit è annullato da revert (`1842b00`) e il lavoro resta su `prd/integration`. |
 | S02 | **VERIFIED** | CP02.1–3 confermati, anche dal checkout pulito. Rilievo LOW aperto sull'unione di `reserved_dataset_ids`, non bloccante. |
 | S03 | **VERIFIED** | CP03.1–3 confermati. Le correzioni MEDIUM e LOW sono verificate; CP03.2 è stato ripetuto attraverso sessioni persistenti (S06). |
 | S04 | **VERIFIED** | CP04.1–3 confermati; il commit è verde da solo. |
@@ -50,3 +50,11 @@ Nota ambientale: con un basetemp lungo, 8 test della raccolta forward e del moni
 3. **S02:** rilievo LOW su `reserved_dataset_ids`.
 4. **CP08:** errore silenzioso con percorsi lunghi su Windows (vedi nota ambientale).
 5. **S05/S06:** le strategie a decision point non ricevono le feature S02 nelle sessioni paper.
+
+## Seguito · S01 ripresentato e verificato (2026-11-13)
+
+Il banner è stato corretto sul branch `fix/s01-audit-banner` (commit `f3b0dbb`, handoff `9ac6f79`). Dal checkout pulito di `9ac6f79`: CP01.1 passa, CP01.2 passa con 9 stati verificati nella vista renderizzata (i nuovi test falliscono 11/11 contro il codice rinviato), CP01.3 passa, suite completa 440 passed, percorsi congelati CP08 intatti. Sull'archivio forward reale il banner mostra "Audit CP08-07 assente" (info) al posto del falso successo.
+
+**Indipendenza:** la correzione e questa verifica sono della stessa istanza (Claude Sonnet 5.5); il rinvio originale era di Claude Opus 5.5. Revisione non indipendente, eseguita su mandato dell'utente.
+
+**Aperto:** la corrispondenza dell'audit è per versione del manifest (il report CP08-07 non registra hash); una soglia di età dell'audit nella UI va concordata con CP08.
