@@ -381,6 +381,9 @@ class PaperSession:
         return self.snapshot()
 
     def suspend(self, reason: str = "operator") -> dict:
+        status, _ = self._status()
+        if status == "COMPLETED":
+            raise SessionError("session is COMPLETED: it cannot be suspended or resumed")
         self._set_status("SUSPENDED", reason, self.source.now() if self.source else None)
         return self.snapshot()
 
@@ -389,11 +392,15 @@ class PaperSession:
         if status != "SUSPENDED":
             raise SessionError("session is not suspended")
         self._set_status("RUNNING", "resumed by operator", self.source.now() if self.source else None)
+        # Resuming never bypasses the pins: model, engine and source are checked again.
+        self._load_pins()
         return self.snapshot()
 
     def accept_engine_revision(self, note: str) -> dict:
         """Explicit operator decision to continue with a new engine revision."""
 
+        if self._status()[0] == "COMPLETED":
+            raise SessionError("session is COMPLETED")
         current, _ = engine_digests()
         self.connection.execute("BEGIN IMMEDIATE")
         self.connection.execute("UPDATE meta SET value = ? WHERE key = 'engine_sha256'", (_dump(current),))
