@@ -194,7 +194,7 @@ Questa tabella è la coda iniziale. Durante l'implementazione va mantenuta con i
 |---|---|---|---|---|
 | A00 | DONE | — | Analisi di main, CP08-07 e CP09, con SHA ed esiti nella sezione 2 | Usare come punto di partenza per S00 |
 | S00 | VERIFIED | A00 | Baseline storica disponibile | main=430P/1S/0F, cp08-07=297P/1F, cp09=297P/0F. SHA main=0daf402 scelto come baseline. [S00-BASELINE-REPORT.md](S00-BASELINE-REPORT.md) |
-| S00A | IN_REVIEW | S00 | Commit 6414abd (sanificazione, -385 file). [S00A-HANDOFF.yaml](S00A-HANDOFF.yaml): CP00A.2–4 PASS (clone pulito: 342 passati), CP00A.1 NOT_RUN | Inventario con verifica riferimenti; riconciliare 342 vs 430 test di main |
+| S00A | IN_REVIEW | S00 | Commit 6414abd (sanificazione, -385 file). [S00A-HANDOFF.yaml](S00A-HANDOFF.yaml): CP00A.1–4 PASS, inventario in [S00A-INVENTORY.md](S00A-INVENTORY.md); 342 test = 288 main + 54 nuovi. Anomalia: i 430 test di S00 non sono riproducibili per main | Confermare ripristino di report.json e forecast-windows.parquet; revisore ricontrolla S00 e S00A |
 | S01 | IN_REVIEW | S00A | Commit 8949237 + correzione fixture (sidecar v2). 342 test verdi. [S01-HANDOFF.yaml](S01-HANDOFF.yaml): CP01.1–3 PASS | Revisore diverso ripete CP01.1–3, poi VERIFIED |
 | S02 | IN_REVIEW | S00A | Commit 62c38c9 su feat/s02-dataset-builder: execution_contract, dataset_catalog, dataset_builder; dataset BTCUSDT-1h-research-v1 (2061 finestre); CP02.1–CP02.3 PASS in [S02-HANDOFF.yaml](S02-HANDOFF.yaml) | Revisione CP02.3 congiunta con S03 sul contratto condiviso |
 | S03 | TODO | S00A | Simulatore CP07 | Definire eventi e fixture comune |
