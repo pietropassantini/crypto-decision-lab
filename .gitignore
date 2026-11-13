@@ -223,6 +223,13 @@ data/datasets/S02-CP06B-regime-features-v1/*
 !data/experiments/S02-CP08-simulator-integrity-audit-v1/metrics_comparison.csv
 !data/experiments/S02-CP08-parameter-robustness-v1/*
 
+# REVIEW 2026-11-13 F7 · regenerable outputs and crash dumps (never commit)
+# data/reports keeps its tracked evidence; only the generated range reports are ignored.
+*.stackdump
+data/reports/BTCUSDT_*.json
+data/manifests/
+data/diagnostics/
+
 # S05 · preregistered experiment specs are versioned evidence: the generic
 # "experiments/" rule above targets generated outputs only.
 !config/experiments/
