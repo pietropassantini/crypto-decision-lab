@@ -32,6 +32,20 @@ def _records(ledger: Iterable[dict], kind: str) -> list[dict]:
     return [record for record in ledger if record.get("kind") == kind]
 
 
+def _final(ledger: Iterable[dict]) -> dict:
+    """The ``end`` record, or the last balance of a session that is still running."""
+
+    end = next(iter(_records(ledger, "end")), None)
+    if end is not None:
+        return end
+    balances = _records(ledger, "balance")
+    if not balances:
+        return {}
+    last = balances[-1]
+    return {"status": "RUNNING", "cash": last["cash"], "quantity": last["quantity"], "equity": last["equity"],
+            "position_open": bool(last["quantity"])}
+
+
 def _ts(value: Any) -> pd.Timestamp:
     timestamp = pd.Timestamp(value)
     return timestamp.tz_localize("UTC") if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
@@ -100,7 +114,7 @@ def trades(ledger: list[dict]) -> pd.DataFrame:
     """Round trips paired from the fills, with reasons and costs."""
 
     orders = _order_context(ledger)
-    end = next(iter(_records(ledger, "end")), {})
+    end = _final(ledger)
     last_open = None
     market = _records(ledger, "market")
     if market:
@@ -192,7 +206,7 @@ def summarize(ledger: list[dict], initial_cash: float) -> dict[str, Any]:
     frame = equity_frame(ledger)
     trade_frame = trades(ledger)
     fills = _records(ledger, "execution")
-    end = next(iter(_records(ledger, "end")), {})
+    end = _final(ledger)
     final_equity = float(end.get("equity", initial_cash)) if end else float(initial_cash)
     fees = float(sum(float(fill["fee"]) for fill in fills))
     slippage = float(sum(float(fill["slippage_cost"]) for fill in fills))
@@ -289,7 +303,7 @@ def reconcile(ledger: list[dict], initial_cash: float, freq: str = "M") -> list[
     trade_frame = trades(ledger)
     windows = window_summary(ledger, initial_cash, freq)
     frame = equity_frame(ledger)
-    end = next(iter(_records(ledger, "end")), {})
+    end = _final(ledger)
     fills = _records(ledger, "execution")
     orders = {record["order_id"]: record for record in _records(ledger, "order")}
     cash_flow = float(initial_cash)

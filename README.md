@@ -379,3 +379,10 @@ Esperimento preregistrato fuori campione su un filtro degli ingressi momentum:
 `python -m crypto_decision_lab.pattern_experiment --spec config/experiments/S05-momentum-filter-v1.json`.
 Esito del primo esperimento: **REJECTED**.
 [Guida](docs/S05-pattern-decision-model.md), [evidenze e risultati](S05-HANDOFF.yaml).
+
+## S06 del PRD - Paper trading persistente
+
+Sessioni paper su SQLite (una transazione per evento, ripresa identica dopo interruzioni),
+replay di snapshot e feed di laboratorio riproducibile con guasti, stati espliciti e scheda
+"Paper trading" nello Studio: `python -m crypto_decision_lab.paper --help`.
+[Guida](docs/S06-paper-trading.md), [evidenze dei checkpoint](S06-HANDOFF.yaml).

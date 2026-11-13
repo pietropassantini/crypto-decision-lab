@@ -353,6 +353,8 @@ def render_strategy_studio(
     *,
     studio_root: str | Path | None = None,
     catalog_path: str | Path | None = None,
+    paper_root: str = "var/paper",
+    feeds_root: str = "var/lab-feeds",
 ) -> None:
     st.subheader("Strategy Studio · S04")
     st.caption(
@@ -364,7 +366,7 @@ def render_strategy_studio(
     except StudioError as exc:
         st.error(str(exc))
         return
-    tabs = st.tabs(["Strategie", "Nuovo backtest", "Risultati", "Confronto"])
+    tabs = st.tabs(["Strategie", "Nuovo backtest", "Risultati", "Confronto", "Paper trading"])
     with tabs[0]:
         _render_strategies(studio)
     with tabs[1]:
@@ -373,3 +375,7 @@ def render_strategy_studio(
         _render_results(studio)
     with tabs[3]:
         _render_comparison(studio)
+    with tabs[4]:
+        from .paper_sessions import render_paper_sessions
+
+        render_paper_sessions(studio, studio.repo_root, root=paper_root, feeds_root=feeds_root)

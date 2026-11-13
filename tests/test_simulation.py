@@ -116,6 +116,40 @@ def test_review_gap_lifecycle_clock_does_not_go_backwards():
     assert kinds(result, 'end')[0]['valuation_timestamp'] == str(fixture[0].timestamp)
 
 
+@pytest.mark.parametrize('latency,horizon', [(0, 2), (1, 2), (2, 3)])
+def test_s06_engine_rebuilt_from_json_state_matches_run(latency, horizon):
+    import json
+    from crypto_decision_lab.simulation import Engine
+    fixture = events((100, 105, 90, 120, 130, 110, 115, 95), (1, 1, 1, 0, 1, 1, 0, 0))
+    config = RunConfig(strategy={'name': 'momentum'}, risk=RiskLimits(max_exposure=0.5),
+                       hypothesis=ExecutionHypothesis(latency_hours=latency, horizon_hours=horizon))
+    expected = run(fixture, config)
+    ledger, state, seen = [], None, {}
+    for event in [fixture[0], *fixture]:  # includes an identical duplicate
+        engine = Engine(config, state=state, seen=seen)
+        ledger.extend(engine.step(event))
+        state = json.loads(json.dumps(engine.state()))
+    final = Engine(config, state=state, seen=seen)
+    ledger.extend(final.finish())
+    assert ledger == expected.ledger
+    assert final.manifest(mode='backtest', source_id='in-memory-fixture')['input_digest'] == expected.manifest['input_digest']
+
+
+def test_s06_acknowledged_gap_cancels_pending_and_continues():
+    from crypto_decision_lab.simulation import Engine
+    fixture = events((100, 110, 120, 130, 140), (1, 1, 1, 1, 1))
+    engine = Engine(RunConfig(hypothesis=ExecutionHypothesis(latency_hours=1)))
+    engine.step(fixture[0])
+    assert engine.pending is not None
+    with pytest.raises(ValueError):
+        engine.acknowledge_gap(fixture[1].timestamp)
+    records = engine.acknowledge_gap(fixture[3].timestamp, note='bar never published')
+    assert [r['kind'] for r in records] == ['order_cancelled', 'gap_acknowledged']
+    assert records[1]['missing_hours'] == 2
+    after = engine.step(fixture[3])
+    assert after[0]['kind'] == 'market' and engine.status == 'COMPLETED'
+
+
 def test_review_run_without_events_is_refused():
     with pytest.raises(ValueError, match='at least one'):
         run([], RunConfig())

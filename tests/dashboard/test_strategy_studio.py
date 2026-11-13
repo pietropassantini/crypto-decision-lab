@@ -41,7 +41,7 @@ def test_cp041_save_config_run_open_trade_and_reread_in_new_session(studio_repo:
     app = _app(studio_repo)
     app.run()
     assert list(app.exception) == []
-    assert [tab.label for tab in app.tabs] == ["Strategie", "Nuovo backtest", "Risultati", "Confronto"]
+    assert [tab.label for tab in app.tabs] == ["Strategie", "Nuovo backtest", "Risultati", "Confronto", "Paper trading"]
 
     _save_constant_config(app)
     assert list(app.exception) == []
@@ -73,6 +73,47 @@ def test_cp041_save_config_run_open_trade_and_reread_in_new_session(studio_repo:
     assert int(_metric(fresh, "Trade").value) == trades_shown
     assert _metric(fresh, "P&L netto").value == pnl_shown
     assert any("riconciliazione superati" in item.value for item in fresh.success)
+
+
+def test_cp062_paper_tab_shows_persisted_state_and_runner_works_without_ui(studio_repo: Path) -> None:
+    import subprocess
+    import sys
+
+    from crypto_decision_lab.lab_feed import FEED_SCHEMA, LabFeed
+    from crypto_decision_lab.paper import PaperSession
+
+    feed = LabFeed.create("var/lab-feeds/ui", {
+        "schema_version": FEED_SCHEMA, "feed_id": "ui", "source_dataset_id": "BTCUSDT-1h-raw-v1",
+        "start": "2024-01-30 00:00", "end": "2024-02-03 00:00",
+        "faults": [{"type": "gap", "at": "2024-01-31 06:00"}]}, repo_root=studio_repo)
+    session = PaperSession.create("ui", {"strategy": {"name": "constant"}},
+                                  {"kind": "lab_feed", "path": "var/lab-feeds/ui"},
+                                  start_at="2024-01-31 02:00", repo_root=studio_repo)
+    feed.advance(until="2024-01-31 04:00")
+    # Runner without UI (CLI), as an operator would schedule it.
+    result = subprocess.run([sys.executable, "-m", "crypto_decision_lab.paper", "--repo-root", str(studio_repo),
+                             "session-run", "--session-dir", str(session.directory)],
+                            capture_output=True, text=True, timeout=300,
+                            env={**__import__("os").environ, "PYTHONPATH": str(SRC)})
+    assert result.returncode == 0, result.stderr
+    assert '"WAITING"' in result.stdout
+
+    app = _app(studio_repo)
+    app.run()
+    assert list(app.exception) == []
+    assert any("Stato **WAITING**" in item.value for item in app.success)
+    assert _metric(app, "Ultimo evento").value.startswith("2024-01-31 04:00")
+    app.number_input(key="paper_feed_hours").set_value(4)
+    app.button(key="paper_feed_advance").click()
+    app.run()
+    assert any("Stato **PAUSED_GAP**" in item.value for item in app.warning)
+    app.button(key="paper_ack").click()
+    app.run()
+    assert list(app.exception) == []
+    fresh = _app(studio_repo)
+    fresh.run()
+    assert any("RUNNING" in item.value or "WAITING" in item.value for item in fresh.success)
+    assert any(row["kind"] == "gap_acknowledged" for row in PaperSession(session.directory, repo_root=studio_repo).ledger())
 
 
 def test_cp043_comparison_view_flags_period_change(studio_repo: Path) -> None:
