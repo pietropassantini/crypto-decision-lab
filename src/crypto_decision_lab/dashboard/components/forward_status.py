@@ -23,6 +23,14 @@ STATUS_ICON = {
     "DATA_READY_EVALUATION_PENDING": "🟢",
 }
 QUARANTINE_ICON = {"VALID": "🟢", "REQUIRES_REVIEW": "🟠", "QUARANTINED": "🔴", "INVALID": "⛔"}
+AUDIT_ICON = {
+    "AUDIT_CURRENT": "🟢",
+    "AUDIT_STALE": "🟡",
+    "AUDIT_FAILED": "🔴",
+    "NO_AUDIT": "⚪",
+    "AUDIT_READ_ERROR": "🔴",
+    "AUDIT_UNKNOWN": "⚪",
+}
 
 
 def _fmt(value, digits: int = 2) -> str:
@@ -100,6 +108,45 @@ def render_forward_status(config: DashboardConfig) -> None:
 
     show_plot(make_forward_coverage_figure(status, readiness), key="forward_coverage")
     show_plot(make_forward_readiness_figure(readiness), key="forward_requirements")
+
+    # CP08-07 audit banner
+    audit_report = dataset.audit_report
+    audit_status = dataset.audit_status
+    audit_gate = dataset.audit_gate
+    audit_lag = dataset.audit_lag_hours
+    audit_checked = dataset.audit_checked_utc
+
+    if audit_report:
+        icon = AUDIT_ICON.get(audit_status, "⚪")
+        manifest_current = audit_report.get("manifest_current", {})
+        manifest_audit = audit_report.get("manifest_audit")
+        manifest_match = audit_report.get("manifest_match")
+        audit_failures = audit_report.get("failures", [])
+
+        st.markdown(
+            f"#### Monitoraggio qualità CP08-07  {icon} **{audit_status}**"
+        )
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Manifest corrente", manifest_current.get("version", "n/d") or "n/d")
+        col2.metric("Manifest auditato", manifest_audit.get("version", "n/d") if manifest_audit else "n/d")
+        col3.metric("Corrispondenza", "✅" if manifest_match else "❌")
+        col4.metric("Lag (ore)", f"{audit_lag:.2f}" if audit_lag is not None else "n/d")
+        col4.caption(f"Audit eseguito: {audit_checked or 'n/d'}")
+
+        if manifest_current.get("sha256") and manifest_audit and manifest_audit.get("sha256"):
+            st.caption(
+                f"SHA-256 corrente: `{manifest_current['sha256'][:16]}…` · "
+                f"SHA-256 audit: `{manifest_audit['sha256'][:16]}…`"
+            )
+
+        if audit_failures:
+            st.warning(f"**{len(audit_failures)}** controllo/i fallito/i nella verifica CP08-07:")
+            for failure in audit_failures[:10]:
+                st.caption(f"- **{failure.get('name', '?')}**: {failure.get('detail', '')}")
+        else:
+            st.success("Tutti i controlli CP08-07 superati.")
+
+        st.divider()
 
     tabs = st.tabs(["Readiness", "Chunk & provenienza", "Gap & quarantena", "Registry"])
 

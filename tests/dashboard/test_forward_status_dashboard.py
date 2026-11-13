@@ -1,4 +1,9 @@
-"""Tests for the read-only S02-CP08-05 dashboard adapter, charts and tab."""
+"""Tests for the read-only S02-CP08-05 dashboard adapter, charts and tab.
+
+S01-CP01.1 – vista senza snapshot storico
+S01-CP01.2 – quattro stati dell'audit: corrente, stale, assente, fallito
+S01-CP01.3 – integrità dell'archivio preservata al caricamento
+"""
 from __future__ import annotations
 
 import json
@@ -196,9 +201,153 @@ def test_component_renders_read_only(repo: Path) -> None:
     app.run()
     assert list(app.exception) == []
     assert len(app.tabs) == 4
-    assert len(app.metric) == 6
+    # 6 original metrics + 4 audit metrics (manifest current, manifest audit, match, lag)
+    assert len(app.metric) == 10
     assert len(app.get("plotly_chart")) == 2
     body = " ".join(str(item.value) for item in app.markdown) + " ".join(
         str(item.value) for item in app.warning
     )
     assert "NOT_EVALUATED" in body or "NO-GO" in body
+
+
+# ---------------------------------------------------------------------------
+# S01 – Audit report integration (CP01.1, CP01.2, CP01.3)
+# ---------------------------------------------------------------------------
+
+
+def _write_audit_report(repo: Path, dataset_dir: Path, *, gate: str, manifest_version: str,
+                        lag_hours: float = 0.5, failures: list | None = None) -> Path:
+    """Helper that writes a CP08-07 audit report and returns its path."""
+    monitoring_dir = repo / "data" / "monitoring" / "forward"
+    monitoring_dir.mkdir(parents=True, exist_ok=True)
+    report = {
+        "schema_version": "cdl.cp08.forward_monitoring.v1",
+        "checked_utc": "2026-10-30T15:00:00+00:00",
+        "dataset_root": str(dataset_dir),
+        "checks": [
+            {"name": "LATEST_HASH", "status": "PASS"},
+            {"name": "MANIFEST_VERSION", "status": "PASS"},
+            {"name": "DATASET_ID", "status": "PASS"},
+            {"name": "FORWARD_ONLY", "status": "PASS"},
+            {"name": "CHUNK_CHAIN", "status": "PASS"},
+            {"name": "COVERAGE", "status": "PASS"},
+            {"name": "TIMESTAMPS", "status": "PASS"},
+            {"name": "FRESHNESS", "status": "PASS" if 0 <= lag_hours <= 2.0 else "FAIL"},
+        ],
+        "metrics": {
+            "rows": 48,
+            "chunks": 2,
+            "manifest": manifest_version,
+            "lag_hours": lag_hours,
+        },
+        "gate": gate,
+        "failures": failures or [],
+    }
+    audit_path = monitoring_dir / "latest-audit.json"
+    audit_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return audit_path
+
+
+def test_audit_no_report_available(repo: Path) -> None:
+    """CP01.2 – quando non esiste alcun audit report, lo stato è NO_AUDIT."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    assert dataset.audit_status == "NO_AUDIT"
+    assert dataset.audit_gate == "NO_AUDIT"
+    assert dataset.audit_failures == []
+    assert dataset.audit_lag_hours is None
+    assert dataset.audit_checked_utc is None
+    assert dataset.audit_report is not None
+    assert dataset.audit_report["gate"] == "NO_AUDIT"
+
+
+def test_audit_current_passes(repo: Path) -> None:
+    """CP01.2 – audit corrente con manifest allineato e gate PASS."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version=manifest_name, lag_hours=0.5)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_CURRENT"
+    assert dataset2.audit_gate == "PASS"
+    assert dataset2.audit_failures == []
+    assert dataset2.audit_report["manifest_match"] is True
+    assert dataset2.audit_lag_hours == 0.5
+
+
+def test_audit_stale_manifest(repo: Path) -> None:
+    """CP01.2 – audit su manifest precedente: gate PASS ma manifest diverso."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    # Write audit with an OLD manifest name to simulate stale audit
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version="dataset-manifest-0000.json",
+                        lag_hours=0.5)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_STALE"
+    assert dataset2.audit_gate == "PASS"
+    assert dataset2.audit_report["manifest_match"] is False
+
+
+def test_audit_failed(repo: Path) -> None:
+    """CP01.2 – audit fallito: gate FAIL con dettagli."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    failures = [
+        {"name": "CHUNK_HASH", "status": "FAIL", "detail": "expected abc, got xyz"},
+        {"name": "FRESHNESS", "status": "FAIL", "detail": "lag_hours=5.2, limit=2.0"},
+    ]
+    _write_audit_report(repo, dataset_dir, gate="FAIL", manifest_version=manifest_name,
+                        lag_hours=5.2, failures=failures)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_FAILED"
+    assert dataset2.audit_gate == "FAIL"
+    assert len(dataset2.audit_failures) == 2
+    assert dataset2.audit_failures[0]["name"] == "CHUNK_HASH"
+    assert dataset2.audit_lag_hours == 5.2
+
+
+def test_audit_never_writes_to_archive(repo: Path) -> None:
+    """CP01.3 – il caricamento della vista lascia intatto l'archivio."""
+    _populated(repo, hours=48)
+    dataset_dir = None
+
+    def snapshot() -> dict[str, tuple[int, int]]:
+        return {
+            str(path): (path.stat().st_size, path.stat().st_mtime_ns)
+            for path in sorted(repo.rglob("*"))
+            if path.is_file()
+        }
+
+    before = snapshot()
+    dataset = load_forward_dataset(repo)
+    assert snapshot() == before
+
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version=manifest_name)
+    after_with_audit = snapshot()
+    # Loading with audit present must still not modify existing files.
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_CURRENT"
+    assert snapshot() == after_with_audit
+
+
+def test_view_without_snapshot_data(repo: Path) -> None:
+    """CP01.1 – la vista forward funziona anche senza snapshot storico."""
+    _populated(repo, hours=48)
+    # Remove the snapshot manifest to simulate missing historical data.
+    snapshot_manifest = repo / "data" / "snapshots" / "BTCUSDT-1h-raw-v1" / "raw-manifest.json"
+    snapshot_manifest.rename(snapshot_manifest.with_suffix(".bak"))
+    try:
+        dataset = load_forward_dataset(repo)
+        assert dataset.dataset_id == fc.DATASET_ID
+        assert dataset.chunks
+        # The view loads forward data even without snapshot.
+        assert dataset.status is not None
+        assert dataset.readiness is not None
+    finally:
+        snapshot_manifest.with_suffix(".bak").rename(snapshot_manifest)
