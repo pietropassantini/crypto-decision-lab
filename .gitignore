@@ -138,6 +138,19 @@ config/secrets.*
 data/forward/*/registry/sync.lock
 var/log/
 
+# Agent state and external tool data (regenerable, never commit)
+.agent-state/
+.wibix/
+
+# Local runtime data (regenerable, never commit)
+var/
+
+# Stray files
+nul
+
+# Frontend build cache (regenerable)
+frontend/
+
 # ==================================================
 # S02-CP08-05R · FROZEN EVIDENCE PINNED BY THE PROTOCOL (tracked)
 # ==================================================
