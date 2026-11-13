@@ -194,9 +194,9 @@ Questa tabella è la coda iniziale. Durante l'implementazione va mantenuta con i
 |---|---|---|---|---|
 | A00 | DONE | — | Analisi di main, CP08-07 e CP09, con SHA ed esiti nella sezione 2 | Usare come punto di partenza per S00 |
 | S00 | VERIFIED | A00 | Baseline storica disponibile | main=430P/1S/0F, cp08-07=297P/1F, cp09=297P/0F. SHA main=0daf402 scelto come baseline. [S00-BASELINE-REPORT.md](S00-BASELINE-REPORT.md) |
-| S00A | TODO | S00 | Inventario e diff da produrre | Censire file, dipendenze e riferimenti operativi |
-| S01 | TODO | S00A | Vista forward su main, report su CP08-07 | Verificare l'integrazione UI e report |
-| S02 | TODO | S00A | Dataset Builder CP09 | Definire contratto dei target con S03 |
+| S00A | IN_REVIEW | S00 | Commit 6414abd (sanificazione, -385 file). Handoff dedicato da produrre | Completare handoff S00A e verificare CP00A.1–4 |
+| S01 | IN_PROGRESS | S00A | Modifiche forward_status/forward_adapter nell'albero di lavoro (1 test fallente pre-esistente) | Completare CP01.1–3 e registrare handoff |
+| S02 | IN_REVIEW | S00A | Commit 62c38c9 su feat/s02-dataset-builder: execution_contract, dataset_catalog, dataset_builder; dataset BTCUSDT-1h-research-v1 (2061 finestre); CP02.1–CP02.3 PASS in [S02-HANDOFF.yaml](S02-HANDOFF.yaml) | Revisione CP02.3 congiunta con S03 sul contratto condiviso |
 | S03 | TODO | S00A | Simulatore CP07 | Definire eventi e fixture comune |
 | S04 | TODO | S02, S03 | Viste Streamlit esistenti | Collegare configurazione, runner e risultati |
 | S05 | TODO | S02, S03, S04 | Dataset CP09 come base | Registrare l'esperimento fuori campione |

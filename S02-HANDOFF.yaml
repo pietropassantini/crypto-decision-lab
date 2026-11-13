@@ -1,0 +1,51 @@
+step_id: S02
+status: IN_REVIEW
+updated_at: "2026-11-13T09:05:00Z"
+agent_role: data engineering
+agent_model: <modello usato per questa sessione>
+base_commit: 6414abd
+head_commit: 62c38c9
+review_ref: branch feat/s02-dataset-builder (PR da aprire verso main)
+inputs:
+  - "S00 VERIFIED: S00-BASELINE-REPORT.md — baseline main=0daf402, CP09=7109e90"
+  - "S00A: commit 6414abd (sanificazione repository). Nota: la riga di backlog S00A non era stata aggiornata dal suo proprietario; aggiornata qui a IN_REVIEW con riferimento al commit esistente. Handoff S00A dedicato ancora da produrre."
+  - "CP09 (branch feat/s02-cp09-decision-dataset, 7109e90): concetti di dataset feature/target separati, guardie di isolamento forward, digest sha256 — integrati/riusati, non copiati alla lettera (il CP09 dipende da artefatti forecast Timestral non richiesti dal primo dataset di ricerca S02)"
+changed_paths:
+  - "src/crypto_decision_lab/execution_contract.py — contratto di esecuzione condiviso S02/S03 (cutoff, latenza, orizzonte, costi); riconciliazione bit-identica con decision_contract (CP07) a latenza zero"
+  - "src/crypto_decision_lab/dataset_catalog.py — catalogo fonti ammissibili con guardie ruolo/identità/provenienza/alias-byte"
+  - "src/crypto_decision_lab/dataset_builder.py — Dataset Builder versionato: feature cutoff-only con timestamp di disponibilità (riuso di regime_analysis.compute_features CP06B), target separati con esito economico del contratto, digest canonici deterministici, manifest con provenienza e ipotesi di esecuzione, verify_dataset"
+  - "src/crypto_decision_lab/cli.py — sottocomandi build-dataset / verify-dataset"
+  - "config/dataset-catalog.json — catalogo tracciato: BTCUSDT-1h-raw-v1 (research), BTCUSDT-1h-forward-v1 (reserved-forward)"
+  - "tests/test_execution_contract.py, tests/test_dataset_catalog.py, tests/test_dataset_builder.py — 48 test nuovi"
+  - "Crypto_Decision_Lab_PRD.md — righe di backlog S00A e S02 aggiornate"
+  - "data/datasets/research/BTCUSDT-1h-research-v1/ — primo dataset versionato costruito (non tracciato: artefatto rigenerabile secondo le regole S00A; riproducibile con il comando in CP02.1)"
+checkpoints:
+  - id: CP02.1
+    result: PASS
+    verification: "python -m pytest tests/test_dataset_builder.py -k determinism -q ; python -m crypto_decision_lab.cli build-dataset --source BTCUSDT-1h-raw-v1 --output-dir var/tmp-s02/build-a ; idem --output-dir var/tmp-s02/build-b ; confronto manifest"
+    expected: "due build con stessi input e parametri producono contenuti di feature e target identici; timestamp di build solo metadati"
+    observed: "fixture: features/targets content digest identici e parquet byte-identici. Dati reali: build-a e build-b con features_content_sha256=2cb8f741bbef4389ae486d6f5dae1d6eb0ce9c2aaa15edeaa53545e343da489b, targets_content_sha256=8fffb2ec9a8c776c71360c7d25f8cacfd60e9579e52641f9fc3d14e7c7b5f30f, parquet byte-identici, created_utc diversi (08:27:16Z vs 08:27:36Z, solo nel manifest). Parametri diversi => digest diverso (test negative)."
+    evidence: "tests/test_dataset_builder.py::TestDeterminism ; var/tmp-s02/build-{a,b} ; data/datasets/research/BTCUSDT-1h-research-v1/manifest.json (stessi digest)"
+  - id: CP02.2
+    result: PASS
+    verification: "python -m pytest tests/test_dataset_catalog.py tests/test_dataset_builder.py -q"
+    expected: "test che respingono input forward per identità o provenienza, feature disponibili oltre il cutoff e finestre prive dei dati richiesti"
+    observed: "48/48 pass. Identità: percorso sotto data/forward rifiutato (builder diretto e catalogo). Provenienza: manifest che identifica BTCUSDT-1h-forward-v1 rifiutato anche con dataset_id rinominato. Alias: chunk byte-identico a un parquet riservato rifiutato per collisione di digest. Feature oltre cutoff: validate_feature_inputs/validate_feature_frame respingono barre >= cutoff e available_at > cutoff. Finestre incomplete: warmup, entry bar, exit bar mancanti e buchi orari nel periodo di detenzione => WindowDataError/ExecutionContractError. Sul catalogo reale: BTCUSDT-1h-forward-v1 REFUSED, BTCUSDT-1h-raw-v1 admitted."
+    evidence: "tests/test_dataset_catalog.py ; tests/test_dataset_builder.py::{TestFeatureGuards,TestWindowDataGuards} ; output comandi nell'handoff"
+  - id: CP02.3
+    result: PASS
+    verification: "python -m pytest tests/test_execution_contract.py tests/test_dataset_builder.py -k 'economics or fixture' -q"
+    expected: "un fixture con prezzi e tempi noti ricostruisce il target con lo stesso esito economico del motore S03, comprese latenza e commissioni"
+    observed: "target == resolve_round_trip (primitiva che S03 deve riusare o replicare bit-identica) su fixture a prezzi noti; con latenza 1h ingresso all'open del bar cutoff+1h, slippage contro la posizione su entrambi i lati, fee su entrambi i lati: net = exit_exec*(1-f)/(entry_exec*(1+f))-1 verificato a mano. A latenza zero il net è bit-identico a decision_contract.net_return (CP07). Nota: il motore S03 non esiste ancora (step parallelo); il contratto condiviso execution_contract.py è l'artefatto dell'accordo e S03 dovrà consumarlo o dimostrare esiti identici (blocker verso la chiusura completa di CP02.3 alla verifica congiunta)."
+    evidence: "tests/test_execution_contract.py::{TestRoundTrip} ; tests/test_dataset_builder.py::TestTargetsEconomics"
+decisions:
+  - "Contratto di esecuzione: entry all'open del bar cutoff+latenza, exit all'open del bar entry+orizzonte (holding misurato dal fill). A latenza 0 riduce esattamente al contratto CP07/CP09 legacy (riconciliazione richiesta dal PRD); la latenza è ora un parametro dichiarato nel manifest."
+  - "Feature stazionarie riusate da regime_analysis.compute_features (CP06B): niente livelli di prezzo, disponibilità registrata per riga (feature_available_at = cutoff; feature_bar = cutoff-1h)."
+  - "Catalogo in JSON (config/dataset-catalog.json) per evitare la dipendenza opzionale PyYAML nei test; guardia alias basata su digest sha256 dei parquet riservati (copie/rinomine incluse)."
+  - "Dataset di ricerca costruito con latenza 0 e costi CP07 di default (fee 0.001/side, slippage 0.0005/side), stride 24h, warmup 168h: 2061 finestre 2021-01-08→2026-10-22; finestre attorno ai 14 buchi orari documentati saltate in modo deterministico (gap fino a 14 giorni tra cutoff eleggibili)."
+  - "Il dataset rimane non tracciato (regola S00A: dataset generati rigenerabili/ignorati); la riproducibilità è garantita da comando CLI + digest nel manifest + test."
+  - "Aggiornata la riga S00A del backlog a IN_REVIEW (commit 6414abd esistente ma riga non aggiornata dal proprietario dello step)."
+blockers:
+  - "CP02.3 richiede conferma congiunta con S03 quando il motore esisterà: S03 deve consumare execution_contract.resolve_round_trip o produrre esiti bit-identici. Nessuna azione richiesta da S02."
+  - "Il fallimento pre-esistente tests/dashboard/test_forward_status_dashboard.py::test_adapter_reads_status_readiness_and_provenance deriva dalle modifiche S01 non committate presenti nell'albero di lavoro (forward_adapter.py ecc.): fuori dallo scope S02, da risolvere nello step S01."
+next_action: "Il revisore ripete CP02.1 dal commit 62c38c9 (comandi in verification) e S03 adotta execution_contract.py come contratto condiviso, riportando eventuali divergenze prima del merge."
