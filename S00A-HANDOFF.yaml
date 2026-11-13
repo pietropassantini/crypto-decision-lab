@@ -1,5 +1,5 @@
 step_id: S00A
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-13T00:00:00Z"
 agent_role: manutenzione del repository e QA
 agent_model: <modello usato per questa sessione>
@@ -43,3 +43,8 @@ blockers:
   - "Decisione aperta: ripristinare nel tracking snapshots/BTCUSDT-1h-raw-v1/{report.json,forecast-windows.parquet} (93 KB). Chi puo sbloccare: coordinatore."
   - "Anomalia in S00 (VERIFIED): numeri di test per main/cp09 apparentemente scambiati; S00 va ricontrollato da un revisore."
 next_action: "Confermare il ripristino dei 2 file dello snapshot; revisore diverso ripete CP00A.1-4 e ricontrolla S00 per portare S00A a VERIFIED."
+verification_2026_11_13:
+  reviewer: "Claude Opus 5.5 (claude-opus-5-5), mandato dell'utente"
+  status: VERIFIED
+  report: REVIEW-S00A-S06.md
+  note: "VERIFIED dopo correzione: ripristinati report.json e forecast-windows.parquet (commit 9e3f930, byte-identici a 0daf402). CP00A.1-4 superati dal checkout pulito (429 passed, CP08 congelato intatto, protocolli PROTOCOL_VERIFIED, nessun segreto). Correzione scritta dal revisore: revisione non indipendente per quella parte."
