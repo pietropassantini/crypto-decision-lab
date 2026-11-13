@@ -63,7 +63,7 @@ Il runbook di avvio, monitoraggio, sospensione e ripristino è quello di S07 ([d
 5. **Ripristino.**
    - Dopo un crash basta rilanciare `session-run`.
    - Dopo `HALTED`, spiegare la differenza di saldo prima di `rebaseline`.
-   - Un cambio di codice o di limiti richiede una **nuova scheda e una nuova approvazione**: il gate rifiuta la vecchia.
+   - Un cambio di codice o di limiti richiede una **nuova scheda e una nuova approvazione**: il gate rifiuta la vecchia. Su una sessione già attiva il cambio di codice passa da `live accept-code-revision --approval <nuova approval.json>`, che riesegue `verify_activation` sul nuovo digest (revisione indipendente, R1).
 6. **Disattivazione.** `suspend-openings`, `cancel-open-orders`, `flatten`, `session-finish` e infine una nuova voce `decide` con lo stato operativo risultante.
 
 ## Esito della prima esecuzione (2026-11-13)

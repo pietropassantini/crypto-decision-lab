@@ -20,7 +20,7 @@ solo l'esecuzione: gli ordini passano da un adattatore exchange e il portafoglio
 - Firma HMAC-SHA256 della query in esadecimale e header `X-MBX-APIKEY`. `timestamp` è in ms, `recvWindow` vale 5000 (massimo 60000). `-1021` indica un timestamp fuori finestra: l'ordine viene rifiutato e non creato.
 - `POST /api/v3/order`: MARKET con `quantity` oppure `quoteOrderQty`, LIMIT GTC con `price`. `newOrderRespType=FULL` restituisce `fills` (`price`, `qty`, `commission`, `commissionAsset`, `tradeId`).
 - `newClientOrderId` è unico solo tra gli ordini aperti: dopo il fill lo stesso id può essere riaccettato. **Il runner quindi non reinvia mai un id: prima interroga l'ordine.** La documentazione letta non specifica regex e lunghezza. Usiamo `cdl-<prefisso8>-<seq6>` (`[a-z0-9-]`, 19 caratteri).
-- `GET /api/v3/order?origClientOrderId=` interroga l'ordine e restituisce `-2013` se l'ordine non esiste. `DELETE /api/v3/order` lo annulla e restituisce `-2011` se l'annullamento viene rifiutato. `GET /api/v3/myTrades?orderId=` restituisce i fill di un ordine interrogato.
+- `GET /api/v3/order?origClientOrderId=` interroga l'ordine e restituisce `-2013` se l'ordine non esiste. `DELETE /api/v3/order` lo annulla e restituisce `-2011` se l'annullamento viene rifiutato. `GET /api/v3/myTrades?orderId=` restituisce i fill di un ordine interrogato: al massimo `limit` trade (predefinito 500, massimo 1000). L'adattatore chiede pagine da 1000 e prosegue con `fromId` finché una pagina non è piena. La combinazione `orderId` + `fromId` e l'ordine crescente dei trade nella pagina vanno confermati sul testnet reale (R6): con meno di 1000 trade per ordine non vengono usati. Se una pagina mancasse, l'ordine resterebbe `FILLS_PENDING` fino a `HALTED`: nessuna perdita silenziosa.
 - Un HTTP 5xx o `-1007` (timeout) **non indicano un fallimento**: lo stato di esecuzione è sconosciuto e va verificato.
 - Stati: `NEW`, `PENDING_NEW`, `PARTIALLY_FILLED`, `FILLED`, `CANCELED`, `PENDING_CANCEL`, `REJECTED`, `EXPIRED`, `EXPIRED_IN_MATCH`. Un MARKET senza liquidità sufficiente termina `EXPIRED` con esecuzione parziale.
 - Filtri: `LOT_SIZE`/`MARKET_LOT_SIZE` (`minQty`, `maxQty`, `stepSize`), `PRICE_FILTER` (`tickSize`), `NOTIONAL` o `MIN_NOTIONAL` (`minNotional`).
@@ -43,7 +43,11 @@ solo l'esecuzione: gli ordini passano da un adattatore exchange e il portafoglio
    - gli ordini aperti oltre `order_timeout_seconds` vengono annullati;
    - un ordine aperto sull'exchange con il prefisso della sessione ma assente in locale porta a `HALTED`;
    - i saldi (free + locked) vengono confrontati con baseline, fill e rettifiche. Una differenza porta a `HALTED`.
-4. **Finché un ordine è `INTENT` o `UNKNOWN`, il runner non elabora barre e non invia ordini.**
+   - un ordine terminale sull'exchange i cui trade non sommano a `executedQty` resta `FILLS_PENDING` e viene interrogato di nuovo; nel frattempo il controllo dei saldi è sospeso, perché la differenza è attesa;
+   - un ordine terminale con trade importati **oltre** `executedQty` diventa `FILLS_EXCESS` e la sessione passa `HALTED` alla riconciliazione successiva, senza tolleranza (dati dell'exchange incoerenti).
+4. **Finché un ordine è `INTENT`, `UNKNOWN`, `FILLS_PENDING` o `FILLS_EXCESS`, il runner non elabora barre e non invia ordini.**
+
+**Un attore alla volta.** Runner e comandi operatore tengono il lock esclusivo `session.lock` per tutta l'azione: decisione, commit dell'intento e invio sono un tratto unico. Un secondo processo riceve `session busy` invece di intercalarsi: per esempio un `session-finish` lanciato durante un `poll` viene rifiutato e va ripetuto. Il sistema operativo rilascia il lock alla morte del processo, quindi un runner ucciso non lascia blocchi. `session-run --loop` su lock occupato attende l'intervallo e riprova. `session-status` legge senza lock. Il lock (`msvcrt`/`fcntl`) coordina solo processi **sulla stessa macchina**: runner e comandi operatore devono girare sullo stesso host, mai da host diversi su un filesystem condiviso.
 
 Cassa e posizione derivano solo dalle tabelle `fills` e dalle rettifiche dell'operatore. Le commissioni nell'asset base riducono la posizione e quelle nell'asset quote riducono la cassa. Il residuo sotto `minQty` o `minNotional` è polvere: la posizione risulta chiusa.
 
@@ -57,7 +61,7 @@ Cassa e posizione derivano solo dalle tabelle `fills` e dalle rettifiche dell'op
 | Saldo disallineato | `HALTED`: blocca **tutti** gli ordini, uscite comprese, perché lo stato non è affidabile. | `balance_*_tolerance` |
 | Ordine pendente o irrisolto | Nessun nuovo ordine. | — |
 | Regole del simbolo cambiate | `HALTED` alla riapertura della sessione. | — |
-| Revisione del codice diversa | `ENGINE_MISMATCH`: nulla viene elaborato fino ad `accept-code-revision`. | — |
+| Revisione del codice diversa | `ENGINE_MISMATCH`: nulla viene elaborato fino ad `accept-code-revision`. Con capitale reale (mainnet o sessione creata dal gate S08) serve `--approval` di una nuova scheda READY per **questo** codice. | — |
 
 Ogni blocco produce un record `guard` nel registro, con barra e motivo.
 
@@ -83,10 +87,10 @@ La creazione fotografa i saldi come baseline. L'account testnet deve essere dedi
 |---|---|---|
 | `WAITING` | Sessione aggiornata | Nessuna |
 | `STALE` | Nessuna barra recente | Verificare connettività e feed. Le aperture riprendono da sole con barre fresche. |
-| `UNRESOLVED` | Ordine con esito ignoto | Il runner riconcilia da solo. Se lo stato persiste oltre `unknown_grace_seconds`, verificare la connettività con `session-reconcile`. **Non inviare ordini a mano.** |
-| `HALTED` | Saldo disallineato, ordine estraneo, ordine aperto sconosciuto all'exchange (`MISSING`) o regole cambiate | Vedi "Sospensione e ripristino". |
+| `UNRESOLVED` | Ordine con esito ignoto, `MISSING` o `FILLS_PENDING` | Il runner riconcilia da solo. Se lo stato persiste oltre `unknown_grace_seconds`, verificare la connettività con `session-reconcile`. **Non inviare ordini a mano.** |
+| `HALTED` | Saldo disallineato, ordine estraneo, ordine aperto sconosciuto all'exchange (`MISSING`), trade incompleti oltre la tolleranza (`FILLS_PENDING`) o regole cambiate | Vedi "Sospensione e ripristino". |
 | `OPENINGS_SUSPENDED` | Sospensione manuale | `resume-openings` quando opportuno |
-| `ENGINE_MISMATCH` | Codice diverso da quello fissato | Rivedere il diff, poi `accept-code-revision --note`, oppure tornare al commit fissato. |
+| `ENGINE_MISMATCH` | Codice diverso da quello fissato | Rivedere il diff, poi `accept-code-revision --note`, oppure tornare al commit fissato. Con capitale reale: nuova scheda S08 e `accept-code-revision --approval <approval.json> --note`. |
 
 **Sospensione e ripristino**
 
@@ -101,10 +105,16 @@ La creazione fotografa i saldi come baseline. L'account testnet deve essere dedi
    - Controllare lo storico ordini e i trade sull'exchange.
    - Eseguire `live resolve-missing-order --session-dir $S --client-order-id <id> --note "evidenza"`: l'ordine diventa `LOST`, terminale.
    - Eseguire `rebaseline` con nota: le esecuzioni non riportate emergono come differenza di saldo.
-7. Comandi ammessi per stato:
+7. Ordine eseguito con trade incompleti (`FILLS_PENDING`): l'exchange lo dà per chiuso ma `myTrades` non restituisce tutti i trade.
+   - Durante `unknown_grace_seconds` lo stato è `UNRESOLVED`. Se i trade arrivano, l'ordine prende lo stato dell'exchange.
+   - Oltre la tolleranza la sessione passa `HALTED`. Il blocco resta anche se i trade arrivano dopo: va tolto con `rebaseline`.
+   - Controllare i trade dell'ordine sull'exchange, poi `live resolve-missing-order --client-order-id <id> --note "evidenza"`: l'ordine diventa `FILLS_INCOMPLETE`, terminale.
+   - Eseguire `rebaseline` con nota: l'esecuzione non importata entra come rettifica di posizione e cassa.
+   - Stesso percorso per `FILLS_EXCESS` (trade oltre `executedQty`): dopo la verifica sull'exchange `resolve-missing-order` lo porta a `FILLS_EXCESS_ACCEPTED`, poi `rebaseline`.
+8. Comandi ammessi per stato:
    - `COMPLETED` rifiuta ogni comando; serve una nuova sessione.
    - `ENGINE_MISMATCH` ammette solo `session-status`, `suspend-openings`/`resume-openings` (lo stato non cambia) e `accept-code-revision`. Ogni azione sull'exchange va fatta direttamente sull'exchange, poi va eseguito `rebaseline` dopo l'accettazione.
-8. Chiusura: `live session-finish --note "..."` viene rifiutato se ci sono ordini aperti. Il record `end` riporta l'eventuale posizione ancora aperta. Dopo la chiusura la sessione non accetta più comandi.
+9. Chiusura: `live session-finish --note "..."` viene rifiutato se ci sono ordini aperti o se il runner sta elaborando (`session busy`: ripetere). Il record `end` riporta l'eventuale posizione ancora aperta. Dopo la chiusura la sessione non accetta più comandi.
 
 ## Checkpoint
 

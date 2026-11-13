@@ -61,6 +61,21 @@ review_fixes:
     - "F1/F2: COMPLETED ed ENGINE_MISMATCH non vengono piu sovrascritti da _refresh_status; _require rifiuta i comandi su COMPLETED e le azioni sull'exchange con ENGINE_MISMATCH"
     - "F3: stato MISSING per ordini aperti sconosciuti all'exchange -> UNRESOLVED nella tolleranza, HALTED oltre; resolve-missing-order (LOST) e rebaseline; runbook aggiornato"
   verification: "python -m pytest tests/test_live.py -k review -q -p no:cacheprovider -> 4 passed; suite completa nella riga di backlog"
+independent_review_fixes:
+  date: "2026-11-13"
+  source: "REVIEW-INDEP-2026-11-13.md (Codex GPT-6) e REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3): R1 HIGH, R2 MEDIUM, R3 HIGH; correzioni di Claude Opus 5.5, serve un revisore non Claude"
+  changes:
+    - "R3: lock esclusivo di sessione (session.lock, msvcrt/fcntl, rilasciato dal sistema alla morte del processo). poll, reconcile e tutti i comandi operatore lo tengono per l'intera azione: un session-finish concorrente riceve SessionBusy invece di intercalarsi. Il lock rilegge meta (rettifiche, revisione accettata) e ricontrolla il pin del codice. Difesa in profondita: poll ricontrolla lo stato a ogni barra e _send non invia un intento se la sessione e chiusa (NOT_PLACED). session-run --loop su SessionBusy attende e riprova."
+    - "R1: accept-code-revision su sessione a capitale reale (mainnet o creata col gate S08) richiede --approval e verify_activation sul nuovo digest; l'attivazione aggiornata e registrata in meta. Testnet e fixture invariati."
+    - "R2: myTrades paginato con fromId (limit 1000). Nuovo stato locale FILLS_PENDING per ordini terminali con fill incompleti: restano in riconciliazione, fermano le barre, sospendono il controllo saldi; oltre unknown_grace_seconds -> HALTED. resolve-missing-order li chiude come FILLS_INCOMPLETE, poi rebaseline. updated_at ora cambia solo con stato o fill nuovi."
+  tests: "test_review_r1_* (2), test_review_r3_* (3), test_review_r2_* (3)"
+  verification: "python -m pytest tests/test_live.py -q -p no:cacheprovider -> 41 passed; suite completa -> 488 passed in 398s; con R8 -> 489 passed in 295s"
+  open: "La combinazione orderId+fromId di myTrades va confermata sul testnet reale (scripts/s07_testnet_smoke.py); con meno di 1000 trade per ordine non e usata."
+  confirmed_by: "REVIEW-INDEP-2026-11-13-deepseek.md (DeepSeek v4 Pro): R1-R3 confermate, F1-F4 confermate, 488 passed sul working tree, 36/36 probe propri"
+  deepseek_findings:
+    - "R6 LOW: paginazione myTrades presuppone ordine crescente dei trade -> resta aperto, da confermare con lo smoke testnet; un trade mancante porta a FILLS_PENDING/HALTED, non a perdita silenziosa"
+    - "R7 INFO: session.lock vale solo sulla stessa macchina -> documentato nel runbook"
+    - "R8 LOW: trade oltre l'executedQty finale -> corretto: stato FILLS_EXCESS, HALTED alla riconciliazione successiva senza tolleranza, resolve-missing-order -> FILLS_EXCESS_ACCEPTED, poi rebaseline; test test_review_r8_* (correzione di Claude Opus 5.5, da confermare da un revisore non Claude)"
 blockers:
   - "Collaudo sull'API reale della testnet: servono chiavi testnet nelle variabili d'ambiente; lo esegue l'operatore con scripts/s07_testnet_smoke.py."
   - "S02-S06 IN_REVIEW: S07 non modifica i moduli S03/S06, ma ne riusa Strategy, RiskEngine e feed."

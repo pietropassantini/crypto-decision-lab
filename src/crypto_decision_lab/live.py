@@ -73,7 +73,15 @@ LIVE_MODULES = ("exchange.py", "binance_spot.py", "live.py")
 UNRESOLVED = ("INTENT", "UNKNOWN")
 # MISSING: an order the exchange acknowledged (open) but no longer knows; it blocks new
 # orders and, after the grace period, halts the session until the operator resolves it.
-LOCAL_OPEN = UNRESOLVED + OPEN_STATUSES + ("MISSING",)
+# FILLS_PENDING: terminal on the exchange, but the trades received so far do not add up to
+# executedQty; it is queried again until they do (the position is not known meanwhile).
+# FILLS_EXCESS: terminal on the exchange with fewer executedQty than the trades imported
+# (inconsistent exchange data): it halts the session at once until the operator resolves it.
+LOCAL_OPEN = UNRESOLVED + OPEN_STATUSES + ("MISSING", "FILLS_PENDING", "FILLS_EXCESS")
+# Orders that stop bar processing: the portfolio is not known until they are resolved.
+WAIT_STATUSES = UNRESOLVED + ("FILLS_PENDING", "FILLS_EXCESS")
+# Orders shown as UNRESOLVED and blocking a rebaseline.
+OPERATOR_STATUSES = UNRESOLVED + ("MISSING", "FILLS_PENDING", "FILLS_EXCESS")
 # Statuses that operator commands and status refreshes must never overwrite.
 STICKY = ("COMPLETED", "ENGINE_MISMATCH")
 DEFAULT_LIMITS = {
@@ -92,6 +100,89 @@ _ENV_CRASH = "CDL_LIVE_CRASH"  # "<stage>" -> os._exit(97): before_send | after_
 
 class LiveError(RuntimeError):
     """Invalid live session operation."""
+
+
+class SessionBusy(LiveError):
+    """Another process (runner or operator command) holds the session lock."""
+
+
+def _lock_file(handle) -> None:
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def _unlock_file(handle) -> None:
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+class _SessionLock:
+    """Exclusive, re-entrant OS lock on ``session.lock``: one actor at a time per session.
+
+    The runner holds it for a whole poll (decision, intent commit *and* send);
+    operator commands hold it for their whole action.  The operating system
+    releases it when the holder dies, so a killed runner never leaves it stale.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.handle = None
+        self.depth = 0
+
+    def acquire(self, wait: float) -> bool:
+        """Return True on the outermost acquisition."""
+        if self.depth:
+            self.depth += 1
+            return False
+        handle = open(self.path, "a+b")
+        deadline = time.monotonic() + max(wait, 0.0)
+        while True:
+            try:
+                _lock_file(handle)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    handle.close()
+                    raise SessionBusy(f"session busy: another process (runner or operator command) holds "
+                                      f"{self.path}; retry when it has finished") from None
+                time.sleep(0.05)
+        self.handle, self.depth = handle, 1
+        return True
+
+    def release(self) -> None:
+        self.depth -= 1
+        if self.depth == 0:
+            handle, self.handle = self.handle, None
+            try:
+                _unlock_file(handle)
+            finally:
+                handle.close()
+
+
+def _exclusive(method):
+    """Run a mutating session method under the session lock."""
+    import functools
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self.exclusive():
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 def _utc(value: Any) -> pd.Timestamp:
@@ -209,7 +300,9 @@ class LiveSession:
         self.connection = sqlite3.connect(path, isolation_level=None, timeout=30)
         self.connection.execute("PRAGMA journal_mode=WAL")
         self.connection.execute("PRAGMA synchronous=FULL")
-        self.meta = {k: json.loads(v) for k, v in self.connection.execute("SELECT key, value FROM meta")}
+        self.lock = _SessionLock(self.directory / "session.lock")
+        self.lock_wait_seconds = 10.0
+        self._load_meta()
         self.config = self.meta["config"]
         self.limits = self.config["limits"]
         self.run_config = build_run_config(self.config["run_config"])
@@ -217,17 +310,45 @@ class LiveSession:
         self.feed = feed or open_feed(self.meta["source"], repo_root=self.repo_root, adapter=self.adapter)
         self.clock = clock or (self.feed.now if self.meta["source"]["kind"] == "lab_feed" else _wall)
         self.rules = self.adapter.rules(self.config["symbol"])
-        if self.rules.record() != self.meta["symbol_rules"]:
+        self.rules_changed = self.rules.record() != self.meta["symbol_rules"]
+        self.strategy = select_strategy(self.run_config.strategy)
+        self.risk = RiskEngine(self.run_config.risk, self.run_config.hypothesis.fee_rate)
+        # Pins are enforced under the lock; if another process holds it now, the checks run
+        # on this instance's first locked operation.
+        try:
+            with self.exclusive(wait=0):
+                pass
+        except SessionBusy:
+            pass
+
+    def _load_meta(self) -> None:
+        self.meta = {k: json.loads(v) for k, v in self.connection.execute("SELECT key, value FROM meta")}
+
+    @contextmanager
+    def exclusive(self, *, wait: float | None = None):
+        """Hold the session lock; on the outermost entry re-read what other processes may have changed."""
+        outer = self.lock.acquire(self.lock_wait_seconds if wait is None else wait)
+        try:
+            if outer:
+                self._load_meta()  # adjustments, accepted code revision, activation
+                self._enforce_pins()
+            yield
+        finally:
+            self.lock.release()
+
+    def _enforce_pins(self) -> None:
+        if self.status()[0] == "COMPLETED":
+            return
+        if self.rules_changed:  # once per opening, as before: a rebaseline clears it
+            self.rules_changed = False
             state = self._state()
             if not state.get("halted"):
                 with self._tx():
                     state["halted"] = "exchange symbol rules changed since creation; review before trading"
                     self._save_state(state)
                 self._refresh_status()
-        self.strategy = select_strategy(self.run_config.strategy)
-        self.risk = RiskEngine(self.run_config.risk, self.run_config.hypothesis.fee_rate)
         current, _ = live_digests()
-        if current != self.meta["code_sha256"] and self.status()[0] not in ("ENGINE_MISMATCH", "COMPLETED"):
+        if current != self.meta["code_sha256"] and self.status()[0] != "ENGINE_MISMATCH":
             self._set_status("ENGINE_MISMATCH", f"code {current[:12]} differs from pinned {self.meta['code_sha256'][:12]}")
 
     # ================================================================== creation
@@ -444,16 +565,28 @@ class LiveSession:
                           slippage_cost=0.0)
         executed = sum((D(q) for (q,) in self.connection.execute(
             "SELECT quantity FROM fills WHERE client_order_id = ?", (client_id,))), Decimal(0))
+        status = report.status
         if executed != report.executed_quantity:
             note = (note + "; " if note else "") + \
                 f"fills {executed} differ from executedQty {report.executed_quantity}: fills pending"
+            if not report.is_open and executed < report.executed_quantity:
+                # Terminal on the exchange but trades still missing: keep it reconcilable.
+                status = "FILLS_PENDING"
+            elif not report.is_open:
+                # More trades than the final executedQty: never expected (an open order may show
+                # this transiently, because myTrades is read after the order).
+                status = "FILLS_EXCESS"
+        # updated_at = last change (status or fills): it measures how long a MISSING or
+        # FILLS_PENDING order has been stuck.
+        changed = previous != status or new
         self.connection.execute(
-            "UPDATE orders SET status = ?, exchange_order_id = ?, executed_quantity = ?, report = ?, updated_at = ?, "
-            "detail = ? WHERE client_order_id = ?",
-            (report.status, report.exchange_order_id, str(report.executed_quantity), _dump(report.record()),
-             _iso(now), note, client_id))
-        if previous != report.status or new:
-            self._log("order_update", now, client_order_id=client_id, previous=previous, status=report.status,
+            "UPDATE orders SET status = ?, exchange_order_id = ?, executed_quantity = ?, report = ?, "
+            "updated_at = CASE WHEN ? THEN ? ELSE updated_at END, detail = ? WHERE client_order_id = ?",
+            (status, report.exchange_order_id, str(report.executed_quantity), _dump(report.record()),
+             1 if changed else 0, _iso(now), note, client_id))
+        if changed:
+            self._log("order_update", now, client_order_id=client_id, previous=previous, status=status,
+                      exchange_status=report.status,
                       executed_quantity=str(report.executed_quantity), quote_executed=str(report.quote_executed),
                       exchange_order_id=report.exchange_order_id, note=note)
         return new
@@ -468,6 +601,16 @@ class LiveSession:
                       note=detail)
 
     def _send(self, request: OrderRequest) -> str:
+        # Defence in depth (the session lock already serialises actors): never send for a
+        # session that was closed, or an intent that is no longer pending.
+        status = self.status()[0]
+        row = self.connection.execute("SELECT status FROM orders WHERE client_order_id = ?",
+                                      (request.client_order_id,)).fetchone()
+        if status in STICKY or row is None or row[0] != "INTENT":
+            with self._tx():
+                if row is not None and row[0] == "INTENT":
+                    self._mark(request.client_order_id, "NOT_PLACED", f"not sent: session {status}")
+            return "NOT_SENT"
         _crash("before_send", request.client_order_id)
         try:
             report = self.adapter.submit(request)
@@ -485,6 +628,7 @@ class LiveSession:
         return report.status
 
     # ================================================================== reconciliation
+    @_exclusive
     def reconcile(self) -> dict:
         """Bring every non-final local order and the balances in line with the exchange."""
         now = self.clock()
@@ -531,14 +675,26 @@ class LiveSession:
         state = self._state()
         ours = [c for c in summary["foreign"] if c.startswith(f"cdl-{self.meta['client_prefix']}-")]
         halted = state.get("halted")
-        overdue = [o["client_order_id"] for o in self._orders("WHERE status = 'MISSING'")
-                   if (now - _utc(o["updated_at"])).total_seconds() >= self.limits["unknown_grace_seconds"]]
+        grace = self.limits["unknown_grace_seconds"]
+
+        def overdue(status: str) -> list[str]:
+            return [o["client_order_id"] for o in self._orders("WHERE status = ?", (status,))
+                    if (now - _utc(o["updated_at"])).total_seconds() >= grace]
+
+        missing, pending = overdue("MISSING"), overdue("FILLS_PENDING")
+        excess = [o["client_order_id"] for o in self._orders("WHERE status = 'FILLS_EXCESS'")]
         if ours:
             halted = f"exchange has orders with this session's prefix unknown locally: {ours}"
-        elif overdue:
-            halted = (f"open orders no longer known by the exchange: {overdue}; check the exchange history, "
+        elif excess:
+            halted = (f"imported trades exceed the final executedQty of {excess}; check myTrades and the order on "
+                      "the exchange, then resolve-missing-order and rebaseline")
+        elif missing:
+            halted = (f"open orders no longer known by the exchange: {missing}; check the exchange history, "
                       "then resolve-missing-order and rebaseline")
-        elif not any(o["status"] in UNRESOLVED for o in self.unresolved_orders()):
+        elif pending:
+            halted = (f"executed orders whose trades are still incomplete: {pending}; check myTrades on the "
+                      "exchange, then resolve-missing-order and rebaseline")
+        elif not any(o["status"] in WAIT_STATUSES for o in self.unresolved_orders()):
             mismatch = self.balance_mismatch()
             if mismatch:
                 halted = f"balance mismatch: {mismatch}"
@@ -644,15 +800,18 @@ class LiveSession:
         return self._intent(state, "BUY" if exposure == ACTION_LONG else "SELL", timestamp, purpose,
                             budget=budget if exposure == ACTION_LONG else None, reference_price=open_price)
 
+    @_exclusive
     def poll(self, *, max_bars: int | None = None) -> dict:
         status, _ = self.status()
-        if status in ("COMPLETED", "ENGINE_MISMATCH"):
+        if status in STICKY:
             return self.snapshot()
         self.reconcile()
         processed = 0
         start = _utc(self.meta["start_at"])
         while max_bars is None or processed < max_bars:
-            if any(o["status"] in UNRESOLVED for o in self.unresolved_orders()):
+            if self.status()[0] in STICKY:
+                break  # closed or code changed while polling
+            if any(o["status"] in WAIT_STATUSES for o in self.unresolved_orders()):
                 break  # reconcile before any further decision or order
             now = self.clock()
             view = self.feed.records()
@@ -696,12 +855,19 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
+    def reconcile_and_refresh(self) -> dict:
+        self.reconcile()
+        self._refresh_status()
+        return self.snapshot()
+
     def _refresh_status(self) -> None:
+        # Callers hold the session lock: the status read here cannot change before it is written.
         if self.status()[0] in STICKY:  # only finish / accept_code_revision leave these
             return
         state = self._state()
         now = self.clock()
-        unresolved = [o for o in self.unresolved_orders() if o["status"] in UNRESOLVED + ("MISSING",)]
+        unresolved = [o for o in self.unresolved_orders() if o["status"] in OPERATOR_STATUSES]
         if state.get("halted"):
             self._set_status("HALTED", state["halted"])
         elif unresolved:
@@ -723,6 +889,7 @@ class LiveSession:
             raise LiveError(f"{action}: code revision differs from the pinned one; accept-code-revision first "
                             "(or act on the exchange directly and rebaseline afterwards)")
 
+    @_exclusive
     def suspend_openings(self, reason: str = "operator") -> dict:
         self._require("suspend-openings", trading=False)
         state = self._state()
@@ -733,6 +900,7 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
     def resume_openings(self, reason: str = "operator") -> dict:
         self._require("resume-openings", trading=False)
         state = self._state()
@@ -743,6 +911,7 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
     def cancel_open_orders(self, reason: str = "operator") -> dict:
         self._require("cancel-open-orders", trading=True)
         self.reconcile()
@@ -752,6 +921,7 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
     def flatten(self, reason: str = "operator") -> dict:
         """Sell the whole tradable position now (MARKET), after reconciliation."""
         self._require("flatten", trading=True)
@@ -774,6 +944,7 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
     def rebaseline(self, note: str) -> dict:
         """Operator accepts the exchange balances as the truth.
 
@@ -785,7 +956,7 @@ class LiveSession:
         self._require("rebaseline", trading=True)
         if not note:
             raise LiveError("a note explaining the balance difference is required")
-        if any(o["status"] in UNRESOLVED + ("MISSING",) for o in self.unresolved_orders()):
+        if any(o["status"] in OPERATOR_STATUSES for o in self.unresolved_orders()):
             raise LiveError("reconcile unresolved orders and resolve missing ones before re-baselining")
         observed = self.adapter.balances()
         baseline = {k: D(v) for k, v in self.meta["baseline_balances"].items()}
@@ -810,9 +981,13 @@ class LiveSession:
         self._refresh_status()
         return self.snapshot()
 
+    @_exclusive
     def resolve_missing_order(self, client_order_id: str, note: str) -> dict:
-        """Operator closes an order the exchange no longer knows (status LOST, terminal).
+        """Operator closes an order whose exchange-side history is not obtainable.
 
+        ``MISSING`` (the exchange no longer knows the order) becomes ``LOST``;
+        ``FILLS_PENDING`` (executed, trades incomplete) becomes ``FILLS_INCOMPLETE``;
+        ``FILLS_EXCESS`` (trades beyond executedQty) becomes ``FILLS_EXCESS_ACCEPTED``.
         Fills already imported stay; anything executed but never reported shows
         up as a balance difference, accepted afterwards with :meth:`rebaseline`.
         """
@@ -820,25 +995,53 @@ class LiveSession:
         if not note:
             raise LiveError("a note with the exchange-side evidence is required")
         rows = self._orders("WHERE client_order_id = ?", (client_order_id,))
-        if not rows or rows[0]["status"] != "MISSING":
-            raise LiveError(f"{client_order_id} is not a MISSING order")
+        targets = {"MISSING": "LOST", "FILLS_PENDING": "FILLS_INCOMPLETE", "FILLS_EXCESS": "FILLS_EXCESS_ACCEPTED"}
+        if not rows or rows[0]["status"] not in targets:
+            raise LiveError(f"{client_order_id} is not a MISSING, FILLS_PENDING or FILLS_EXCESS order")
         with self._tx():
-            self._mark(client_order_id, "LOST", f"resolved by operator: {note}")
+            self._mark(client_order_id, targets[rows[0]["status"]], f"resolved by operator: {note}")
             self._log("operator", self.clock(), action="resolve_missing_order", client_order_id=client_order_id,
                       note=note)
         self._refresh_status()
         return self.snapshot()
 
-    def accept_code_revision(self, note: str) -> dict:
+    def real_capital(self) -> bool:
+        """Mainnet session, or one created through the S08 activation gate."""
+        exchange = self.meta["exchange"]
+        return bool(self.meta.get("activation")) or (
+            exchange.get("name") == "binance-spot" and exchange.get("environment", "testnet") != "testnet")
+
+    @_exclusive
+    def accept_code_revision(self, note: str, *, approval: str | Path | None = None) -> dict:
+        """Pin the current code.  With real capital it needs a new S08 approval of this exact code."""
         self._require("accept-code-revision", trading=False)
         current, files = live_digests()
+        activation = self.meta.get("activation")
+        if self.real_capital():
+            from .release import ActivationError, verify_activation
+
+            if not approval:
+                raise LiveError("accept-code-revision: real-capital session; a code change needs a new S08 release "
+                                "card and approval for this code (pass --approval)")
+            path = Path(approval)
+            try:
+                activation = verify_activation(path if path.is_absolute() else self.repo_root / path,
+                                               live_config=self.config,
+                                               exchange={**self.meta["exchange"], "approval": str(approval)},
+                                               code_sha256=current)
+            except ActivationError as exc:
+                raise LiveError(f"accept-code-revision refused: {exc}") from exc
         with self._tx():
-            self.connection.execute("UPDATE meta SET value = ? WHERE key = 'code_sha256'", (_dump(current),))
-            self._log("operator", self.clock(), action="accept_code_revision", code_sha256=current, note=note)
-        self.meta["code_sha256"] = current
+            self.connection.executemany("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                                        [("code_sha256", _dump(current)), ("code_files", _dump(files)),
+                                         ("activation", _dump(activation))])
+            self._log("operator", self.clock(), action="accept_code_revision", code_sha256=current, note=note,
+                      activation=activation)
+        self.meta.update(code_sha256=current, code_files=files, activation=activation)
         self._set_status("RUNNING", f"code revision {current[:12]} accepted: {note}")
         return self.snapshot()
 
+    @_exclusive
     def finish(self, reason: str = "operator") -> dict:
         self._require("session-finish", trading=True)
         self.reconcile()
@@ -911,6 +1114,8 @@ def main(argv=None) -> int:
         command.add_argument("--note", default="operator")
         if name == "resolve-missing-order":
             command.add_argument("--client-order-id", required=True)
+        if name == "accept-code-revision":
+            command.add_argument("--approval", help="S08 approval.json of the new code (real-capital sessions)")
         if name == "session-run":
             command.add_argument("--loop", action="store_true")
             command.add_argument("--interval", type=float, default=60.0)
@@ -937,7 +1142,14 @@ def main(argv=None) -> int:
     session = LiveSession(Path(args.session_dir), repo_root=repo)
     if args.command == "session-run":
         while True:
-            snapshot = session.poll()
+            try:
+                snapshot = session.poll()
+            except SessionBusy as exc:
+                if not args.loop:
+                    raise
+                print(json.dumps({"status": "BUSY", "detail": str(exc)}), flush=True)
+                time.sleep(args.interval)
+                continue
             print(json.dumps({k: snapshot[k] for k in ("status", "detail", "cursor", "position", "open_orders")},
                              default=str), flush=True)
             if not args.loop or snapshot["status"] in ("COMPLETED", "ENGINE_MISMATCH"):
@@ -945,14 +1157,14 @@ def main(argv=None) -> int:
             time.sleep(args.interval)
     actions = {
         "session-status": session.snapshot,
-        "session-reconcile": lambda: (session.reconcile(), session._refresh_status(), session.snapshot())[-1],
+        "session-reconcile": session.reconcile_and_refresh,
         "suspend-openings": lambda: session.suspend_openings(args.note),
         "resume-openings": lambda: session.resume_openings(args.note),
         "cancel-open-orders": lambda: session.cancel_open_orders(args.note),
         "flatten": lambda: session.flatten(args.note),
         "rebaseline": lambda: session.rebaseline(args.note),
         "resolve-missing-order": lambda: session.resolve_missing_order(args.client_order_id, args.note),
-        "accept-code-revision": lambda: session.accept_code_revision(args.note),
+        "accept-code-revision": lambda: session.accept_code_revision(args.note, approval=args.approval),
         "session-finish": lambda: session.finish(args.note),
     }
     print(json.dumps(actions[args.command](), indent=2, default=str))

@@ -192,9 +192,18 @@ class BinanceSpotAdapter:
     def open_orders(self, symbol: str) -> list[OrderReport]:
         return [self.parse_order(o) for o in self._call("GET", "/api/v3/openOrders", {"symbol": symbol}, signed=True)]
 
+    trades_page_limit = 1000  # Binance maximum (default 500)
+
     def trades(self, symbol: str, exchange_order_id: str) -> list[Fill]:
-        return [self.parse_trade(t) for t in self._call("GET", "/api/v3/myTrades",
-                                                        {"symbol": symbol, "orderId": exchange_order_id}, signed=True)]
+        """All trades of one order, paginated with ``fromId`` (a page is at most ``limit`` trades)."""
+        fills: list[Fill] = []
+        params = {"symbol": symbol, "orderId": exchange_order_id, "limit": self.trades_page_limit}
+        while True:
+            page = self._call("GET", "/api/v3/myTrades", params, signed=True)
+            fills.extend(self.parse_trade(t) for t in page)
+            if len(page) < self.trades_page_limit:
+                return fills
+            params = {**params, "fromId": max(int(t["id"]) for t in page) + 1}
 
     def balances(self) -> dict:
         account = self._call("GET", "/api/v3/account", {"omitZeroBalances": "true"}, signed=True)

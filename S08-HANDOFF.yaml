@@ -58,4 +58,10 @@ anomalies:
 blockers:
   - "Nessuna candidata soddisfa i criteri: serve una nuova ipotesi (S09) prima di una scheda READY."
   - "S07 collaudo testnet reale e verifica indipendente di S00A-S07 aperti; rilascio da commit pulito richiesto."
+independent_review_fixes:
+  date: "2026-11-13"
+  source: "R1 HIGH delle revisioni indipendenti (Codex GPT-6, GLM-5.3); correzione in live.py, dettagli in S07-HANDOFF.yaml"
+  change: "accept-code-revision su sessione a capitale reale richiede una nuova approvazione verificata da verify_activation sul nuovo digest"
+  tests: "tests/test_live.py::test_review_r1_*"
+  confirmed_by: "REVIEW-INDEP-2026-11-13-deepseek.md (DeepSeek v4 Pro): R1 confermata con la verify_activation reale"
 next_action: "Operatore conferma la decisione NOT_ACTIVATED; S09 apre un esperimento preregistrato sulla riduzione del turnover (soglia di ingresso, orizzonte, filtro costi) con la diagnostica +40% lordo / -96% netto come baseline."

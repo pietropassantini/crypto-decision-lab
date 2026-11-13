@@ -464,6 +464,197 @@ def test_review_f3_transient_not_found_recovers_without_halting(studio_repo):
     assert session.orders()[0]["status"] == "NEW" and snap["halted"] is None
 
 
+# ====================================================================== independent review 2026-11-13 (R1-R3)
+def _mainnet_session(repo, monkeypatch, name="r1"):
+    """Real-capital session on the fixture exchange: the S08 gate is stubbed at creation only."""
+    from crypto_decision_lab import release
+
+    monkeypatch.setattr(release, "verify_activation",
+                        lambda path, **kw: {"approval_sha256": "a" * 64, "release_id": "rel-old"})
+    session, feed, fake = make(repo, name)  # builds feed + fake; replaced below by a mainnet session
+    session.close()
+    spec = {"name": "binance-spot", "environment": "mainnet", "allow_mainnet": True, "approval": "old/approval.json"}
+    mainnet = LiveSession.create(f"{name}-main", CONSTANT, exchange=spec,
+                                 source={"kind": "lab_feed", "path": str(feed.directory)}, start_at=START,
+                                 repo_root=repo, adapter=fake, feed=feed)
+    monkeypatch.undo()
+    return mainnet, feed, fake
+
+
+def test_review_r1_code_revision_of_a_real_capital_session_needs_a_new_approval(studio_repo, monkeypatch):
+    from crypto_decision_lab import release
+
+    session, feed, fake = _mainnet_session(studio_repo, monkeypatch)
+    assert session.real_capital() and session.meta["activation"]["release_id"] == "rel-old"
+    session.close()
+    monkeypatch.setattr(live, "live_digests", lambda: ("1" * 64, {}))
+    reopened = LiveSession(session.directory, repo_root=studio_repo, adapter=fake, feed=feed)
+    assert reopened.status()[0] == "ENGINE_MISMATCH"
+    with pytest.raises(LiveError, match="new S08 release"):
+        reopened.accept_code_revision("hotfix")
+    approval = studio_repo / "var" / "r1-approval.json"
+    approval.write_text("{}", encoding="utf-8")
+    with pytest.raises(LiveError, match="refused"):  # the real gate: not a valid approval of this code
+        reopened.accept_code_revision("hotfix", approval=approval)
+    assert reopened.status()[0] == "ENGINE_MISMATCH" and reopened.meta["code_sha256"] != "1" * 64
+    seen = {}
+
+    def gate(path, *, live_config, exchange, code_sha256):
+        seen.update(path=Path(path), code=code_sha256, environment=exchange["environment"])
+        return {"approval_sha256": "b" * 64, "release_id": "rel-new"}
+
+    monkeypatch.setattr(release, "verify_activation", gate)
+    reopened.accept_code_revision("hotfix approved", approval=approval)
+    assert seen == {"path": approval, "code": "1" * 64, "environment": "mainnet"}
+    assert reopened.status()[0] == "RUNNING" and reopened.meta["activation"]["release_id"] == "rel-new"
+    reopened.close()
+    again = LiveSession(session.directory, repo_root=studio_repo, adapter=fake, feed=feed)
+    assert again.meta["activation"]["release_id"] == "rel-new" and again.status()[0] == "RUNNING"
+
+
+def test_review_r1_testnet_and_fixture_sessions_accept_code_without_approval(studio_repo, monkeypatch):
+    session, feed, fake = make(studio_repo, "r1t")
+    assert not session.real_capital()
+    session.close()
+    monkeypatch.setattr(live, "live_digests", lambda: ("2" * 64, {}))
+    reopened = LiveSession(session.directory, repo_root=studio_repo)
+    assert reopened.accept_code_revision("reviewed")["status"] == "RUNNING"
+
+
+def test_review_r3_finish_from_another_process_cannot_interleave_with_a_poll(studio_repo):
+    session, feed, fake = make(studio_repo, "r3")
+    operator = LiveSession(session.directory, repo_root=studio_repo)
+    operator.lock_wait_seconds = 0.2
+    original = session.feed.records
+    attempts = []
+
+    def records():  # the operator acts while the runner is between its checks and the send
+        for name, action in (("finish", lambda: operator.finish("concurrent")),
+                             ("poll", operator.poll), ("suspend", lambda: operator.suspend_openings("x"))):
+            try:
+                action()
+                attempts.append((name, "ran"))
+            except live.SessionBusy:
+                attempts.append((name, "busy"))
+        return original()
+
+    session.feed.records = records
+    feed.advance(until=START)
+    session.poll()
+    session.feed.records = original
+    assert {outcome for _, outcome in attempts} == {"busy"}
+    assert not kinds(session, "end") and session.status()[0] != "COMPLETED"
+    assert len(session.orders()) == 1  # the runner's own order, sent while the session was open
+    operator.finish("after the poll")  # lock released at the end of the poll
+    ledger = session.ledger()
+    assert ledger[-1]["kind"] == "end"
+    submits = FakeExchange(fake.path).state.calls.count("submit")
+    step(session, feed, START + 3 * H)
+    assert session.status()[0] == "COMPLETED" and FakeExchange(fake.path).state.calls.count("submit") == submits
+    assert session.ledger()[-1]["kind"] == "end"
+
+
+def test_review_r3_send_refuses_an_intent_of_a_closed_session(studio_repo):
+    session, feed, fake = make(studio_repo, "r3s")
+    sent = []
+
+    def hook(stage, client_id):  # simulate the close landing between intent commit and send
+        if stage == "before_send":
+            sent.append(client_id)
+
+    live.CRASH_HOOK = hook
+    original = session._send
+
+    def closing_send(request):
+        session._set_status("COMPLETED", "closed elsewhere")
+        return original(request)
+
+    session._send = closing_send
+    step(session, feed, START)
+    assert sent == [] and FakeExchange(fake.path).state.calls.count("submit") == 0
+    assert session.orders()[0]["status"] == "NOT_PLACED"
+
+
+def test_review_r3_lock_is_released_when_the_holder_dies(studio_repo):
+    session, feed, fake = make(studio_repo, "r3k")
+    code = ("import sys, os; from pathlib import Path; from crypto_decision_lab import live; "
+            f"s = live.LiveSession(Path(r'{session.directory}'), repo_root=r'{studio_repo}'); "
+            "s.lock.acquire(0); os._exit(97)")
+    result = subprocess.run([sys.executable, "-c", code], env={**os.environ, "PYTHONPATH": str(SRC)})
+    assert result.returncode == 97
+    session.lock_wait_seconds = 1.0
+    assert session.suspend_openings("after a killed holder")["status"] == "OPENINGS_SUSPENDED"
+
+
+def test_review_r2_executed_order_with_missing_trades_stays_reconcilable(studio_repo):
+    session, feed, fake = make(studio_repo, "r2")
+    fake.push({"hide_fills": True})
+    snap = step(session, feed, START)
+    order = session.orders()[0]
+    assert order["status"] == "FILLS_PENDING" and session.fills() == []
+    assert snap["status"] == "UNRESOLVED" and snap["halted"] is None  # no misleading balance halt
+    assert session.poll()["status"] == "UNRESOLVED"  # queried again, still incomplete (within the grace)
+    fake.release_fills(order["client_order_id"])
+    snap = session.poll()
+    assert session.orders()[0]["status"] == "FILLED" and len(session.fills()) == 1
+    assert snap["halted"] is None and snap["status"] == "WAITING"
+    assert_reconciled(session, fake)
+    snap = step(session, feed, START + H)
+    assert snap["cursor"] == str(START + H)  # bars are processed again
+
+
+def test_review_r2_trades_never_reported_halt_until_resolved(studio_repo):
+    session, feed, fake = make(studio_repo, "r2h")
+    fake.push({"hide_fills": True})
+    step(session, feed, START)
+    client_id = session.orders()[0]["client_order_id"]
+    snap = step(session, feed, START + 2 * H)  # beyond unknown_grace_seconds
+    assert snap["status"] == "HALTED" and "trades are still incomplete" in snap["halted"]
+    with pytest.raises(LiveError):
+        session.rebaseline("too early")
+    session.resolve_missing_order(client_id, "myTrades on the exchange shows the fill; accepted from balances")
+    assert session.orders()[0]["status"] == "FILLS_INCOMPLETE"
+    session.rebaseline("BTC bought by the order whose trades were never reported")
+    book = session.book()
+    assert book["position"] > 0 and session.balance_mismatch() is None
+    snap = step(session, feed, START + 4 * H)
+    assert snap["halted"] is None and snap["cursor"] == str(START + 4 * H)
+
+
+def test_review_r8_trades_beyond_final_executed_quantity_halt_at_once(studio_repo):
+    session, feed, fake = make(studio_repo, "r8")
+    fake.push({"understate_executed": True})
+    step(session, feed, START)
+    client_id = session.orders()[0]["client_order_id"]
+    assert session.orders()[0]["status"] == "FILLS_EXCESS"
+    snap = session.poll()  # next reconciliation: no grace period
+    assert snap["status"] == "HALTED" and "exceed the final executedQty" in snap["halted"]
+    assert snap["cursor"] == str(START) and FakeExchange(fake.path).state.calls.count("submit") == 1
+    with pytest.raises(LiveError):
+        session.rebaseline("too early")
+    session.resolve_missing_order(client_id, "exchange trade list checked: executedQty report was wrong")
+    assert session.orders()[0]["status"] == "FILLS_EXCESS_ACCEPTED"
+    session.rebaseline("balances agree with the imported trades")
+    snap = step(session, feed, START + H)
+    assert snap["halted"] is None and snap["cursor"] == str(START + H)
+
+
+def test_review_r2_adapter_paginates_my_trades():
+    trade = lambda i: {"id": i, "price": "100", "qty": "0.1", "commission": "0", "commissionAsset": "BNB"}  # noqa: E731
+    order = {"symbol": "BTCUSDT", "orderId": 7, "clientOrderId": "cdl-1a2b3c4d-000009", "price": "0",
+             "origQty": "0.5", "executedQty": "0.5", "cummulativeQuoteQty": "50", "status": "FILLED",
+             "type": "MARKET", "side": "BUY"}
+    exchange, transport = adapter((200, order), (200, [trade(1), trade(2)]), (200, [trade(3), trade(4)]),
+                                  (200, [trade(5)]))
+    exchange.trades_page_limit = 2
+    report = exchange.query("BTCUSDT", "cdl-1a2b3c4d-000009")
+    assert [f.trade_id for f in report.fills] == ["1", "2", "3", "4", "5"]
+    assert sum(f.quantity for f in report.fills) == report.executed_quantity
+    pages = [call[2] for call in transport.calls[1:]]
+    assert [p.get("fromId") for p in pages] == [None, 3, 5]
+    assert all(str(p["orderId"]) == "7" and int(p["limit"]) == 2 for p in pages)
+
+
 # ====================================================================== Binance adapter
 def _fixture(name):
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))

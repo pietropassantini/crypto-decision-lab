@@ -188,6 +188,8 @@ class _FakeState:
     script: list[dict] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
     adverse_bps: str = "0"  # MARKET fills move against the order by this many basis points
+    hidden_fills: list[str] = field(default_factory=list)  # client ids whose trades are not reported yet
+    understated: list[str] = field(default_factory=list)  # client ids reported with half their executedQty
 
 
 class FakeExchange:
@@ -198,7 +200,9 @@ class FakeExchange:
     ``{"timeout": "before"}`` (order never created), ``{"timeout": "after"}``
     (order created and executed, response lost), ``{"partial": "0.4"}``
     (MARKET: 40 % filled then ``EXPIRED``; LIMIT: 40 % filled, rest open),
-    ``{"rest": true}`` (LIMIT stays ``NEW``).  Queries can also be scripted
+    ``{"rest": true}`` (LIMIT stays ``NEW``), ``{"hide_fills": true}`` (executed,
+    but its trades are not reported until :meth:`release_fills`), ``{"understate_executed": true}``
+    (inconsistent exchange: executedQty reported as half the trades).  Queries can also be scripted
     with ``{"query_timeout": n}`` via :meth:`fail_next`.
     """
 
@@ -264,6 +268,12 @@ class FakeExchange:
         self.state.balances[asset] = str(D(self.state.balances.get(asset, "0")) + D(delta))
         self._save()
 
+    def release_fills(self, client_order_id: str) -> None:
+        """Trades of an order executed with ``hide_fills`` become visible."""
+        self._reload()
+        self.state.hidden_fills = [c for c in self.state.hidden_fills if c != client_order_id]
+        self._save()
+
     def fill_resting(self, client_order_id: str, fraction: Any = 1) -> OrderReport:
         """Market moves through a resting LIMIT order: fill ``fraction`` of the remainder."""
         self._reload()
@@ -309,11 +319,15 @@ class FakeExchange:
         order["status"] = "PARTIALLY_FILLED"
 
     def _report(self, order: dict) -> OrderReport:
+        executed = D(order["executed_quantity"])
+        if order["client_order_id"] in self.state.understated:
+            executed = self._rules.quantity(executed / 2)
         return OrderReport(order["client_order_id"], order["exchange_order_id"], order["symbol"], order["side"],
-                           order["type"], order["status"], D(order["orig_quantity"]), D(order["executed_quantity"]),
+                           order["type"], order["status"], D(order["orig_quantity"]), executed,
                            D(order["quote_executed"]),
                            tuple(Fill(f["trade_id"], D(f["price"]), D(f["quantity"]), D(f["commission"]),
-                                      f["commission_asset"]) for f in order["fills"]),
+                                      f["commission_asset"]) for f in order["fills"]
+                                 if order["client_order_id"] not in self.state.hidden_fills),
                            D(order.get("price") or 0))
 
     # ------------------------------------------------------------ adapter API
@@ -359,6 +373,10 @@ class FakeExchange:
                      price=str(request.price) if request.price is not None else "0", fills=[])
         self.state.next_order += 1
         self.state.orders[request.client_order_id] = order
+        if behaviour.get("hide_fills"):
+            self.state.hidden_fills.append(request.client_order_id)
+        if behaviour.get("understate_executed"):
+            self.state.understated.append(request.client_order_id)
         partial = D(behaviour["partial"]) if "partial" in behaviour else None
         if request.order_type == "MARKET":
             adverse = D(self.state.adverse_bps) / D(10000)
