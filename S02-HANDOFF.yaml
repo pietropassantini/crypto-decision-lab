@@ -48,4 +48,17 @@ decisions:
 blockers:
   - "CP02.3 richiede conferma congiunta con S03 quando il motore esisterà: S03 deve consumare execution_contract.resolve_round_trip o produrre esiti bit-identici. Nessuna azione richiesta da S02."
   - "Il fallimento pre-esistente tests/dashboard/test_forward_status_dashboard.py::test_adapter_reads_status_readiness_and_provenance deriva dalle modifiche S01 non committate presenti nell'albero di lavoro (forward_adapter.py ecc.): fuori dallo scope S02, da risolvere nello step S01."
+review:
+  reviewer: "Claude Opus 5.5 (claude-opus-5-5), revisore diverso dall'autore S02"
+  date: "2026-11-13"
+  base: "fc83faf + working tree (S03/S04 non committati)"
+  outcome: "CONFIRMED - CP02.1, CP02.2, CP02.3 ripetuti con esito PASS; nessun difetto bloccante"
+  evidence:
+    - "python -m pytest tests/test_execution_contract.py tests/test_dataset_catalog.py tests/test_dataset_builder.py tests/test_simulation.py tests/test_trading_simulator.py -q -p no:cacheprovider -> 80 passed"
+    - "CP02.1: due build reali (var/rev-build-a, var/rev-build-b) -> 2061 righe, features 2cb8f741...489b, targets 8fffb2ec...5f30f, file features identici; digest uguali a quelli dell'handoff. verify-dataset ok su var/rev-build-a e su data/datasets/research/BTCUSDT-1h-research-v1"
+    - "CP02.3 congiunto con S03: test_cp033 riconcilia prezzi di fill, tempi e cassa del motore con resolve_round_trip per latenza 0/1/2 e tre modelli di costo; momentum_24h del dataset coincide esattamente (diff max 0.0 su 2061 cutoff) con la feature degli eventi S03"
+    - "Il blocker sul test forward_status (S01) non si riproduce: suite completa 386 passed"
+  findings:
+    - "LOW: Catalog.load usa reserved_dataset_ids dal file oppure, solo se assente, i ruoli reserved-forward. Una voce reserved-forward non elencata in reserved_dataset_ids sfugge alla guardia di provenienza (resta coperta da ruolo e alias). Suggerito: unione dei due insiemi."
+    - "NOTE: la guardia alias riconosce solo copie byte-identiche; una ricodifica del Parquet con gli stessi dati non e rilevata. Limite dichiarato, da tenere presente per S05."
 next_action: "Il revisore ripete CP02.1 dal commit 62c38c9 (comandi in verification) e S03 adotta execution_contract.py come contratto condiviso, riportando eventuali divergenze prima del merge."
