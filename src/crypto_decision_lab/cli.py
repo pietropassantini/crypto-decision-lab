@@ -51,6 +51,7 @@ def execute(args) -> int:
 
 
 def main(argv=None):
+    tokens = list(sys.argv[1:]) if argv is None else list(argv)
     parser = argparse.ArgumentParser(description="Crypto Decision Lab: verified Binance Spot hourly OHLCV")
     sub = parser.add_subparsers(dest="command", required=True)
     ingest = sub.add_parser("ingest", help="download closed hourly candles and validate")
@@ -73,6 +74,23 @@ def main(argv=None):
     fr.add_argument("--lookback", type=int, default=168)
     fr.add_argument("--horizon", type=int, default=24)
     fr.add_argument("--stride", type=int, default=24)
+    ds = sub.add_parser("build-dataset", help="S02: build a versioned research dataset from a catalog source")
+    ds.add_argument("--catalog", default="config/dataset-catalog.json")
+    ds.add_argument("--source", required=True, help="admitted catalog dataset_id")
+    ds.add_argument("--repo-root", default=".")
+    ds.add_argument("--data-root", default=None)
+    ds.add_argument("--output-dir", default=None)
+    ds.add_argument("--dataset-id", default="BTCUSDT-1h-research")
+    ds.add_argument("--version", default="v1")
+    ds.add_argument("--stride-hours", type=int, default=24)
+    ds.add_argument("--warmup-hours", type=int, default=168)
+    ds.add_argument("--latency-hours", type=int, default=0)
+    ds.add_argument("--horizon-hours", type=int, default=24)
+    ds.add_argument("--fee-rate", type=float, default=0.001)
+    ds.add_argument("--slippage", type=float, default=0.0005)
+    ds.add_argument("--no-write", action="store_true")
+    dv = sub.add_parser("verify-dataset", help="S02: recompute dataset digests and compare with the manifest")
+    dv.add_argument("--dataset-dir", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "freeze":
@@ -83,6 +101,10 @@ def main(argv=None):
             from .sync import sync
             print(json.dumps(sync(args.symbol, args.start, args.end, args.output_dir, mode=args.mode), indent=2))
             return 0
+        if args.command in ("build-dataset", "verify-dataset"):
+            from .dataset_builder import main as dataset_main
+            rest = ["build" if args.command == "build-dataset" else "verify"] + tokens[1:]
+            return dataset_main(rest)
         return execute(args)
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

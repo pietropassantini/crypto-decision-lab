@@ -1,0 +1,20 @@
+{
+  "schema_version": "cdl.s02.catalog.v1",
+  "sources": [
+    {
+      "dataset_id": "BTCUSDT-1h-raw-v1",
+      "path": "data/snapshots/BTCUSDT-1h-raw-v1",
+      "kind": "snapshot",
+      "role": "research",
+      "notes": "Frozen audited snapshot (sha256-verified chunks); admissible for Dataset Builder, training and exploratory backtests"
+    },
+    {
+      "dataset_id": "BTCUSDT-1h-forward-v1",
+      "path": "data/forward/BTCUSDT-1h-forward-v1",
+      "kind": "snapshot",
+      "role": "reserved-forward",
+      "notes": "Independent forward collection reserved for the frozen CP08 validation protocol; never a research input"
+    }
+  ],
+  "reserved_dataset_ids": ["BTCUSDT-1h-forward-v1"]
+}
