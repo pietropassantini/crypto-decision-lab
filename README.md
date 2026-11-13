@@ -4,9 +4,9 @@ Pipeline **Spot BTCUSDT 1h**, sola lettura, dati di mercato pubblici. Nessuna ch
 
 ## Dati di test (checkout pulito)
 
-`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e **un chunk di fixture**, `data/chunks/BTCUSDT/1h/20261001T0000_20261023T1600.{parquet,json}`, copiato dalle fixture dei test forward.
+`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB), usati dai test sull'archivio reale e dalle fixture forward.
 
-Per gli altri dati rigenerabili (`data/chunks/` completo, `data/quarantine/`, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
+Per gli altri dati rigenerabili (altri chunk, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
 
 - chunk e manifest: `cdl ingest` / `cdl sync` (vedi sezioni sotto), che li ricrea con hash SHA-256 verificabili;
 - dataset di ricerca: `python -m crypto_decision_lab.cli build-dataset --source BTCUSDT-1h-raw-v1 --output-dir <dir>`;
