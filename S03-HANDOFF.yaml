@@ -1,5 +1,5 @@
 step_id: S03
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-13"
 agent_role: backend del motore di trading
 agent_model: GPT-6 (Codex)
@@ -82,3 +82,9 @@ review_fixes:
     - "Suite completa: 388 passed in 278.82s (386 + 2 test di regressione)"
   note: "engine_sha256 dei run precedenti alla correzione (es. var/s03-smoke-*, var/studio) non e confrontabile con i nuovi: rigenerare i run da confrontare."
 next_action: "Reviewer reruns the 69 focused tests from the recorded base plus S03 diff and confirms S00A dependency before VERIFIED."
+verification:
+  date: "2026-11-13"
+  decided_by: "coordinatore (operatore)"
+  reviews:
+    - "REVIEW-INDEP-2026-11-13.md (Codex GPT-6)"
+    - "REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3)"

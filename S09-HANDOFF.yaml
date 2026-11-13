@@ -1,5 +1,5 @@
 step_id: S09
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-13"
 agent_role: osservabilita e ricerca quantitativa
 agent_model: Claude Opus 5.5 (claude-opus-5-5)
@@ -47,3 +47,9 @@ anomalies:
 blockers:
   - "Nessun registro live reale: le ipotesi su slippage, fill e latenza reali restano da misurare su testnet (S07) o dopo un'attivazione."
 next_action: "Un revisore diverso ripete CP09.1-2; poi un agente esegue il prompt di S09-E01 (riga E01)."
+verification:
+  date: "2026-11-13"
+  decided_by: "coordinatore (operatore)"
+  reviews:
+    - "REVIEW-INDEP-2026-11-13.md (Codex GPT-6)"
+    - "REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3)"
