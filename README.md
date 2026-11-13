@@ -365,3 +365,10 @@ Strategie configurabili LONG/FLAT, rischio, broker spot, backtest e paper replay
 [configurazione](config/simulation.example.json),
 [evidenze dei checkpoint](S03-HANDOFF.yaml).
 Questo step del PRD e distinto dalla dashboard storica S03-CP01.
+
+## S04 del PRD - Strategy Studio
+
+Configurazioni immutabili, backtest e paper replay su fonti ammesse dal catalogo,
+risultati riconciliati con il registro e confronto tra run:
+`streamlit run src/crypto_decision_lab/dashboard/studio_app.py`.
+[Guida](docs/S04-strategy-studio.md), [evidenze dei checkpoint](S04-HANDOFF.yaml).

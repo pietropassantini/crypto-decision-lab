@@ -1,0 +1,65 @@
+step_id: S04
+status: IN_REVIEW
+updated_at: "2026-11-13T12:20:00Z"
+agent_role: applicazione Streamlit
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: fc83faf73eefad8d76806e09e9fb63979eb9568d
+head_commit: "working-tree diff against base_commit (include il diff S03 non ancora committato)"
+review_ref: "branch feat/s02-dataset-builder; nessun commit creato"
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S04, CP04.1-3"
+  - "S02-HANDOFF.yaml (IN_REVIEW, 62c38c9): catalogo con guardie ruolo/identita/provenienza/alias, execution_contract"
+  - "S03-HANDOFF.yaml (IN_REVIEW, diff non committato): run(), RunConfig, STRATEGIES, registro canonico"
+changed_paths:
+  - "src/crypto_decision_lab/studio.py - backend: configurazioni immutabili, fonti autorizzate, run persistiti, confronto, segmenti contigui"
+  - "src/crypto_decision_lab/studio_analytics.py - metriche ricavate dal registro: equity, drawdown MTM, costi, esposizione, trade, finestre, riconciliazione"
+  - "src/crypto_decision_lab/dashboard/components/strategy_studio.py - viste Strategie, Nuovo backtest, Risultati, Confronto"
+  - "src/crypto_decision_lab/dashboard/studio_app.py - entry point autonomo"
+  - "src/crypto_decision_lab/dashboard/app.py - scheda Strategy Studio nella dashboard principale"
+  - "src/crypto_decision_lab/dashboard/charts.py - make_studio_equity_figure, make_studio_trades_figure"
+  - "src/crypto_decision_lab/simulation.py - market_events() estratto dalla CLI e condiviso; momentum sul calendario orario"
+  - "tests/conftest.py - fixture studio_repo (snapshot di ricerca + archivio forward riservato + catalogo)"
+  - "tests/test_studio.py, tests/dashboard/test_strategy_studio.py - 24 test nuovi"
+  - "docs/S04-strategy-studio.md, README.md, Crypto_Decision_Lab_PRD.md (riga S04), S04-HANDOFF.yaml"
+checkpoints:
+  - id: CP04.1
+    result: PASS
+    verification: "python -m pytest tests/dashboard/test_strategy_studio.py tests/test_studio.py -k \"cp041 or Immutable or tampered\" -q -p no:cacheprovider --basetemp var/s04-cp041"
+    expected: "Test UI salva una configurazione, avvia un run, apre un trade e rilegge i risultati in una nuova sessione"
+    observed: "AppTest: salvataggio da form (file configs/<nome>-<sha12>.json), dataset proposto solo BTCUSDT-1h-raw-v1, run con BUY nel registro, metriche Trade e P&L identiche in una seconda AppTest indipendente; riconciliazione mostrata superata. Configurazioni immutabili (stesso contenuto = stesso id, file intatto; contenuto alterato rifiutato), registro alterato rifiutato via ledger_sha256."
+    evidence: "tests/dashboard/test_strategy_studio.py::test_cp041_save_config_run_open_trade_and_reread_in_new_session; tests/test_studio.py::{TestImmutableConfigs,TestSourcesAndRuns}"
+  - id: CP04.2
+    result: PASS
+    verification: "python -m pytest tests/test_studio.py -k CP042 -q -p no:cacheprovider --basetemp var/s04-cp042"
+    expected: "Su un fixture P&L netto, drawdown MTM, costi, esposizione e conteggio trade si riconciliano con il registro; risultati aggregati e per finestra"
+    observed: "Fixture 100/110/90/95/120/100, latenza 0, orizzonte 2, fee 0.1%: P&L, fee, drawdown, tempo in mercato 4/6, 2 trade, curva equity uguali al calcolo manuale; finestre 2024-01/2024-02 con P&L concatenati e conteggi; posizione aperta valorizzata MTM; reconcile() superato anche su run reale del motore per M/Q/W/Y."
+    evidence: "tests/test_studio.py::TestCP042Reconciliation"
+  - id: CP04.3
+    result: PASS
+    verification: "python -m pytest tests/test_studio.py -k \"CP043 or authorized\" tests/dashboard/test_strategy_studio.py -k \"cp043 or CP043 or authorized\" -q -p no:cacheprovider --basetemp var/s04-cp043"
+    expected: "Due run a parita di condizioni confrontabili; cambio di periodo o modello di costi visibile; catalogo dello Studio espone solo fonti autorizzate"
+    observed: "Stesse condizioni con strategie diverse => comparable=True, differenza solo nell'oggetto del confronto. Periodo diverso => 'Periodo richiesto - fine' e 'Ultimo evento' segnalati; fee diversa => unica condizione differente 'Fee per lato' e costi maggiori. Forward riservato non ammesso, non caricabile, non iniettabile come market; storage sotto data/forward rifiutato. La UI mostra l'avviso di condizioni diverse."
+    evidence: "tests/test_studio.py::{TestCP043Comparison,TestSourcesAndRuns::test_studio_exposes_only_authorized_sources}; tests/dashboard/test_strategy_studio.py::test_cp043_comparison_view_flags_period_change"
+validation:
+  focused:
+    command: "python -m pytest tests/test_studio.py tests/dashboard/test_strategy_studio.py tests/test_simulation.py -q -p no:cacheprovider --basetemp var/s04-verification"
+    observed: "44 passed"
+  full_suite:
+    command: "python -m pytest -q -p no:cacheprovider --basetemp var/s04-full"
+    observed: "386 passed in 475.69s (S03 registrava 358 + 4 regressioni; +24 test S04). Nessuna regressione."
+  real_data_smoke:
+    command: "Studio('var/s04-smoke/studio').run_backtest(...) su BTCUSDT-1h-raw-v1, segmento contiguo piu lungo 2023-03-24 14:00 -> 2026-10-23 15:00"
+    observed: "Fonti: raw-v1 ammessa, forward-v1 rifiutata per ruolo. 31417 eventi, COMPLETED in ~10 s per run. momentum 5% (config/simulation.example.json): 173 trade, P&L -1757.26, DD -24.83%, costi 2398.22. constant LONG: 1209 trade, P&L -7285.24, DD -73.66%, costi 11317.28. reconcile() superato su entrambi; confronto comparable=True. Numeri esplorativi, non una valutazione."
+  standalone_app:
+    observed: "AppTest.from_file(studio_app.py) sul repository reale: 4 schede, nessuna eccezione, nessun errore."
+decisions:
+  - "Storage in var/studio (ignorato da Git, regola S00A sugli artefatti rigenerabili); identita = digest della RunConfig normalizzata + digest eventi + hash motore nel manifest."
+  - "Lo Studio non ricalcola economia: chiama solo simulation.run e ricava ogni metrica dal registro canonico, cosi UI, summary.json e riconciliazione coincidono."
+  - "Drawdown MTM calcolato con il capitale iniziale come primo punto; la curva passata a make_drawdown_figure include lo stesso punto per riusare il grafico esistente con definizione identica."
+  - "Il motore S03 si arresta al primo gap: lo Studio non spezza i run, mostra i segmenti contigui e avvisa prima dell'avvio. Il dataset reale ha 14 buchi; il segmento piu lungo copre 2023-03-24 -> 2026-10-23."
+  - "market_events() estratto da simulation.main e condiviso; momentum calcolato sul calendario orario. Per dati contigui e identico alla formula precedente (verificato da test); evita il confronto fra barre separate da un gap quando il periodo inizia dopo un buco. Cambia engine_sha256 (file simulation.py), previsto perche S03 non e ancora committato."
+  - "Confronto: condizioni (dataset, manifest, periodo richiesto ed effettivo, digest eventi, latenza, orizzonte, fee, slippage, capitale, motore) separate dall'oggetto (strategia, rischio, modalita, esito)."
+  - "Il paper replay e selezionabile come modalita del run; sessioni persistenti su feed restano in S06."
+blockers:
+  - "S02 e S03 sono IN_REVIEW; S03 non e committato. S04 non puo essere VERIFIED prima della verifica delle dipendenze."
+next_action: "Revisore diverso ripete CP04.1-3 con i comandi indicati dal base_commit + diff S03/S04 e apre l'app autonoma per una prova manuale; poi commit separati S03 e S04."

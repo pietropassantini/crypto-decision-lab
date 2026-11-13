@@ -283,6 +283,27 @@ def run(events, config: RunConfig, *, mode="backtest", source_id="in-memory-fixt
     return RunResult(manifest, ledger, portfolio, status)
 
 
+def market_events(frame: pd.DataFrame, start=None, end_exclusive=None) -> list[MarketEvent]:
+    """Events for a normalized hourly OHLCV frame, optionally restricted to a period.
+
+    ``momentum_24h`` uses only closed bars before each event: close(t-1h) versus
+    close(t-25h) on the hourly calendar, so a missing hour yields no feature
+    instead of comparing bars across a gap. Bars before ``start`` act as warmup
+    only. Shared by the CLI and Strategy Studio (S04).
+    """
+    close = frame["close"].astype(float)
+    hourly = close.asfreq("1h") if len(close) else close
+    momentum = hourly.pct_change(24, fill_method=None).shift(1).reindex(frame.index)
+    selected = frame
+    if start is not None:
+        selected = selected[selected.index >= utc(start)]
+    if end_exclusive is not None:
+        selected = selected[selected.index < utc(end_exclusive)]
+    return [MarketEvent(ts, float(row["open"]),
+                        {"momentum_24h": float(momentum.loc[ts])} if pd.notna(momentum.loc[ts]) else {})
+            for ts, row in selected.iterrows()]
+
+
 def main(argv=None):
     import argparse
     from pathlib import Path
@@ -305,12 +326,8 @@ def main(argv=None):
     config = RunConfig(**{**raw, "hypothesis": ExecutionHypothesis(**raw.get("hypothesis", {})),
                           "risk": RiskLimits(**raw.get("risk", {}))})
     market = load_market(Catalog.load(args.catalog), args.source, repo_root=args.repo_root)
-    frame = market.frame
-    # Only the previous closed bar supplies the momentum signal (fraction).
-    momentum = frame["close"].pct_change(24, fill_method=None).shift(1)
-    events = (MarketEvent(ts, float(row["open"]),
-                          {"momentum_24h": float(momentum.loc[ts])} if pd.notna(momentum.loc[ts]) else {})
-              for ts, row in frame.iterrows())
+    # Only previous closed bars supply the momentum signal (fraction).
+    events = market_events(market.frame)
     result = run(events, config, mode=args.mode, source_id=args.source)
     result.manifest["source_manifest_sha256"] = market.source_manifest_sha256
     result.manifest["loaded_dataset_id"] = market.dataset_id
