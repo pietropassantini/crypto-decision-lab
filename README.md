@@ -386,3 +386,29 @@ Sessioni paper su SQLite (una transazione per evento, ripresa identica dopo inte
 replay di snapshot e feed di laboratorio riproducibile con guasti, stati espliciti e scheda
 "Paper trading" nello Studio: `python -m crypto_decision_lab.paper --help`.
 [Guida](docs/S06-paper-trading.md), [evidenze dei checkpoint](S06-HANDOFF.yaml).
+
+## S07 del PRD - Adattatore live e collaudo
+
+Adattatore Binance Spot dietro un contratto di esecuzione, runner live su SQLite con ordini
+write-ahead (client id persistito prima dell'invio), riconciliazione di esiti incerti, rifiuti,
+annullamenti ed esecuzioni parziali, guardie sulle aperture e runbook. Collaudo su Binance Spot
+Testnet (mainnet bloccata fino a S08): `python -m crypto_decision_lab.live --help`,
+`python scripts/s07_testnet_smoke.py`.
+[Guida e runbook](docs/S07-live-adapter.md), [evidenze dei checkpoint](S07-HANDOFF.yaml).
+
+## S08 del PRD - Rilascio e attivazione controllata
+
+Criteri preregistrati write-once, pacchetto installato in un venv pulito, drill del runbook in
+collaudo, scheda di rilascio READY/BLOCKED, approvazione e gate che lega ogni sessione mainnet
+alla versione, ai limiti e all'exchange approvati: `python -m crypto_decision_lab.release --help`.
+Prima esecuzione: candidata momentum **BLOCKED**, decisione **NOT_ACTIVATED**.
+[Guida](docs/S08-release.md), [scheda](releases/btcusdt-momentum-v1/fd1153cd/release-card.md),
+[evidenze dei checkpoint](S08-HANDOFF.yaml).
+
+## S09 del PRD - Misura operativa e ciclo successivo
+
+Report operativo da un registro live o paper: versione, feed, ordini legati alle decisioni,
+costi, slippage, latenza, fill mancanti, accordo con la simulazione, riconciliazione e ipotesi
+dagli scostamenti: `python -m crypto_decision_lab.ops_report --help`. Primo esperimento del ciclo
+successivo: [S09-E01](config/experiments/S09-E01-turnover-reduction-v1.json).
+[Guida](docs/S09-ops-report.md), [report](reports/s09), [evidenze dei checkpoint](S09-HANDOFF.yaml).

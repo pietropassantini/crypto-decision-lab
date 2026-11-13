@@ -1,0 +1,332 @@
+{
+  "content": {
+    "costs": {
+      "assumed_fee_bps": 10.0,
+      "fees_quote": 0.5972644744,
+      "notional": 597.2644744,
+      "observed_fee_bps": 9.999999999999998
+    },
+    "data_label": "fixture-live etichettata: drill S08 parte C (FakeExchange senza guasti, lab feed 2024-03, config candidata); non operativo",
+    "feed": {
+      "feed_id": "drill-c",
+      "kind": "lab_feed",
+      "scenario_sha256": "f4c76c86a789d66358832c5d527eb8f3e08fe1562154dbb2cf8b92b0a1ceb49c",
+      "source": {
+        "catalog_role": "research",
+        "dataset_id": "BTCUSDT-1h-raw-v1",
+        "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+      }
+    },
+    "fills": {
+      "by_status": {
+        "FILLED": 6
+      },
+      "executed_orders": 6,
+      "executed_quantity": 0.00965,
+      "fill_ratio": 0.9983989089632209,
+      "missing": [],
+      "orders": 6,
+      "requested_quantity": 0.009665475305878453
+    },
+    "hypotheses": [
+      {
+        "checkpoint": "preregistered turnover experiment (S09-E01)",
+        "hypothesis": "turnover consumes the gross edge; fewer, longer trades keep a positive net result",
+        "id": "H-turnover",
+        "metric": "net_return_pct and costs / gross on the same window",
+        "observation": "costs 0.60 vs gross result -0.20"
+      }
+    ],
+    "latency": {
+      "assumed_s": 0.0,
+      "decision_to_intent_s": {
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "n": 6
+      },
+      "intent_to_first_fill_s": {
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "n": 6
+      }
+    },
+    "mode": "live-fixture",
+    "orders": [
+      {
+        "bar_ts": "2024-03-02 02:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000000",
+        "decision_latency_s": 0.0,
+        "decision_reason": "momentum_24h=0.013324653451355806; threshold=0.0",
+        "detail": "",
+        "executed_quantity": 0.00161,
+        "fee_bps": 10.0,
+        "fees_quote": 0.0998683161,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 0.998683161,
+        "fills": 1,
+        "notional": 99.8683161,
+        "order_type": "MARKET",
+        "purpose": "open",
+        "reference_open": 62030.01,
+        "requested_quantity": 0.00161212290631583,
+        "side": "BUY",
+        "slippage_bps": 0.0,
+        "slippage_cost_quote": 0.0,
+        "status": "FILLED",
+        "vwap": 62030.01
+      },
+      {
+        "bar_ts": "2024-03-02 08:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000001",
+        "decision_latency_s": 0.0,
+        "decision_reason": "holding horizon reached",
+        "detail": "",
+        "executed_quantity": 0.0016,
+        "fee_bps": 10.0,
+        "fees_quote": 0.09921896,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 1.0,
+        "fills": 1,
+        "notional": 99.21896,
+        "order_type": "MARKET",
+        "purpose": "horizon_exit",
+        "reference_open": 62011.85,
+        "requested_quantity": 0.0016,
+        "side": "SELL",
+        "slippage_bps": -0.0,
+        "slippage_cost_quote": -0.0,
+        "status": "FILLED",
+        "vwap": 62011.85
+      },
+      {
+        "bar_ts": "2024-03-02 09:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000002",
+        "decision_latency_s": 0.0,
+        "decision_reason": "momentum_24h=0.0005010610800240123; threshold=0.0",
+        "detail": "",
+        "executed_quantity": 0.00161,
+        "fee_bps": 10.0,
+        "fees_quote": 0.0997228043,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 0.997228043,
+        "fills": 1,
+        "notional": 99.7228043,
+        "order_type": "MARKET",
+        "purpose": "open",
+        "reference_open": 61939.63,
+        "requested_quantity": 0.0016144752559871605,
+        "side": "BUY",
+        "slippage_bps": 0.0,
+        "slippage_cost_quote": 0.0,
+        "status": "FILLED",
+        "vwap": 61939.63
+      },
+      {
+        "bar_ts": "2024-03-02 10:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000003",
+        "decision_latency_s": 0.0,
+        "decision_reason": "momentum_24h=-0.004604762820672792; threshold=0.0",
+        "detail": "",
+        "executed_quantity": 0.00161,
+        "fee_bps": 10.0,
+        "fees_quote": 0.0995673427,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 1.0,
+        "fills": 1,
+        "notional": 99.5673427,
+        "order_type": "MARKET",
+        "purpose": "strategy_exit",
+        "reference_open": 61843.07,
+        "requested_quantity": 0.00161,
+        "side": "SELL",
+        "slippage_bps": -0.0,
+        "slippage_cost_quote": -0.0,
+        "status": "FILLED",
+        "vwap": 61843.07
+      },
+      {
+        "bar_ts": "2024-03-02 16:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000004",
+        "decision_latency_s": 0.0,
+        "decision_reason": "momentum_24h=0.00827908858042048; threshold=0.0",
+        "detail": "",
+        "executed_quantity": 0.00161,
+        "fee_bps": 10.0,
+        "fees_quote": 0.0994516481,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 0.994516481,
+        "fills": 1,
+        "notional": 99.4516481,
+        "order_type": "MARKET",
+        "purpose": "open",
+        "reference_open": 61771.21,
+        "requested_quantity": 0.0016188771435754618,
+        "side": "BUY",
+        "slippage_bps": 0.0,
+        "slippage_cost_quote": 0.0,
+        "status": "FILLED",
+        "vwap": 61771.21
+      },
+      {
+        "bar_ts": "2024-03-02 18:00:00+00:00",
+        "client_order_id": "cdl-143c8cb2-000005",
+        "decision_latency_s": 0.0,
+        "decision_reason": "momentum_24h=-0.0024046203859217075; threshold=0.0",
+        "detail": "",
+        "executed_quantity": 0.00161,
+        "fee_bps": 10.0,
+        "fees_quote": 0.0994354032,
+        "fill_latency_s": 0.0,
+        "fill_ratio": 1.0,
+        "fills": 1,
+        "notional": 99.4354032,
+        "order_type": "MARKET",
+        "purpose": "strategy_exit",
+        "reference_open": 61761.12,
+        "requested_quantity": 0.00161,
+        "side": "SELL",
+        "slippage_bps": -0.0,
+        "slippage_cost_quote": -0.0,
+        "status": "FILLED",
+        "vwap": 61761.12
+      }
+    ],
+    "outcome": {
+      "difference": 1.9438155343754602,
+      "observed_costs": 0.5972644744,
+      "observed_gross_pnl": -0.20284005850003628,
+      "observed_net_pnl": -0.8001045329000362,
+      "position_open": true,
+      "simulated_costs": 2.2417132174682326,
+      "simulated_net_pnl": -2.7439200672754964,
+      "valuation_open": 61736.9
+    },
+    "period": {
+      "bars": 24,
+      "first_bar": "2024-03-02 02:00:00+00:00",
+      "last_bar": "2024-03-03 01:00:00+00:00"
+    },
+    "reconciliation": [
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000000)",
+        "left": "0.00161",
+        "ok": true,
+        "right": "0.00161"
+      },
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000001)",
+        "left": "0.00160",
+        "ok": true,
+        "right": "0.00160"
+      },
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000002)",
+        "left": "0.00161",
+        "ok": true,
+        "right": "0.00161"
+      },
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000003)",
+        "left": "0.00161",
+        "ok": true,
+        "right": "0.00161"
+      },
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000004)",
+        "left": "0.00161",
+        "ok": true,
+        "right": "0.00161"
+      },
+      {
+        "check": "fills = executedQty (cdl-143c8cb2-000005)",
+        "left": "0.00161",
+        "ok": true,
+        "right": "0.00161"
+      },
+      {
+        "check": "execution records = fills",
+        "left": 6,
+        "ok": true,
+        "right": 6
+      },
+      {
+        "check": "notional: report = register",
+        "left": 597.2644744,
+        "ok": true,
+        "right": 597.2644744
+      },
+      {
+        "check": "fees: report = register",
+        "left": 0.5972644744,
+        "ok": true,
+        "right": 0.5972644744
+      },
+      {
+        "check": "trade ids unique",
+        "left": 6,
+        "ok": true,
+        "right": 6
+      }
+    ],
+    "register": {
+      "kind": "live",
+      "records": 114,
+      "sha256": "d49943c537718e2b7a0ed9a47e1d4294b2c4c680d33ad435aad394207d277e7a",
+      "status": {
+        "detail": "up to date; last bar 2024-03-03 01:00:00+00:00",
+        "status": "WAITING"
+      }
+    },
+    "schema_version": "cdl.s09.ops-report.v1",
+    "session_id": "drill-c-4345b936",
+    "signals": {
+      "agreement": 1.0,
+      "bars_compared": 23,
+      "disagreements": [],
+      "guards": {},
+      "live_orders": 6,
+      "position_agreement": 1.0,
+      "position_bars_compared": 24,
+      "position_differences": [],
+      "simulated_orders": 6
+    },
+    "slippage": {
+      "assumed_bps": 5.0,
+      "bps": {
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "n": 6
+      },
+      "cost_quote": 0.0
+    },
+    "version": {
+      "activation": null,
+      "code_sha256": "fd1153cd96c397d30f3d43feae86e26f5a1088cb3b68a05cf827a08cc2053e2e",
+      "config_sha256": "838e1b3accd18fe30ffc5bc9c7611a75b5762de47e190a0d76a4a8fd6e2ebbc4",
+      "exchange": {
+        "environment": "fixture",
+        "exchange": "fake",
+        "symbol_rules": {
+          "base_asset": "BTC",
+          "max_qty": "9000",
+          "min_notional": "5",
+          "min_qty": "0.00001",
+          "quote_asset": "USDT",
+          "quote_precision": 8,
+          "step_size": "0.00001",
+          "symbol": "BTCUSDT",
+          "tick_size": "0.01"
+        }
+      },
+      "run_config_sha256": "b29ee5b0fb33c75d03d4dc4383b37cd73174a44aa7faecaf628284a92720b2ee"
+    }
+  },
+  "content_sha256": "0fae4fc93e7a52eebbee0f77868ca5a0af5fa0dc70dda651dd949f94e0d80540",
+  "generated_utc": "2026-11-13T17:40:40Z"
+}

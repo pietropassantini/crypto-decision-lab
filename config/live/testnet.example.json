@@ -1,0 +1,22 @@
+{
+  "symbol": "BTCUSDT",
+  "order_type": "MARKET",
+  "limit_offset": 0.001,
+  "allow_exits_when_suspended": true,
+  "run_config": {
+    "strategy": {"name": "momentum", "parameters": {"threshold": 0.0}},
+    "initial_cash": 500,
+    "hypothesis": {"latency_hours": 0, "horizon_hours": 6, "fee_rate": 0.001, "slippage": 0.0005},
+    "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true}
+  },
+  "limits": {
+    "max_order_notional": 100,
+    "max_position_notional": 200,
+    "max_signal_age_hours": 1,
+    "stale_after_hours": 2,
+    "order_timeout_seconds": 300,
+    "unknown_grace_seconds": 60,
+    "balance_abs_tolerance": 1e-8,
+    "balance_rel_tolerance": 1e-6
+  }
+}
