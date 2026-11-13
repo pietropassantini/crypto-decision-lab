@@ -216,3 +216,9 @@ data/datasets/S02-CP06B-regime-features-v1/*
 !data/quarantine/**/
 !data/quarantine/BTCUSDT/1h/*.parquet
 !data/quarantine/BTCUSDT/1h/*.json
+
+# S00A/CP00A.2 · CP08 EVIDENCE READ BY "REAL ARCHIVE" TESTS (tracked)
+# momentum_stability.reconcile reads the CP08-01 metrics table; the parameter
+# robustness dashboard reads the whole (small) robustness archive.
+!data/experiments/S02-CP08-simulator-integrity-audit-v1/metrics_comparison.csv
+!data/experiments/S02-CP08-parameter-robustness-v1/*
