@@ -193,6 +193,10 @@ data/snapshots/*
 data/snapshots/BTCUSDT-1h-raw-v1/*
 !data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json
 !data/snapshots/BTCUSDT-1h-raw-v1/anomalies.json
+# S00A review: part of the reference snapshot, read by the forecast modules and
+# not regenerable in place (restored byte-identical from baseline 0daf402).
+!data/snapshots/BTCUSDT-1h-raw-v1/report.json
+!data/snapshots/BTCUSDT-1h-raw-v1/forecast-windows.parquet
 !data/datasets/
 data/datasets/*
 !data/datasets/S02-CP07-decision-labels-v1/

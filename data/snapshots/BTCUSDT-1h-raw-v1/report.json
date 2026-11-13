@@ -1,0 +1,11 @@
+{
+  "dataset_id": "BTCUSDT-1h-raw-v1",
+  "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+  "lookback_hours": 168,
+  "horizon_hours": 24,
+  "stride_hours": 24,
+  "valid_windows": 2053,
+  "windows_parquet_sha256": "21bbe08da031e54960b32e1764fd76df5b12eaf82ebdaa123c1703229c9defa8",
+  "data_scope": "INDEX ONLY: no OHLCV copying and no interpolation",
+  "created_utc": "2026-10-23T17:29:43.363676+00:00"
+}
