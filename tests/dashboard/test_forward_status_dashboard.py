@@ -1,4 +1,9 @@
-"""Tests for the read-only S02-CP08-05 dashboard adapter, charts and tab."""
+"""Tests for the read-only S02-CP08-05 dashboard adapter, charts and tab.
+
+S01-CP01.1 – vista senza snapshot storico
+S01-CP01.2 – quattro stati dell'audit: corrente, stale, assente, fallito
+S01-CP01.3 – integrità dell'archivio preservata al caricamento
+"""
 from __future__ import annotations
 
 import json
@@ -196,9 +201,305 @@ def test_component_renders_read_only(repo: Path) -> None:
     app.run()
     assert list(app.exception) == []
     assert len(app.tabs) == 4
-    assert len(app.metric) == 6
+    # 6 original metrics + 4 audit metrics (manifest current, manifest audit, match, lag)
+    assert len(app.metric) == 10
     assert len(app.get("plotly_chart")) == 2
     body = " ".join(str(item.value) for item in app.markdown) + " ".join(
         str(item.value) for item in app.warning
     )
     assert "NOT_EVALUATED" in body or "NO-GO" in body
+
+
+# ---------------------------------------------------------------------------
+# S01 – Audit report integration (CP01.1, CP01.2, CP01.3)
+# ---------------------------------------------------------------------------
+
+
+def _write_audit_report(repo: Path, dataset_dir: Path, *, gate: str, manifest_version: str,
+                        lag_hours: float = 0.5, failures: list | None = None) -> Path:
+    """Helper that writes a CP08-07 audit report and returns its path."""
+    monitoring_dir = repo / "data" / "monitoring" / "forward"
+    monitoring_dir.mkdir(parents=True, exist_ok=True)
+    report = {
+        "schema_version": "cdl.cp08.forward_monitoring.v1",
+        "checked_utc": "2026-10-30T15:00:00+00:00",
+        "dataset_root": str(dataset_dir),
+        "checks": [
+            {"name": "LATEST_HASH", "status": "PASS"},
+            {"name": "MANIFEST_VERSION", "status": "PASS"},
+            {"name": "DATASET_ID", "status": "PASS"},
+            {"name": "FORWARD_ONLY", "status": "PASS"},
+            {"name": "CHUNK_CHAIN", "status": "PASS"},
+            {"name": "COVERAGE", "status": "PASS"},
+            {"name": "TIMESTAMPS", "status": "PASS"},
+            {"name": "FRESHNESS", "status": "PASS" if 0 <= lag_hours <= 2.0 else "FAIL"},
+        ],
+        "metrics": {
+            "rows": 48,
+            "chunks": 2,
+            "manifest": manifest_version,
+            "lag_hours": lag_hours,
+        },
+        "gate": gate,
+        "failures": failures or [],
+    }
+    audit_path = monitoring_dir / "latest-audit.json"
+    audit_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return audit_path
+
+
+def test_audit_no_report_available(repo: Path) -> None:
+    """CP01.2 – quando non esiste alcun audit report, lo stato è NO_AUDIT."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    assert dataset.audit_status == "NO_AUDIT"
+    assert dataset.audit_gate == "NO_AUDIT"
+    assert dataset.audit_failures == []
+    assert dataset.audit_lag_hours is None
+    assert dataset.audit_checked_utc is None
+    assert dataset.audit_report is not None
+    assert dataset.audit_report["gate"] == "NO_AUDIT"
+
+
+def test_audit_current_passes(repo: Path) -> None:
+    """CP01.2 – audit corrente con manifest allineato e gate PASS."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version=manifest_name, lag_hours=0.5)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_CURRENT"
+    assert dataset2.audit_gate == "PASS"
+    assert dataset2.audit_failures == []
+    assert dataset2.audit_report["manifest_match"] is True
+    assert dataset2.audit_lag_hours == 0.5
+
+
+def test_audit_stale_manifest(repo: Path) -> None:
+    """CP01.2 – audit su manifest precedente: gate PASS ma manifest diverso."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    # Write audit with an OLD manifest name to simulate stale audit
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version="dataset-manifest-0000.json",
+                        lag_hours=0.5)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_STALE"
+    assert dataset2.audit_gate == "PASS"
+    assert dataset2.audit_report["manifest_match"] is False
+
+
+def test_audit_failed(repo: Path) -> None:
+    """CP01.2 – audit fallito: gate FAIL con dettagli."""
+    _populated(repo, hours=48)
+    dataset = load_forward_dataset(repo)
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    failures = [
+        {"name": "CHUNK_HASH", "status": "FAIL", "detail": "expected abc, got xyz"},
+        {"name": "FRESHNESS", "status": "FAIL", "detail": "lag_hours=5.2, limit=2.0"},
+    ]
+    _write_audit_report(repo, dataset_dir, gate="FAIL", manifest_version=manifest_name,
+                        lag_hours=5.2, failures=failures)
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_FAILED"
+    assert dataset2.audit_gate == "FAIL"
+    assert len(dataset2.audit_failures) == 2
+    assert dataset2.audit_failures[0]["name"] == "CHUNK_HASH"
+    assert dataset2.audit_lag_hours == 5.2
+
+
+def test_audit_never_writes_to_archive(repo: Path) -> None:
+    """CP01.3 – il caricamento della vista lascia intatto l'archivio."""
+    _populated(repo, hours=48)
+    dataset_dir = None
+
+    def snapshot() -> dict[str, tuple[int, int]]:
+        return {
+            str(path): (path.stat().st_size, path.stat().st_mtime_ns)
+            for path in sorted(repo.rglob("*"))
+            if path.is_file()
+        }
+
+    before = snapshot()
+    dataset = load_forward_dataset(repo)
+    assert snapshot() == before
+
+    dataset_dir = dataset.directory
+    manifest_name = dataset.audit_report["manifest_current"]["version"]
+    _write_audit_report(repo, dataset_dir, gate="PASS", manifest_version=manifest_name)
+    after_with_audit = snapshot()
+    # Loading with audit present must still not modify existing files.
+    dataset2 = load_forward_dataset(repo)
+    assert dataset2.audit_status == "AUDIT_CURRENT"
+    assert snapshot() == after_with_audit
+
+
+def test_view_without_snapshot_data(repo: Path) -> None:
+    """CP01.1 – la vista forward funziona anche senza snapshot storico."""
+    _populated(repo, hours=48)
+    # Remove the snapshot manifest to simulate missing historical data.
+    snapshot_manifest = repo / "data" / "snapshots" / "BTCUSDT-1h-raw-v1" / "raw-manifest.json"
+    snapshot_manifest.rename(snapshot_manifest.with_suffix(".bak"))
+    try:
+        dataset = load_forward_dataset(repo)
+        assert dataset.dataset_id == fc.DATASET_ID
+        assert dataset.chunks
+        # The view loads forward data even without snapshot.
+        assert dataset.status is not None
+        assert dataset.readiness is not None
+    finally:
+        snapshot_manifest.with_suffix(".bak").rename(snapshot_manifest)
+
+
+# ---------------------------------------------------------------------------
+# S01 review fix – the CP08-07 banner must distinguish every audit state in the UI
+# (CP01.2). Previously "Tutti i controlli CP08-07 superati." appeared for NO_AUDIT,
+# AUDIT_READ_ERROR and for a failed audit without listed failures.
+# ---------------------------------------------------------------------------
+
+
+def _write_raw_audit(repo: Path, text: str) -> None:
+    monitoring_dir = repo / "data" / "monitoring" / "forward"
+    monitoring_dir.mkdir(parents=True, exist_ok=True)
+    (monitoring_dir / "latest-audit.json").write_text(text, encoding="utf-8")
+
+
+def _render_view(repo: Path):
+    from streamlit.testing.v1 import AppTest
+
+    code = (
+        "import sys\n"
+        f"sys.path.insert(0, r'{(REPO / 'src').as_posix()}')\n"
+        "from crypto_decision_lab.dashboard.config import load_config\n"
+        "from crypto_decision_lab.dashboard.components.forward_status import render_forward_status\n"
+        f"render_forward_status(load_config(repo_root=r'{repo.as_posix()}'))\n"
+    )
+    app = AppTest.from_string(code, default_timeout=120)
+    app.run()
+    assert list(app.exception) == []
+    return app
+
+
+def _audit_messages(app) -> dict[str, list[str]]:
+    levels = {"success": app.success, "info": app.info, "warning": app.warning, "error": app.error}
+    return {
+        level: [str(item.value) for item in items if "Audit CP08-07" in str(item.value)]
+        for level, items in levels.items()
+    }
+
+
+def _current_version(repo: Path) -> str:
+    return load_forward_dataset(repo).audit_report["manifest_current"]["version"]
+
+
+FAILURES = [
+    {"name": "CHUNK_HASH", "status": "FAIL", "detail": "expected abc, got xyz"},
+    {"name": "FRESHNESS", "status": "FAIL", "detail": "lag_hours=5.2, limit=2.0"},
+]
+
+
+def _audit_cases():
+    def current(repo):
+        _write_audit_report(repo, repo, gate="PASS", manifest_version=_current_version(repo))
+
+    def stale(repo):
+        _write_audit_report(repo, repo, gate="PASS", manifest_version="dataset-manifest-0000.json")
+
+    def none(repo):
+        pass
+
+    def failed(repo):
+        _write_audit_report(repo, repo, gate="FAIL", manifest_version=_current_version(repo), lag_hours=5.2,
+                            failures=FAILURES)
+
+    def failed_without_details(repo):
+        _write_audit_report(repo, repo, gate="FAIL", manifest_version=_current_version(repo), failures=[])
+
+    def unreadable(repo):
+        _write_raw_audit(repo, "{ not json")
+
+    def not_an_object(repo):
+        _write_raw_audit(repo, "[1, 2, 3]")
+
+    def unknown_gate(repo):
+        _write_audit_report(repo, repo, gate="MAYBE", manifest_version=_current_version(repo))
+
+    def pass_with_failures(repo):
+        _write_audit_report(repo, repo, gate="PASS", manifest_version=_current_version(repo), failures=FAILURES)
+
+    # id, writer, status, level, text expected in the audit message, "Corrispondenza" metric
+    return [
+        ("current", current, "AUDIT_CURRENT", "success", "corrente", "✅"),
+        ("stale", stale, "AUDIT_STALE", "warning", "manifest precedente", "❌"),
+        ("none", none, "NO_AUDIT", "info", "assente", "n/d"),
+        ("failed", failed, "AUDIT_FAILED", "error", "2 controllo/i fallito/i", "✅"),
+        ("failed-no-details", failed_without_details, "AUDIT_FAILED", "error", "non elenca i controlli", "✅"),
+        ("unreadable", unreadable, "AUDIT_READ_ERROR", "error", "non leggibile", "n/d"),
+        ("not-an-object", not_an_object, "AUDIT_READ_ERROR", "error", "non è un oggetto JSON", "n/d"),
+        ("unknown-gate", unknown_gate, "AUDIT_UNKNOWN", "warning", "non verificabile", "✅"),
+        ("pass-with-failures", pass_with_failures, "AUDIT_UNKNOWN", "warning", "non verificabile", "✅"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "writer,status,level,text,match",
+    [case[1:] for case in _audit_cases()],
+    ids=[case[0] for case in _audit_cases()],
+)
+def test_cp012_ui_distinguishes_every_audit_state(repo: Path, writer, status, level, text, match) -> None:
+    _populated(repo, hours=48)
+    writer(repo)
+    assert load_forward_dataset(repo).audit_status == status
+    app = _render_view(repo)
+    messages = _audit_messages(app)
+    # Exactly one audit message, at the expected level, with the expected text.
+    assert sum(len(items) for items in messages.values()) == 1, messages
+    assert len(messages[level]) == 1 and text in messages[level][0], messages
+    # Only a current audit may read as a success; the old catch-all message is gone.
+    assert bool(messages["success"]) == (status == "AUDIT_CURRENT")
+    everything = [str(item.value) for item in [*app.success, *app.info, *app.warning, *app.error, *app.markdown]]
+    assert not any("Tutti i controlli" in value for value in everything)
+    assert any(status in str(item.value) for item in app.markdown)
+    metrics = {item.label: item.value for item in app.metric}
+    assert metrics["Corrispondenza"] == match
+    shown = " ".join(str(item.value) for item in app.caption)
+    if status == "AUDIT_FAILED" and level == "error" and "2 controllo" in text:
+        assert "CHUNK_HASH" in shown and "lag_hours=5.2" in shown
+
+
+def test_audit_malformed_values_never_crash_the_view(repo: Path) -> None:
+    _populated(repo, hours=48)
+    version = _current_version(repo)
+    _write_raw_audit(
+        repo,
+        json.dumps({"gate": "PASS", "failures": "boom", "metrics": {"manifest": version, "lag_hours": "soon"}}),
+    )
+    assert load_forward_dataset(repo).audit_status == "AUDIT_READ_ERROR"
+    _write_raw_audit(
+        repo,
+        json.dumps({"gate": "PASS", "failures": [], "metrics": {"manifest": version, "lag_hours": "soon"}}),
+    )
+    dataset = load_forward_dataset(repo)
+    assert dataset.audit_status == "AUDIT_CURRENT" and dataset.audit_lag_hours is None
+    _write_raw_audit(repo, json.dumps({"gate": "PASS", "failures": [], "metrics": {"lag_hours": 0.1}}))
+    stale = load_forward_dataset(repo)
+    assert stale.audit_status == "AUDIT_STALE" and "non identificabile" in stale.audit_detail
+    app = _render_view(repo)
+    assert len(_audit_messages(app)["warning"]) == 1
+
+
+def test_audit_is_looked_up_only_inside_the_repository(repo: Path, tmp_path: Path, monkeypatch) -> None:
+    """A report found in the working directory must not leak into the view."""
+    _populated(repo, hours=48)
+    elsewhere = tmp_path / "elsewhere"
+    _write_audit_report(elsewhere, elsewhere, gate="PASS", manifest_version=_current_version(repo))
+    monkeypatch.chdir(elsewhere)
+    assert load_forward_dataset(repo).audit_status == "NO_AUDIT"
+    # The documented var/monitoring location of the repository is honoured.
+    var_dir = repo / "var" / "monitoring" / "forward"
+    var_dir.mkdir(parents=True)
+    report = json.loads((elsewhere / "data" / "monitoring" / "forward" / "latest-audit.json").read_text())
+    (var_dir / "latest-audit.json").write_text(json.dumps(report), encoding="utf-8")
+    assert load_forward_dataset(repo).audit_status == "AUDIT_CURRENT"
