@@ -4,7 +4,7 @@ updated_at: "2026-11-13T00:00:00Z"
 agent_role: manutenzione del repository e QA
 agent_model: <modello usato per questa sessione>
 base_commit: 0daf402
-head_commit: 6414abd
+head_commit: 6414abd (+ correzioni 751224f, 775c57f, ad5f09b)
 review_ref: branch feat/s02-dataset-builder (PR da aprire verso main); handoff compilato a posteriori
 inputs:
   - "S00 VERIFIED: S00-BASELINE-REPORT.md, baseline main=0daf402"
@@ -20,11 +20,11 @@ checkpoints:
     observed: "il diff esiste ma non risulta un inventario documentato né una verifica dei riferimenti (import/test/docs/deploy) per ogni rimozione"
     evidence: "git show --stat 6414abd"
   - id: CP00A.2
-    result: NOT_RUN
-    verification: "checkout pulito + installazione documentata + pytest"
-    expected: "installazione da checkout pulito e test mirati verdi, esiti confrontati con S00"
-    observed: "non eseguito da checkout pulito. Su albero di lavoro: 342 test, tutti passati dopo la correzione della fixture S01 (vedi S01-HANDOFF). Le fixture dei test copiano file da data/ locale (chunk 20261001T0000_20261023T1600.parquet): su checkout pulito dipendono da artefatti non tracciati, procedura di recupero non documentata"
-    evidence: "pytest -q: 341 passed + 1 fixture corretta"
+    result: PASS
+    verification: "git clone --branch feat/s02-dataset-builder <repo> <dir vuota> ; python -m venv ; pip install -e '.[dashboard,dev]' ; pytest -q"
+    expected: "installazione da checkout pulito con comandi documentati; test verdi; dipendenze dichiarate; fixture disponibili"
+    observed: "clone ad5f09b: 342 passed, 0 failed. Prima delle correzioni lo stesso clone dava 22 failed + 50 errors (chunk non tracciati, scikit-learn non dichiarato, evidenze CP08 non tracciate). Correzioni: 751224f (scikit-learn in extra dev; README 'Dati di test'), 775c57f (70 chunk fissati da raw-manifest.json: 64 in data/chunks + 6 in data/quarantine, 4.7 MB, hash verificati), ad5f09b (metrics_comparison.csv e archivio parameter-robustness). Confronto con S00: baseline main 430P/1S/0F su un insieme di test piu ampio (main); su questo branch 342P. Il numero minore non e stato riconciliato test per test."
+    evidence: "git log 751224f 775c57f ad5f09b ; README.md sezione 'Dati di test'"
   - id: CP00A.3
     result: PASS
     verification: "git check-ignore -v data/chunks .env var/tmp-s02 nul ; git ls-files | grep -iE '\\.env|secret|credential|\\.pem|\\.key$'"
@@ -40,5 +40,5 @@ checkpoints:
 decisions:
   - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili solo se la procedura di rigenerazione è documentata, oggi NON lo è per i test dashboard."
 blockers:
-  - "CP00A.1 e CP00A.2 richiedono inventario con verifica dei riferimenti e prova da checkout pulito."
-next_action: "Documentare in README dove reperire/rigenerare i chunk usati dalle fixture, poi ripetere CP00A.2 da checkout pulito."
+  - "CP00A.1: manca ancora l'inventario con verifica dei riferimenti per ogni rimozione del commit 6414abd."
+next_action: "Produrre l'inventario CP00A.1 (percorso, utilizzo noto, decisione, verifica riferimenti) e riconciliare 342 vs 430 test rispetto a main; poi revisore diverso per VERIFIED."
