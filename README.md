@@ -357,3 +357,11 @@ soglie CP08-03 chiusa con selezione train-only, walk-forward espandente con purg
 hash, una sola valutazione finale, rifiuto del periodo di ricerca). La validazione
 indipendente **non è iniziata**: `NOT_EVALUATED`, gate strategico **NO-GO**.
 Intern-Decision-0.8B non avviato.
+
+## S03 del PRD - Motore di simulazione a eventi
+
+Strategie configurabili LONG/FLAT, rischio, broker spot, backtest e paper replay:
+[guida e comandi](docs/S03-simulation-engine.md),
+[configurazione](config/simulation.example.json),
+[evidenze dei checkpoint](S03-HANDOFF.yaml).
+Questo step del PRD e distinto dalla dashboard storica S03-CP01.

@@ -197,7 +197,7 @@ Questa tabella è la coda iniziale. Durante l'implementazione va mantenuta con i
 | S00A | IN_REVIEW | S00 | Commit 6414abd (sanificazione, -385 file). [S00A-HANDOFF.yaml](S00A-HANDOFF.yaml): CP00A.1–4 PASS, inventario in [S00A-INVENTORY.md](S00A-INVENTORY.md); 342 test = 288 main + 54 nuovi. Anomalia: i 430 test di S00 non sono riproducibili per main | Confermare ripristino di report.json e forecast-windows.parquet; revisore ricontrolla S00 e S00A |
 | S01 | IN_REVIEW | S00A | Commit 8949237 + correzione fixture (sidecar v2). 342 test verdi. [S01-HANDOFF.yaml](S01-HANDOFF.yaml): CP01.1–3 PASS | Revisore diverso ripete CP01.1–3, poi VERIFIED |
 | S02 | IN_REVIEW | S00A | Commit 62c38c9 su feat/s02-dataset-builder: execution_contract, dataset_catalog, dataset_builder; dataset BTCUSDT-1h-research-v1 (2061 finestre); CP02.1–CP02.3 PASS in [S02-HANDOFF.yaml](S02-HANDOFF.yaml) | Revisione 2026-11-13: CP02.1–3 confermati, CP02.3 congiunto con S03 confermato; 1 rilievo LOW. Coordinatore: VERIFIED dopo conferma S00A |
-| S03 | TODO | S00A | Simulatore CP07 | Definire eventi e fixture comune |
+| S03 | IN_REVIEW | S00A | Motore eventi, Strategy, Risk Engine e broker; CP03.1-3 in [S03-HANDOFF.yaml](S03-HANDOFF.yaml) | Revisione 2026-11-13: CP03.1–3 confermati; rilievo MEDIUM su engine_sha256 e LOW su run vuoto corretti (review_fixes nell'handoff). Un revisore diverso conferma le correzioni, poi commit e VERIFIED dopo conferma S00A |
 | S04 | TODO | S02, S03 | Viste Streamlit esistenti | Collegare configurazione, runner e risultati |
 | S05 | TODO | S02, S03, S04 | Dataset CP09 come base | Registrare l'esperimento fuori campione |
 | S06 | TODO | S03, S04 | Feed di laboratorio da identificare | Implementare checkpoint transazionale |

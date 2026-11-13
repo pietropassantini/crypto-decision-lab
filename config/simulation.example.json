@@ -1,0 +1,6 @@
+{
+  "strategy": {"name": "momentum", "parameters": {"threshold": 0.05}},
+  "initial_cash": 10000,
+  "hypothesis": {"latency_hours": 1, "horizon_hours": 24, "fee_rate": 0.001, "slippage": 0.0005},
+  "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true}
+}
