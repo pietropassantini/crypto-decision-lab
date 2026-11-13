@@ -203,3 +203,15 @@ data/datasets/S02-CP07-decision-labels-v1/*
 data/datasets/S02-CP06B-regime-features-v1/*
 !data/datasets/S02-CP06B-regime-features-v1/features.parquet
 !data/datasets/S02-CP06B-regime-features-v1/errors.parquet
+
+# S00A/CP00A.2 · MINIMAL TEST FIXTURE CHUNK (tracked)
+# Test fixtures copy this single closed chunk (last chunk of the frozen raw
+# snapshot). The rest of data/chunks/ is regenerable (see README, "Test data").
+!data/chunks/
+data/chunks/*
+!data/chunks/BTCUSDT/
+data/chunks/BTCUSDT/*
+!data/chunks/BTCUSDT/1h/
+data/chunks/BTCUSDT/1h/*
+!data/chunks/BTCUSDT/1h/20261001T0000_20261023T1600.parquet
+!data/chunks/BTCUSDT/1h/20261001T0000_20261023T1600.json

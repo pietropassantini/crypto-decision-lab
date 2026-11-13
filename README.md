@@ -2,6 +2,18 @@
 
 Pipeline **Spot BTCUSDT 1h**, sola lettura, dati di mercato pubblici. Nessuna chiave API, ordine o operazione finanziaria. Per ogni intervallo `[start, end)` in UTC: download a pagine (max 1000), controlli integrità rigorosi, Parquet ZSTD, report JSON e SHA256.
 
+## Dati di test (checkout pulito)
+
+`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e **un chunk di fixture**, `data/chunks/BTCUSDT/1h/20261001T0000_20261023T1600.{parquet,json}`, copiato dalle fixture dei test forward.
+
+Per gli altri dati rigenerabili (`data/chunks/` completo, `data/quarantine/`, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
+
+- chunk e manifest: `cdl ingest` / `cdl sync` (vedi sezioni sotto), che li ricrea con hash SHA-256 verificabili;
+- dataset di ricerca: `python -m crypto_decision_lab.cli build-dataset --source BTCUSDT-1h-raw-v1 --output-dir <dir>`;
+- gli esperimenti derivati si rigenerano con i relativi comandi CPxx e vanno confrontati con i digest nei manifest tracciati.
+
+I test che richiedono dati non presenti nel checkout vanno segnalati nell'handoff dello step, non ignorati.
+
 ## Installazione su Sirio (Ubuntu)
 
 ```bash
