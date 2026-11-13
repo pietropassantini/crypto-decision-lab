@@ -1,0 +1,29 @@
+{
+  "start_ms": 1614556800000,
+  "end_ms": 1617235200000,
+  "sha256": "86291ae7411afc7198cbc683b45d7d825f76ab097358f0d7e46e85b84f2b9eb9",
+  "quality": {
+    "ok": false,
+    "rows": 743,
+    "expected_rows": 744,
+    "start_utc": "2021-03-01 00:00:00+00:00",
+    "end_exclusive_utc": "2021-04-01 00:00:00+00:00",
+    "issues": [
+      "missing hours: 1, first: 2021-03-06 02:00:00+00:00"
+    ],
+    "status": "ERROR",
+    "exceptions": [],
+    "unresolved_issues": [
+      "missing hours: 1, first: 2021-03-06 02:00:00+00:00"
+    ]
+  },
+  "details": {
+    "missing_utc": [
+      "2021-03-06T02:00:00+00:00"
+    ],
+    "incorrect_close": [],
+    "issues": [
+      "missing hours: 1, first: 2021-03-06 02:00:00+00:00"
+    ]
+  }
+}

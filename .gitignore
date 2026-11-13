@@ -193,6 +193,10 @@ data/snapshots/*
 data/snapshots/BTCUSDT-1h-raw-v1/*
 !data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json
 !data/snapshots/BTCUSDT-1h-raw-v1/anomalies.json
+# S00A review: part of the reference snapshot, read by the forecast modules and
+# not regenerable in place (restored byte-identical from baseline 0daf402).
+!data/snapshots/BTCUSDT-1h-raw-v1/report.json
+!data/snapshots/BTCUSDT-1h-raw-v1/forecast-windows.parquet
 !data/datasets/
 data/datasets/*
 !data/datasets/S02-CP07-decision-labels-v1/
@@ -203,3 +207,27 @@ data/datasets/S02-CP07-decision-labels-v1/*
 data/datasets/S02-CP06B-regime-features-v1/*
 !data/datasets/S02-CP06B-regime-features-v1/features.parquet
 !data/datasets/S02-CP06B-regime-features-v1/errors.parquet
+
+# S00A/CP00A.2 · CHUNKS PINNED BY THE FROZEN RAW SNAPSHOT (tracked)
+# data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json pins 70 chunks by SHA-256
+# (64 in data/chunks, 6 in data/quarantine, ~4.7 MB). "Real archive" tests and
+# fixtures need them in a clean clone. Chunks outside this set stay untracked.
+!data/chunks/
+!data/chunks/**/
+!data/chunks/BTCUSDT/1h/*.parquet
+!data/chunks/BTCUSDT/1h/*.json
+!data/quarantine/
+!data/quarantine/**/
+!data/quarantine/BTCUSDT/1h/*.parquet
+!data/quarantine/BTCUSDT/1h/*.json
+
+# S00A/CP00A.2 · CP08 EVIDENCE READ BY "REAL ARCHIVE" TESTS (tracked)
+# momentum_stability.reconcile reads the CP08-01 metrics table; the parameter
+# robustness dashboard reads the whole (small) robustness archive.
+!data/experiments/S02-CP08-simulator-integrity-audit-v1/metrics_comparison.csv
+!data/experiments/S02-CP08-parameter-robustness-v1/*
+
+# S05 · preregistered experiment specs are versioned evidence: the generic
+# "experiments/" rule above targets generated outputs only.
+!config/experiments/
+!config/experiments/*.json

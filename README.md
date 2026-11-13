@@ -2,6 +2,18 @@
 
 Pipeline **Spot BTCUSDT 1h**, sola lettura, dati di mercato pubblici. Nessuna chiave API, ordine o operazione finanziaria. Per ogni intervallo `[start, end)` in UTC: download a pagine (max 1000), controlli integrità rigorosi, Parquet ZSTD, report JSON e SHA256.
 
+## Dati di test (checkout pulito)
+
+`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB), usati dai test sull'archivio reale e dalle fixture forward.
+
+Per gli altri dati rigenerabili (altri chunk, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
+
+- chunk e manifest: `cdl ingest` / `cdl sync` (vedi sezioni sotto), che li ricrea con hash SHA-256 verificabili;
+- dataset di ricerca: `python -m crypto_decision_lab.cli build-dataset --source BTCUSDT-1h-raw-v1 --output-dir <dir>`;
+- gli esperimenti derivati si rigenerano con i relativi comandi CPxx e vanno confrontati con i digest nei manifest tracciati.
+
+I test che richiedono dati non presenti nel checkout vanno segnalati nell'handoff dello step, non ignorati.
+
 ## Installazione su Sirio (Ubuntu)
 
 ```bash
@@ -345,3 +357,32 @@ soglie CP08-03 chiusa con selezione train-only, walk-forward espandente con purg
 hash, una sola valutazione finale, rifiuto del periodo di ricerca). La validazione
 indipendente **non è iniziata**: `NOT_EVALUATED`, gate strategico **NO-GO**.
 Intern-Decision-0.8B non avviato.
+
+## S03 del PRD - Motore di simulazione a eventi
+
+Strategie configurabili LONG/FLAT, rischio, broker spot, backtest e paper replay:
+[guida e comandi](docs/S03-simulation-engine.md),
+[configurazione](config/simulation.example.json),
+[evidenze dei checkpoint](S03-HANDOFF.yaml).
+Questo step del PRD e distinto dalla dashboard storica S03-CP01.
+
+## S04 del PRD - Strategy Studio
+
+Configurazioni immutabili, backtest e paper replay su fonti ammesse dal catalogo,
+risultati riconciliati con il registro e confronto tra run:
+`streamlit run src/crypto_decision_lab/dashboard/studio_app.py`.
+[Guida](docs/S04-strategy-studio.md), [evidenze dei checkpoint](S04-HANDOFF.yaml).
+
+## S05 del PRD - Pattern e Decision Model
+
+Esperimento preregistrato fuori campione su un filtro degli ingressi momentum:
+`python -m crypto_decision_lab.pattern_experiment --spec config/experiments/S05-momentum-filter-v1.json`.
+Esito del primo esperimento: **REJECTED**.
+[Guida](docs/S05-pattern-decision-model.md), [evidenze e risultati](S05-HANDOFF.yaml).
+
+## S06 del PRD - Paper trading persistente
+
+Sessioni paper su SQLite (una transazione per evento, ripresa identica dopo interruzioni),
+replay di snapshot e feed di laboratorio riproducibile con guasti, stati espliciti e scheda
+"Paper trading" nello Studio: `python -m crypto_decision_lab.paper --help`.
+[Guida](docs/S06-paper-trading.md), [evidenze dei checkpoint](S06-HANDOFF.yaml).

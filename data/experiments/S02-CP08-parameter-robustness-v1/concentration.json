@@ -1,0 +1,396 @@
+{
+  "frozen": {
+    "trades": 106,
+    "net_pnl_usdt": 3917.5764283981093,
+    "total_return_pct": 39.17576428398111,
+    "gini_positive_pnl": 0.4702557406233592,
+    "hhi_positive_pnl": {
+      "index": 0.037954794248840816,
+      "effective_trades": 26.347132682204993
+    },
+    "top_k": {
+      "1": {
+        "pnl_usdt": 1044.3992518331195,
+        "share_of_net_pnl_pct": 26.659320396722233,
+        "share_of_gross_profit_pct": 6.607882015587187,
+        "return_pct_after_removal_monetary": 28.731771765649896,
+        "return_pct_after_removal_recompounded": 27.531605018887273
+      },
+      "2": {
+        "pnl_usdt": 2036.9114670318647,
+        "share_of_net_pnl_pct": 51.99417303684244,
+        "share_of_gross_profit_pct": 12.887476342709828,
+        "return_pct_after_removal_monetary": 18.80664961366245,
+        "return_pct_after_removal_recompounded": 17.18251481805806
+      },
+      "3": {
+        "pnl_usdt": 2990.456151344737,
+        "share_of_net_pnl_pct": 76.33434103971086,
+        "share_of_gross_profit_pct": 18.920524297761972,
+        "return_pct_after_removal_monetary": 9.271202770533726,
+        "return_pct_after_removal_recompounded": 8.696570174701934
+      },
+      "5": {
+        "pnl_usdt": 4793.451891766796,
+        "share_of_net_pnl_pct": 122.3575845775351,
+        "share_of_gross_profit_pct": 30.328023016670393,
+        "return_pct_after_removal_monetary": -8.758754633686861,
+        "return_pct_after_removal_recompounded": -5.790145813970637
+      },
+      "10": {
+        "pnl_usdt": 8146.554038708806,
+        "share_of_net_pnl_pct": 207.9488221252117,
+        "share_of_gross_profit_pct": 51.5429973996138,
+        "return_pct_after_removal_monetary": -42.28977610310696,
+        "return_pct_after_removal_recompounded": -27.607826931445565
+      }
+    },
+    "leave_top_k_recompounded_pct": {
+      "0": 39.17576428398106,
+      "1": 27.531605018887273,
+      "2": 17.18251481805806,
+      "3": 8.696570174701934,
+      "5": -5.790145813970637,
+      "10": -27.607826931445565
+    },
+    "best_trade_pnl_usdt": 1044.3992518331195
+  },
+  "primary_1h": {
+    "trades": 106,
+    "net_pnl_usdt": 2359.045050761017,
+    "total_return_pct": 23.59045050761017,
+    "gini_positive_pnl": 0.507503116667515,
+    "hhi_positive_pnl": {
+      "index": 0.03925394085788343,
+      "effective_trades": 25.47514919891587
+    },
+    "top_k": {
+      "1": {
+        "pnl_usdt": 972.8287353940851,
+        "share_of_net_pnl_pct": 41.23824320693897,
+        "share_of_gross_profit_pct": 7.482264915371399,
+        "return_pct_after_removal_monetary": 13.862163153669327,
+        "return_pct_after_removal_recompounded": 14.630026081702074
+      },
+      "2": {
+        "pnl_usdt": 1772.0293426754738,
+        "share_of_net_pnl_pct": 75.11638415314813,
+        "share_of_gross_profit_pct": 13.629113221391748,
+        "return_pct_after_removal_monetary": 5.8701570808554315,
+        "return_pct_after_removal_recompounded": 6.833563138692811
+      },
+      "3": {
+        "pnl_usdt": 2551.3965216309107,
+        "share_of_net_pnl_pct": 108.15378539752099,
+        "share_of_gross_profit_pct": 19.623417755301286,
+        "return_pct_after_removal_monetary": -1.9235147086989257,
+        "return_pct_after_removal_recompounded": -0.1366103570855426
+      },
+      "5": {
+        "pnl_usdt": 4002.1045797447523,
+        "share_of_net_pnl_pct": 169.64934936082258,
+        "share_of_gross_profit_pct": 30.78116999961042,
+        "return_pct_after_removal_monetary": -16.43059528983737,
+        "return_pct_after_removal_recompounded": -11.742358729068037
+      },
+      "10": {
+        "pnl_usdt": 6915.112548464625,
+        "share_of_net_pnl_pct": 293.13185630913836,
+        "share_of_gross_profit_pct": 53.18583027490612,
+        "return_pct_after_removal_monetary": -45.560674977036086,
+        "return_pct_after_removal_recompounded": -31.294414004947345
+      }
+    },
+    "leave_top_k_recompounded_pct": {
+      "0": 23.59045050761017,
+      "1": 14.630026081702074,
+      "2": 6.833563138692811,
+      "3": -0.1366103570855426,
+      "5": -11.742358729068037,
+      "10": -31.294414004947345
+    },
+    "best_trade_pnl_usdt": 972.8287353940851
+  },
+  "by_scenario": {
+    "cost_0015_base": {
+      "trades": 106,
+      "net_pnl_usdt": 3917.5764283981093,
+      "total_return_pct": 39.17576428398111,
+      "gini_positive_pnl": 0.4702557406233592,
+      "hhi_positive_pnl": {
+        "index": 0.037954794248840816,
+        "effective_trades": 26.347132682204993
+      },
+      "top_k": {
+        "1": {
+          "pnl_usdt": 1044.3992518331195,
+          "share_of_net_pnl_pct": 26.659320396722233,
+          "share_of_gross_profit_pct": 6.607882015587187,
+          "return_pct_after_removal_monetary": 28.731771765649896,
+          "return_pct_after_removal_recompounded": 27.531605018887273
+        },
+        "2": {
+          "pnl_usdt": 2036.9114670318647,
+          "share_of_net_pnl_pct": 51.99417303684244,
+          "share_of_gross_profit_pct": 12.887476342709828,
+          "return_pct_after_removal_monetary": 18.80664961366245,
+          "return_pct_after_removal_recompounded": 17.18251481805806
+        },
+        "3": {
+          "pnl_usdt": 2990.456151344737,
+          "share_of_net_pnl_pct": 76.33434103971086,
+          "share_of_gross_profit_pct": 18.920524297761972,
+          "return_pct_after_removal_monetary": 9.271202770533726,
+          "return_pct_after_removal_recompounded": 8.696570174701934
+        },
+        "5": {
+          "pnl_usdt": 4793.451891766796,
+          "share_of_net_pnl_pct": 122.3575845775351,
+          "share_of_gross_profit_pct": 30.328023016670393,
+          "return_pct_after_removal_monetary": -8.758754633686861,
+          "return_pct_after_removal_recompounded": -5.790145813970637
+        },
+        "10": {
+          "pnl_usdt": 8146.554038708806,
+          "share_of_net_pnl_pct": 207.9488221252117,
+          "share_of_gross_profit_pct": 51.5429973996138,
+          "return_pct_after_removal_monetary": -42.28977610310696,
+          "return_pct_after_removal_recompounded": -27.607826931445565
+        }
+      },
+      "leave_top_k_recompounded_pct": {
+        "0": 39.17576428398106,
+        "1": 27.531605018887273,
+        "2": 17.18251481805806,
+        "3": 8.696570174701934,
+        "5": -5.790145813970637,
+        "10": -27.607826931445565
+      },
+      "best_trade_pnl_usdt": 1044.3992518331195
+    },
+    "carry_stressed": {
+      "trades": 106,
+      "net_pnl_usdt": 2994.2177197820647,
+      "total_return_pct": 29.94217719782064,
+      "gini_positive_pnl": 0.47440231469964256,
+      "hhi_positive_pnl": {
+        "index": 0.0391921175665671,
+        "effective_trades": 25.51533476856713
+      },
+      "top_k": {
+        "1": {
+          "pnl_usdt": 1019.216521279073,
+          "share_of_net_pnl_pct": 34.03949267100246,
+          "share_of_gross_profit_pct": 6.808922936942871,
+          "return_pct_after_removal_monetary": 19.750011985029904,
+          "return_pct_after_removal_recompounded": 19.07054725327697
+        },
+        "2": {
+          "pnl_usdt": 1969.8724297692734,
+          "share_of_net_pnl_pct": 65.78921822400581,
+          "share_of_gross_profit_pct": 13.159823540806633,
+          "return_pct_after_removal_monetary": 10.243452900127913,
+          "return_pct_after_removal_recompounded": 9.561451317582993
+        },
+        "3": {
+          "pnl_usdt": 2916.760964620813,
+          "share_of_net_pnl_pct": 97.41312214374013,
+          "share_of_gross_profit_pct": 19.485556031472896,
+          "return_pct_after_removal_monetary": 0.774567551612515,
+          "return_pct_after_removal_recompounded": 1.6273972279409854
+        },
+        "5": {
+          "pnl_usdt": 4680.839010783075,
+          "share_of_net_pnl_pct": 156.32928026101493,
+          "share_of_gross_profit_pct": 31.270560709377555,
+          "return_pct_after_removal_monetary": -16.866212910010102,
+          "return_pct_after_removal_recompounded": -11.793674134656108
+        },
+        "10": {
+          "pnl_usdt": 7885.201256581825,
+          "share_of_net_pnl_pct": 263.3476251404909,
+          "share_of_gross_profit_pct": 52.67745035272037,
+          "return_pct_after_removal_monetary": -48.90983536799761,
+          "return_pct_after_removal_recompounded": -32.111853312550245
+        }
+      },
+      "leave_top_k_recompounded_pct": {
+        "0": 29.94217719782073,
+        "1": 19.07054725327697,
+        "2": 9.561451317582993,
+        "3": 1.6273972279409854,
+        "5": -11.793674134656108,
+        "10": -32.111853312550245
+      },
+      "best_trade_pnl_usdt": 1019.216521279073
+    },
+    "conservative_1h": {
+      "trades": 106,
+      "net_pnl_usdt": 2359.045050761017,
+      "total_return_pct": 23.59045050761017,
+      "gini_positive_pnl": 0.507503116667515,
+      "hhi_positive_pnl": {
+        "index": 0.03925394085788343,
+        "effective_trades": 25.47514919891587
+      },
+      "top_k": {
+        "1": {
+          "pnl_usdt": 972.8287353940851,
+          "share_of_net_pnl_pct": 41.23824320693897,
+          "share_of_gross_profit_pct": 7.482264915371399,
+          "return_pct_after_removal_monetary": 13.862163153669327,
+          "return_pct_after_removal_recompounded": 14.630026081702074
+        },
+        "2": {
+          "pnl_usdt": 1772.0293426754738,
+          "share_of_net_pnl_pct": 75.11638415314813,
+          "share_of_gross_profit_pct": 13.629113221391748,
+          "return_pct_after_removal_monetary": 5.8701570808554315,
+          "return_pct_after_removal_recompounded": 6.833563138692811
+        },
+        "3": {
+          "pnl_usdt": 2551.3965216309107,
+          "share_of_net_pnl_pct": 108.15378539752099,
+          "share_of_gross_profit_pct": 19.623417755301286,
+          "return_pct_after_removal_monetary": -1.9235147086989257,
+          "return_pct_after_removal_recompounded": -0.1366103570855426
+        },
+        "5": {
+          "pnl_usdt": 4002.1045797447523,
+          "share_of_net_pnl_pct": 169.64934936082258,
+          "share_of_gross_profit_pct": 30.78116999961042,
+          "return_pct_after_removal_monetary": -16.43059528983737,
+          "return_pct_after_removal_recompounded": -11.742358729068037
+        },
+        "10": {
+          "pnl_usdt": 6915.112548464625,
+          "share_of_net_pnl_pct": 293.13185630913836,
+          "share_of_gross_profit_pct": 53.18583027490612,
+          "return_pct_after_removal_monetary": -45.560674977036086,
+          "return_pct_after_removal_recompounded": -31.294414004947345
+        }
+      },
+      "leave_top_k_recompounded_pct": {
+        "0": 23.59045050761017,
+        "1": 14.630026081702074,
+        "2": 6.833563138692811,
+        "3": -0.1366103570855426,
+        "5": -11.742358729068037,
+        "10": -31.294414004947345
+      },
+      "best_trade_pnl_usdt": 972.8287353940851
+    },
+    "conservative_1h_cost20": {
+      "trades": 106,
+      "net_pnl_usdt": 1116.0290579935852,
+      "total_return_pct": 11.16029057993584,
+      "gini_positive_pnl": 0.5012607957525061,
+      "hhi_positive_pnl": {
+        "index": 0.041300662195281584,
+        "effective_trades": 24.212686839540446
+      },
+      "top_k": {
+        "1": {
+          "pnl_usdt": 923.6434125120186,
+          "share_of_net_pnl_pct": 82.76159172526918,
+          "share_of_gross_profit_pct": 7.787396997746025,
+          "return_pct_after_removal_monetary": 1.9238564548156534,
+          "return_pct_after_removal_recompounded": 3.204217184796665
+        },
+        "2": {
+          "pnl_usdt": 1688.1065597432519,
+          "share_of_net_pnl_pct": 151.26009019676934,
+          "share_of_gross_profit_pct": 14.232717710254784,
+          "return_pct_after_removal_monetary": -5.7207750174966705,
+          "return_pct_after_removal_recompounded": -3.7188961268225573
+        },
+        "3": {
+          "pnl_usdt": 2441.697670041326,
+          "share_of_net_pnl_pct": 218.78441717557507,
+          "share_of_gross_profit_pct": 20.58637440326666,
+          "return_pct_after_removal_monetary": -13.256686120477424,
+          "return_pct_after_removal_recompounded": -9.910547952710791
+        },
+        "5": {
+          "pnl_usdt": 3841.3097137002223,
+          "share_of_net_pnl_pct": 344.194417357393,
+          "share_of_gross_profit_pct": 32.38674506487915,
+          "return_pct_after_removal_monetary": -27.25280655706638,
+          "return_pct_after_removal_recompounded": -20.221007350929597
+        },
+        "10": {
+          "pnl_usdt": 6525.3388521177185,
+          "share_of_net_pnl_pct": 584.692558440107,
+          "share_of_gross_profit_pct": 55.016257895517434,
+          "return_pct_after_removal_monetary": -54.09309794124134,
+          "return_pct_after_removal_recompounded": -37.583450915909935
+        }
+      },
+      "leave_top_k_recompounded_pct": {
+        "0": 11.160290579935728,
+        "1": 3.204217184796665,
+        "2": -3.7188961268225573,
+        "3": -9.910547952710791,
+        "5": -20.221007350929597,
+        "10": -37.583450915909935
+      },
+      "best_trade_pnl_usdt": 923.6434125120186
+    },
+    "conservative_1h_cost20_carry": {
+      "trades": 106,
+      "net_pnl_usdt": 378.53842600510455,
+      "total_return_pct": 3.785384260051061,
+      "gini_positive_pnl": 0.4957373271614385,
+      "hhi_positive_pnl": {
+        "index": 0.042780087045796604,
+        "effective_trades": 23.375361507083607
+      },
+      "top_k": {
+        "1": {
+          "pnl_usdt": 886.7446627908006,
+          "share_of_net_pnl_pct": 234.25486076777923,
+          "share_of_gross_profit_pct": 7.887877172312087,
+          "return_pct_after_removal_monetary": -5.082062367856965,
+          "return_pct_after_removal_recompounded": -3.507755961566761
+        },
+        "2": {
+          "pnl_usdt": 1641.6293390504063,
+          "share_of_net_pnl_pct": 433.6757449898281,
+          "share_of_gross_profit_pct": 14.602817622989607,
+          "return_pct_after_removal_monetary": -12.630909130453016,
+          "return_pct_after_removal_recompounded": -9.980618770790194
+        },
+        "3": {
+          "pnl_usdt": 2389.960061298087,
+          "share_of_net_pnl_pct": 631.3652451404918,
+          "share_of_gross_profit_pct": 21.259458558137656,
+          "return_pct_after_removal_monetary": -20.114216352929816,
+          "return_pct_after_removal_recompounded": -15.76959130778295
+        },
+        "5": {
+          "pnl_usdt": 3762.8726702308527,
+          "share_of_net_pnl_pct": 994.053023874546,
+          "share_of_gross_profit_pct": 33.47195498692647,
+          "return_pct_after_removal_monetary": -33.84334244225747,
+          "return_pct_after_removal_recompounded": -25.40950129925025
+        },
+        "10": {
+          "pnl_usdt": 6335.5954350149905,
+          "share_of_net_pnl_pct": 1673.699418544514,
+          "share_of_gross_profit_pct": 56.357146202129755,
+          "return_pct_after_removal_monetary": -59.570570090098855,
+          "return_pct_after_removal_recompounded": -41.560949059213016
+        }
+      },
+      "leave_top_k_recompounded_pct": {
+        "0": 3.785384260051128,
+        "1": -3.507755961566761,
+        "2": -9.980618770790194,
+        "3": -15.76959130778295,
+        "5": -25.40950129925025,
+        "10": -41.560949059213016
+      },
+      "best_trade_pnl_usdt": 886.7446627908006
+    }
+  }
+}

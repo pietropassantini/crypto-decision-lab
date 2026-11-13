@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "provider": "binance-spot",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "start_ms": 1612137600000,
+  "end_ms": 1614556800000,
+  "rows": 671,
+  "sha256": "1ddf564fe5fff32ebfa6c446b1f8f36f71b0fbe56a93d7d1d813d353f971a4a9",
+  "collected_utc": "2026-10-23T16:26:42.715920+00:00",
+  "quality": {
+    "ok": true,
+    "rows": 671,
+    "expected_rows": 672,
+    "start_utc": "2021-02-01 00:00:00+00:00",
+    "end_exclusive_utc": "2021-03-01 00:00:00+00:00",
+    "issues": [
+      "missing hours: 1, first: 2021-02-11 04:00:00+00:00",
+      "incorrect candle close time"
+    ],
+    "status": "ACCEPTED_WITH_WARNINGS",
+    "exceptions": [
+      {
+        "event_id": "BINANCE_BTCUSDT_20210211_MAINTENANCE",
+        "missing_utc": "2021-02-11 04:00:00+00:00",
+        "partial_utc": "2021-02-11 03:00:00+00:00",
+        "observed_close_ms": 1613014854773,
+        "reason": "historical exchange interruption; observed in source API"
+      }
+    ],
+    "unresolved_issues": []
+  }
+}
