@@ -1,0 +1,34 @@
+step_id: S00
+status: VERIFIED
+updated_at: 2026-11-13T07:30:00+01:00
+agent_role: Integrazione e QA
+agent_model: pi-agent
+base_commit: 0daf40287004ceab1f089c4ca4f0940c13cc37e0
+head_commit: 0daf40287004ceab1f089c4ca4f0940c13cc37e0
+review_ref: S00-BASELINE-REPORT.md
+inputs:
+  - A00 (DONE): Analisi di main, CP08-07 e CP09 con SHA ed esiti
+  - PRD Crypto_Decision_Lab_PRD.md (v1.1, 12 novembre 2026)
+changed_paths:
+  - S00-BASELINE-REPORT.md: Report completo di verifica baseline e checkpoint
+checkpoints:
+  - id: CP00.1
+    result: PASS
+    verification: git checkout <branch> && python -m pytest tests/ -v --tb=short
+    expected: Tabella con SHA, data, comandi di test ed esiti per branch
+    observed: main=430P/1S/0F, cp08-07=297P/0S/1F (sidecar v2), cp09=297P/0S/0F
+    evidence: S00-BASELINE-REPORT.md#sezione-2
+  - id: CP00.2
+    result: PASS
+    verification: git log --format="%H %ai %s" -1 <branch> per ogni branch
+    expected: Baseline scelta per ciascuno step dipendente verificata
+    observed: main (0daf402) scelto come baseline operativa per S00A-S03
+    evidence: S00-BASELINE-REPORT.md#sezione-5
+decisions:
+  - Baseline operativa: main (0daf402) con 430 test. Nessuna regressione identificata.
+  - Il fallimento su CP08-07 (sidecar_match) è documentato come fixture incompleta, non come regressione.
+  - I branch CP08-07 e CP09 sono verificati come linee storiche funzionali.
+  - La strategia d'integrazione usa main come base per S00A.
+blockers:
+  - None
+next_action: Avviare S00A — Sanificazione del repository (inventario file, pulizia, PR dedicata)
