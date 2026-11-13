@@ -38,7 +38,7 @@ checkpoints:
     observed: "diff vuoto sui percorsi congelati; protocol_authority: sidecar_match=True, archive_manifest_match=True, hash_ok=True (PROTOCOL_VERIFIED, ARCHIVE_VERIFIED). Rimossi dal tracking solo output rigenerabili (es. data/snapshots report.json e forecast-windows.parquet)"
     evidence: "comando sopra"
 decisions:
-  - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili solo se la procedura di rigenerazione è documentata, oggi NON lo è per i test dashboard."
+  - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili se la procedura è documentata (README, sezione 'Dati di test'). I 70 chunk fissati da raw-manifest.json e le evidenze CP08 lette dai test restano tracciati."
 blockers:
   - "CP00A.1: manca ancora l'inventario con verifica dei riferimenti per ogni rimozione del commit 6414abd."
 next_action: "Produrre l'inventario CP00A.1 (percorso, utilizzo noto, decisione, verifica riferimenti) e riconciliare 342 vs 430 test rispetto a main; poi revisore diverso per VERIFIED."
