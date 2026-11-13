@@ -23,7 +23,45 @@ STATUS_ICON = {
     "DATA_READY_EVALUATION_PENDING": "🟢",
 }
 QUARANTINE_ICON = {"VALID": "🟢", "REQUIRES_REVIEW": "🟠", "QUARANTINED": "🔴", "INVALID": "⛔"}
+AUDIT_ICON = {
+    "AUDIT_CURRENT": "🟢",
+    "AUDIT_STALE": "🟡",
+    "AUDIT_FAILED": "🔴",
+    "NO_AUDIT": "⚪",
+    "AUDIT_READ_ERROR": "🔴",
+    "AUDIT_UNKNOWN": "⚪",
+}
 
+
+# States in which "manifest match" has no meaning: there is no usable report.
+AUDIT_WITHOUT_MATCH = ("NO_AUDIT", "AUDIT_READ_ERROR")
+
+
+def audit_banner(report: dict) -> tuple[str, str]:
+    """(streamlit level, message) of the CP08-07 audit.
+
+    ``success`` is returned only for ``AUDIT_CURRENT``; an absent, stale,
+    failed, unreadable or inconsistent audit never reads as passed.
+    """
+
+    status = str(report.get("status", "AUDIT_UNKNOWN"))
+    failures = report.get("failures") or []
+    detail = str(report.get("detail") or "")
+    audited = (report.get("manifest_audit") or {}).get("version") or "non identificabile"
+    if status == "AUDIT_CURRENT":
+        return "success", "Audit CP08-07 corrente: gate PASS sul manifest corrente, nessun controllo fallito."
+    if status == "AUDIT_STALE":
+        return "warning", (
+            f"Audit CP08-07 su un manifest precedente ({audited}): il manifest corrente non è stato verificato."
+        )
+    if status == "NO_AUDIT":
+        return "info", "Audit CP08-07 assente: nessun report disponibile, il manifest corrente non risulta verificato."
+    if status == "AUDIT_FAILED":
+        count = f"{len(failures)} controllo/i fallito/i" if failures else "il report non elenca i controlli falliti"
+        return "error", f"Audit CP08-07 fallito (gate FAIL): {count}."
+    if status == "AUDIT_READ_ERROR":
+        return "error", f"Audit CP08-07 non leggibile: {detail}"
+    return "warning", f"Audit CP08-07 non verificabile ({status}): {detail or 'report incoerente'}"
 
 def _fmt(value, digits: int = 2) -> str:
     if value is None:
@@ -100,6 +138,36 @@ def render_forward_status(config: DashboardConfig) -> None:
 
     show_plot(make_forward_coverage_figure(status, readiness), key="forward_coverage")
     show_plot(make_forward_readiness_figure(readiness), key="forward_requirements")
+
+    # CP08-07 audit: every state is shown and only AUDIT_CURRENT is a success.
+    audit_report = dataset.audit_report or {}
+    audit_status = dataset.audit_status
+    audit_lag = dataset.audit_lag_hours
+    manifest_current = audit_report.get("manifest_current") or {}
+    manifest_audit = audit_report.get("manifest_audit")
+    st.markdown(
+        f"#### Monitoraggio qualità CP08-07  {AUDIT_ICON.get(audit_status, '⚪')} **{audit_status}**"
+    )
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Manifest corrente", manifest_current.get("version") or "n/d")
+    col2.metric("Manifest auditato", (manifest_audit or {}).get("version") or "n/d")
+    if audit_status in AUDIT_WITHOUT_MATCH:
+        col3.metric("Corrispondenza", "n/d")
+    else:
+        col3.metric("Corrispondenza", "✅" if audit_report.get("manifest_match") else "❌")
+    col4.metric("Lag (ore)", f"{audit_lag:.2f}" if audit_lag is not None else "n/d")
+    col4.caption(f"Audit eseguito: {dataset.audit_checked_utc or 'n/d'}")
+    if manifest_current.get("sha256"):
+        st.caption(f"SHA-256 manifest corrente: `{manifest_current['sha256'][:16]}…`")
+
+    level, message = audit_banner(audit_report)
+    getattr(st, level)(message)
+    audit_failures = dataset.audit_failures
+    for failure in audit_failures[:10]:
+        st.caption(f"- **{failure.get('name', '?')}**: {failure.get('detail', '')}")
+    if len(audit_failures) > 10:
+        st.caption(f"… e altri {len(audit_failures) - 10} controlli falliti")
+    st.divider()
 
     tabs = st.tabs(["Readiness", "Chunk & provenienza", "Gap & quarantena", "Registry"])
 
