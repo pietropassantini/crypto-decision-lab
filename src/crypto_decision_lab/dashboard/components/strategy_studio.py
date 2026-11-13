@@ -23,6 +23,10 @@ SELECTED_RUN_KEY = "studio_selected_run"
 STRATEGY_HELP = {
     "constant": "Esposizione costante LONG o FLAT: riferimento deterministico.",
     "momentum": "LONG se momentum_24h (frazione, 0.05 = 5%) supera la soglia, altrimenti FLAT.",
+    "scheduled_momentum": "S05: decide solo ai decision point (cutoff S02). Gli eventi orari dello Studio non li "
+                          "contengono, quindi qui non apre posizioni: si usa negli esperimenti S05.",
+    "model_filtered_momentum": "S05: momentum filtrato dallo score del Decision Model. Parametri JSON: model_path, "
+                               "model_sha256, threshold, score_threshold. Richiede decision point (esperimenti S05).",
 }
 
 

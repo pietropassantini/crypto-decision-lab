@@ -372,3 +372,10 @@ Configurazioni immutabili, backtest e paper replay su fonti ammesse dal catalogo
 risultati riconciliati con il registro e confronto tra run:
 `streamlit run src/crypto_decision_lab/dashboard/studio_app.py`.
 [Guida](docs/S04-strategy-studio.md), [evidenze dei checkpoint](S04-HANDOFF.yaml).
+
+## S05 del PRD - Pattern e Decision Model
+
+Esperimento preregistrato fuori campione su un filtro degli ingressi momentum:
+`python -m crypto_decision_lab.pattern_experiment --spec config/experiments/S05-momentum-filter-v1.json`.
+Esito del primo esperimento: **REJECTED**.
+[Guida](docs/S05-pattern-decision-model.md), [evidenze e risultati](S05-HANDOFF.yaml).

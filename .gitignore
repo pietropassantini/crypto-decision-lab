@@ -222,3 +222,8 @@ data/datasets/S02-CP06B-regime-features-v1/*
 # robustness dashboard reads the whole (small) robustness archive.
 !data/experiments/S02-CP08-simulator-integrity-audit-v1/metrics_comparison.csv
 !data/experiments/S02-CP08-parameter-robustness-v1/*
+
+# S05 · preregistered experiment specs are versioned evidence: the generic
+# "experiments/" rule above targets generated outputs only.
+!config/experiments/
+!config/experiments/*.json

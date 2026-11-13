@@ -102,8 +102,23 @@ class MomentumStrategy:
         return Proposal(exposure, f"{self.feature}={value}; threshold={self.threshold}")
 
 
+def _scheduled_momentum(**parameters) -> Strategy:
+    from .decision_model import ScheduledMomentumStrategy
+
+    return ScheduledMomentumStrategy(**parameters)
+
+
+def _model_filtered_momentum(**parameters) -> Strategy:
+    from .decision_model import ModelFilteredMomentumStrategy
+
+    return ModelFilteredMomentumStrategy(**parameters)
+
+
 STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "constant": ConstantStrategy, "momentum": MomentumStrategy,
+    # S05: decide only at decision points (S02 cutoffs); lazy to avoid import cycles.
+    "scheduled_momentum": _scheduled_momentum,
+    "model_filtered_momentum": _model_filtered_momentum,
 }
 
 
