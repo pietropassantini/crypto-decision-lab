@@ -1,0 +1,44 @@
+step_id: S00A
+status: IN_REVIEW
+updated_at: "2026-11-13T00:00:00Z"
+agent_role: manutenzione del repository e QA
+agent_model: <modello usato per questa sessione>
+base_commit: 0daf402
+head_commit: 6414abd
+review_ref: branch feat/s02-dataset-builder (PR da aprire verso main); handoff compilato a posteriori
+inputs:
+  - "S00 VERIFIED: S00-BASELINE-REPORT.md, baseline main=0daf402"
+changed_paths:
+  - "data/experiments (224 file rimossi dal tracking: output rigenerabili CP01-CP07/CP08 derivati)"
+  - "data/chunks (128), data/quarantine (12), data/diagnostics (3), data/reports (3), data/manifests (1), data/snapshots (2: report.json, forecast-windows.parquet), docs/screenshots (12)"
+  - ".gitignore — regole di esclusione per output rigenerabili, var/, nul, .env"
+checkpoints:
+  - id: CP00A.1
+    result: NOT_RUN
+    verification: "git show --shortstat 6414abd (386 file, +13/-6689)"
+    expected: "inventario con percorso, utilizzo noto e decisione per ogni candidato; verifica riferimenti per ogni rimozione"
+    observed: "il diff esiste ma non risulta un inventario documentato né una verifica dei riferimenti (import/test/docs/deploy) per ogni rimozione"
+    evidence: "git show --stat 6414abd"
+  - id: CP00A.2
+    result: NOT_RUN
+    verification: "checkout pulito + installazione documentata + pytest"
+    expected: "installazione da checkout pulito e test mirati verdi, esiti confrontati con S00"
+    observed: "non eseguito da checkout pulito. Su albero di lavoro: 342 test, tutti passati dopo la correzione della fixture S01 (vedi S01-HANDOFF). Le fixture dei test copiano file da data/ locale (chunk 20261001T0000_20261023T1600.parquet): su checkout pulito dipendono da artefatti non tracciati, procedura di recupero non documentata"
+    evidence: "pytest -q: 341 passed + 1 fixture corretta"
+  - id: CP00A.3
+    result: PASS
+    verification: "git check-ignore -v data/chunks .env var/tmp-s02 nul ; git ls-files | grep -iE '\\.env|secret|credential|\\.pem|\\.key$'"
+    expected: "output rigenerabili, config locali e credenziali esclusi; nessun segreto tracciato"
+    observed: ".env, var/, nul ignorati; nessun file sospetto tracciato. Nota: .agent-state/.orchestrix/.wibix non tracciati (verificato con git ls-files)"
+    evidence: ".gitignore righe 28, 146, 149"
+  - id: CP00A.4
+    result: PASS
+    verification: "git diff --stat 0daf402 HEAD -- data/forward data/experiments/S02-CP08-independent-validation-protocol-v1 data/experiments/S02-CP08-momentum-stability-v1 config/protocols ; protocol_authority() su repo reale"
+    expected: "dataset forward, manifest, sidecar e artefatti congelati CP08 intatti"
+    observed: "diff vuoto sui percorsi congelati; protocol_authority: sidecar_match=True, archive_manifest_match=True, hash_ok=True (PROTOCOL_VERIFIED, ARCHIVE_VERIFIED). Rimossi dal tracking solo output rigenerabili (es. data/snapshots report.json e forecast-windows.parquet)"
+    evidence: "comando sopra"
+decisions:
+  - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili solo se la procedura di rigenerazione è documentata, oggi NON lo è per i test dashboard."
+blockers:
+  - "CP00A.1 e CP00A.2 richiedono inventario con verifica dei riferimenti e prova da checkout pulito."
+next_action: "Documentare in README dove reperire/rigenerare i chunk usati dalle fixture, poi ripetere CP00A.2 da checkout pulito."
