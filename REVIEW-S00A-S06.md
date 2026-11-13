@@ -45,7 +45,7 @@ Nota ambientale: con un basetemp lungo, 8 test della raccolta forward e del moni
 
 ## Attività aperte
 
-1. **S01:** correggere il banner (nessun successo senza un audit `AUDIT_CURRENT` con gate PASS), aggiungere un test UI per i quattro stati e ripresentare. Va riapplicato il codice annullato dal revert `1842b00`.
+1. **S01:** *(ripresentato il 2026-11-13 su `fix/s01-audit-banner`, commit `f3b0dbb`, in attesa di nuova verifica)* correggere il banner (nessun successo senza un audit `AUDIT_CURRENT` con gate PASS), aggiungere un test UI per i quattro stati e ripresentare. Va riapplicato il codice annullato dal revert `1842b00`.
 2. **S00 (VERIFIED):** l'handoff S00A segnala conteggi di test probabilmente attribuiti al branch sbagliato in `S00-BASELINE-REPORT.md`. Da ricontrollare, non bloccante.
 3. **S02:** rilievo LOW su `reserved_dataset_ids`.
 4. **CP08:** errore silenzioso con percorsi lunghi su Windows (vedi nota ambientale).

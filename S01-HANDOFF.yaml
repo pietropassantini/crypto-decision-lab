@@ -1,5 +1,5 @@
 step_id: S01
-status: IN_PROGRESS
+status: IN_REVIEW
 updated_at: "2026-11-13T00:00:00Z"
 agent_role: Streamlit e operazioni dati
 agent_model: <modello usato per questa sessione>
@@ -40,3 +40,34 @@ verification_2026_11_13:
   status: IN_PROGRESS
   report: REVIEW-S00A-S06.md
   note: "RINVIATO: con NO_AUDIT, AUDIT_READ_ERROR e AUDIT_FAILED senza fallimenti elencati il banner mostra 'Tutti i controlli CP08-07 superati.' (riprodotto con AppTest per NO_AUDIT). Contraddice CP01.2/R01. Codice annullato in main con il revert 1842b00; il lavoro resta su prd/integration. Azione: nessun messaggio di successo senza AUDIT_CURRENT e gate PASS, test UI dei quattro stati, poi ripresentare riapplicando il codice."
+resubmission_2026_11_13:
+  author: "Claude Sonnet 5.5 (claude-sonnet-5-5), su richiesta dell'utente dopo il rinvio"
+  branch: fix/s01-audit-banner
+  base_commit: ca0037f
+  head_commit: f3b0dbb
+  fixes_finding: "Il banner mostrava 'Tutti i controlli CP08-07 superati.' con NO_AUDIT, AUDIT_READ_ERROR e AUDIT_FAILED senza fallimenti elencati (REVIEW-S00A-S06.md)."
+  changes:
+    - "forward_status.py: audit_banner() - success solo per AUDIT_CURRENT (gate PASS, nessun controllo fallito, audit sul manifest corrente); NO_AUDIT = info, AUDIT_STALE/AUDIT_UNKNOWN = warning, AUDIT_FAILED/AUDIT_READ_ERROR = error; 'Corrispondenza' n/d senza report utilizzabile; fallimenti elencati in ogni stato."
+    - "forward_adapter.py: lettura del report secondo il formato reale CP08-07 (gate, failures, metrics.manifest, lag_hours); JSON non valido, non-oggetto, failures non lista, lag non numerico e PASS con fallimenti elencati sono classificati senza eccezioni; la directory corrente non e piu cercata (solo data/monitoring e var/monitoring del repository); eliminato il falso 'sha256 dell'audit' ricavato dal detail di DATASET_HASH (il report registra versioni di manifest, non hash)."
+  checkpoints:
+    - id: CP01.1
+      result: PASS
+      verification: "python -m pytest tests/dashboard/test_forward_status_dashboard.py::test_view_without_snapshot_data -q"
+      observed: "invariato, passa"
+    - id: CP01.2
+      result: PASS
+      verification: 'python -m pytest tests/dashboard/test_forward_status_dashboard.py -k "cp012 or malformed or inside_the_repository" -q -p no:cacheprovider --basetemp <percorso breve>'
+      expected: "La UI distingue audit corrente, su manifest precedente, assente e fallito"
+      observed: "9 stati verificati nella vista renderizzata (AppTest): current=success, stale=warning, none=info, failed=error con controlli elencati, failed senza dettagli=error, report illeggibile e non-oggetto=error, gate sconosciuto e PASS con fallimenti=warning. In ogni caso un solo messaggio di audit, il messaggio generico e scomparso e 'Corrispondenza' vale n/d senza report. I test falliscono (11/11) contro il codice di 8949237, compresi i tre stati che prima mostravano il successo."
+      evidence: "tests/dashboard/test_forward_status_dashboard.py::{test_cp012_ui_distinguishes_every_audit_state,test_audit_malformed_values_never_crash_the_view,test_audit_is_looked_up_only_inside_the_repository}"
+    - id: CP01.3
+      result: PASS
+      verification: "python -m pytest tests/dashboard/test_forward_status_dashboard.py -k never_write -q"
+      observed: "invariato, passa; la lettura dell'audit non scrive nulla"
+  validation:
+    focused: "python -m pytest tests/dashboard/test_forward_status_dashboard.py -q -> 25 passed"
+    full_suite: "python -m pytest -q -p no:cacheprovider --basetemp <percorso breve> -> 440 passed (423 su main + 17 di S01)"
+  open_points:
+    - "Il report CP08-07 non registra hash di manifest: la corrispondenza e per versione del manifest. Un audit eseguito molto tempo fa sul manifest corrente risulta ancora AUDIT_CURRENT; la freschezza dell'audit e coperta dal controllo FRESHNESS interno e dal timestamp 'Audit eseguito', non da una soglia di eta nella UI."
+    - "R01 chiede anche freschezza, copertura, gap e quarantena: restano mostrati dalle metriche gia presenti della vista, non toccate."
+  next_action: "Revisore diverso dall'autore ripete CP01.1-3 dal commit f3b0dbb; poi VERIFIED e merge in main. Autore della correzione = revisore precedente: revisione non indipendente se la ripete la stessa istanza."
