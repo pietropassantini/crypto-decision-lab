@@ -29,6 +29,11 @@ decisions:
   - Il fallimento su CP08-07 (sidecar_match) è documentato come fixture incompleta, non come regressione.
   - I branch CP08-07 e CP09 sono verificati come linee storiche funzionali.
   - La strategia d'integrazione usa main come base per S00A.
+correction:
+  date: "2026-11-14"
+  source: "REVIEW-S00A-2026-11-14.md, rilievo A3"
+  observed: "main 0daf402 raccoglie 288 test (clone pulito: 285P/3F per evidenze CP08 non tracciate a quel commit); il 430P/1S era stato misurato sulla punta locale 38dfa60 di feat/s02-cp09-decision-dataset (431 raccolti). cp08-07 (298) e cp09 7109e90 (297) confermati."
+  impact: "Nessuno sulla baseline: main 0daf402 resta la base operativa. Corretti S00-BASELINE-REPORT.md (§2.1, §3, §5, nuova §7)."
 blockers:
   - None
 next_action: Avviare S00A — Sanificazione del repository (inventario file, pulizia, PR dedicata)

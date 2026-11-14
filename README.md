@@ -4,7 +4,12 @@ Pipeline **Spot BTCUSDT 1h**, sola lettura, dati di mercato pubblici. Nessuna ch
 
 ## Dati di test (checkout pulito)
 
-`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB), usati dai test sull'archivio reale e dalle fixture forward.
+`data/` è quasi tutto rigenerabile e non è tracciato (S00A). In `data/` sono tracciati soltanto:
+
+- l'archivio forward `data/forward/` (evidenza indipendente CP08);
+- gli artefatti congelati CP08 e le evidenze lette dai test (`data/experiments/S02-CP0*`, `data/datasets/S02-CP0*`, `data/reports/S02-CP08-05R-…json`);
+- i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB). Sono tracciati per indice: le cartelle sono escluse, quindi un chunk nuovo creato da `cdl ingest` non entra in un commit;
+- lo snapshot `data/snapshots/BTCUSDT-1h-raw-v1/` (`raw-manifest.json`, `anomalies.json`, `report.json`, `forecast-windows.parquet`), che `cdl freeze` non può rigenerare sul posto.
 
 Per gli altri dati rigenerabili (altri chunk, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
 
@@ -21,9 +26,11 @@ sudo apt-get update && sudo apt-get install -y python3-venv python3-pip
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e '.[dev]'
+pip install -e '.[dashboard,dev]'
 pytest -q
 ```
+
+La suite completa richiede gli extra `dashboard` (Streamlit, Plotly, Kaleido per i test della UI) e `dev` (pytest, scikit-learn). Per il solo servizio di raccolta forward basta `pip install -e .`: PyYAML è una dipendenza principale.
 
 Se il repository è stato estratto da ZIP, entra prima nella cartella `crypto-decision-lab`.
 
