@@ -186,12 +186,19 @@ def _live_orders(register: dict, hypothesis: dict) -> tuple[list[dict], dict]:
         vwap = notional / quantity if quantity else None
         sign = 1 if order["side"] == "BUY" else -1
         slippage_bps = float(sign * (vwap / _d(reference) - 1) * 10000) if vwap and reference else None
+        requested_quote = _d(request["quote_quantity"]) if request.get("quote_quantity") is not None else None
         if request.get("quantity") is not None:
             requested = _d(request["quantity"])
-        elif request.get("quote_quantity") is not None and reference:
-            requested = _d(request["quote_quantity"]) / _d(reference)
+            fill_ratio = float(quantity / requested) if requested else None
+        elif requested_quote:
+            # Quote-sized MARKET order: it is complete when the quote amount is spent, whatever the
+            # price it filled at.  Comparing the base quantity with quote / reference open would read
+            # slippage as a missing fill (review F5), so the ratio is taken on the quote amount.
+            fill_ratio = float(notional / requested_quote)
+            requested = quantity / _d(fill_ratio) if fill_ratio else (requested_quote / _d(reference)
+                                                                       if reference else None)
         else:
-            requested = None
+            requested, fill_ratio = None, None
         first_fill = min((_utc(f["recorded_at"]) for f in fills), default=None)
         decision = decisions.get(str(bar), {})
         orders.append({
@@ -199,7 +206,8 @@ def _live_orders(register: dict, hypothesis: dict) -> tuple[list[dict], dict]:
             "order_type": request.get("order_type"), "status": order["status"], "bar_ts": str(bar),
             "decision_reason": decision.get("reason"), "reference_open": reference,
             "requested_quantity": float(requested) if requested is not None else None,
-            "executed_quantity": float(quantity), "fill_ratio": float(quantity / requested) if requested else None,
+            "requested_quote": float(requested_quote) if requested_quote is not None else None,
+            "executed_quantity": float(quantity), "fill_ratio": fill_ratio,
             "fills": len(fills), "vwap": float(vwap) if vwap else None, "notional": float(notional),
             "fees_quote": float(fees), "fee_bps": float(fees / notional * 10000) if notional else None,
             "slippage_bps": slippage_bps,

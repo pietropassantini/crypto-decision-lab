@@ -48,7 +48,7 @@ review_fixes:
     - "A4: .gitignore esclude docs/screenshots/, data/chunks/ e data/quarantine/ (i 70 chunk fissati restano tracciati per indice); README 'Dati di test' allineato (A6)"
     - "F9: report.json e forecast-windows.parquet dello snapshot ritracciati (byte-identici a 0daf402), eccezioni in .gitignore"
   open:
-    - "A2 (S06): pulsante 'Riconosci gap' disabilitato con stato vecchio; test fragile con streamlit 1.67"
+    - "A2 (S06): CHIUSO il 2026-11-14: paper_sessions.py esegue st.rerun() dopo ogni azione, cosi i pulsanti si ridisegnano con lo stato aggiornato (test_cp042 verde con streamlit 1.67); da confermare da un revisore non Claude"
     - "A5 (INFO): percorsi locali in file tracciati, archivio forward non modificabile"
 blockers:
   - "Conferma di un revisore non Claude (correzioni S00A di Claude Sonnet 5.5, review e fix di Claude Opus 5.5)."

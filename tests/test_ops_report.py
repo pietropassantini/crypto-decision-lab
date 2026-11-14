@@ -73,6 +73,32 @@ def test_report_totals_match_the_register(fixture_session):
     assert sum(report["fills"]["by_status"].values()) == len(register["orders"])
 
 
+def _register(request: dict, fills: list[dict], status: str = "FILLED") -> dict:
+    return {"meta": {"symbol_rules": {"base_asset": "BTC", "quote_asset": "USDT"}},
+            "ledger": [{"kind": "market", "timestamp": "2024-01-31 00:00:00+00:00", "open": 100.0}],
+            "fills": [{"client_order_id": "c1", "commission": "0", "commission_asset": "BNB",
+                       "recorded_at": "2024-01-31T00:00:05Z", **fill} for fill in fills],
+            "orders": [{"client_order_id": "c1", "side": "BUY", "purpose": "open", "status": status,
+                        "bar_ts": "2024-01-31T00:00:00Z", "created_at": "2024-01-31T00:00:02Z", "detail": "",
+                        "request": json.dumps({"order_type": "MARKET", **request})}]}
+
+
+def test_f5_quote_sized_market_fill_ratio_is_not_read_from_slippage():
+    # 400 USDT spent at 2 % above the reference open: 3.92 BTC instead of the 4 BTC estimated from the open
+    spent = [{"trade_id": 1, "price": "102", "quantity": "3.92156863"}]
+    orders, _ = ops_report._live_orders(_register({"quote_quantity": "400"}, spent), {})
+    assert orders[0]["fill_ratio"] == pytest.approx(1.0, abs=1e-6) and orders[0]["requested_quote"] == 400.0
+    assert orders[0]["slippage_bps"] == pytest.approx(200, abs=0.1)
+    # only half of the quote amount was spent: the shortfall is still reported
+    half = [{"trade_id": 1, "price": "102", "quantity": "1.96078431"}]
+    orders, _ = ops_report._live_orders(_register({"quote_quantity": "400"}, half, "PARTIALLY_FILLED"), {})
+    assert orders[0]["fill_ratio"] == pytest.approx(0.5, abs=1e-6)
+    # quantity-sized orders keep the quantity ratio
+    sized = [{"trade_id": 1, "price": "100", "quantity": "0.75"}]
+    orders, _ = ops_report._live_orders(_register({"quantity": "1"}, sized, "PARTIALLY_FILLED"), {})
+    assert orders[0]["fill_ratio"] == pytest.approx(0.75) and orders[0]["requested_quote"] is None
+
+
 def test_clean_live_session_has_no_execution_hypotheses(studio_repo, tmp_path):
     config = {**CONSTANT, "limits": {"max_order_notional": 1e9, "max_position_notional": 1e9},
               "run_config": {**CONSTANT["run_config"],

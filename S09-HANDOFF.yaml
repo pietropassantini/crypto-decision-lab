@@ -46,6 +46,11 @@ anomalies:
   - "report.json del paper S08 pesa ~625 KB (dettaglio di 3113 esecuzioni)."
 blockers:
   - "Nessun registro live reale: le ipotesi su slippage, fill e latenza reali restano da misurare su testnet (S07) o dopo un'attivazione."
+review_fixes_2026_11_14:
+  source: "REVIEW-INDEP-2026-11-13-{deepseek,glm}.md e REVIEW-INDEP-2026-11-13.md, rilievo F5 (LOW)"
+  f5: "ops_report._live_orders: per un MARKET con quote_quantity il fill_ratio e importo speso / importo richiesto (non piu quantita / (quote / open di riferimento)); aggiunto il campo requested_quote; requested_quantity e la quantita equivalente. Gli ordini a quantita non cambiano. Test: tests/test_ops_report.py::test_f5_*"
+  note: "I report gia committati in reports/s09 (content_sha256 a31f8a79, 0fae4fc9, 469e78b3) sono stati prodotti prima della correzione e restano come evidenza storica: rigenerandoli i valori fill_ratio degli ordini MARKET FILLED salgono a ~1 e i content_sha256 cambiano."
+  pending: "Conferma da un revisore non Claude"
 next_action: "Un revisore diverso ripete CP09.1-2; poi un agente esegue il prompt di S09-E01 (riga E01)."
 verification:
   date: "2026-11-13"

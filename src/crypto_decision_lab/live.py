@@ -748,9 +748,13 @@ class LiveSession:
         return {"momentum_24h": float(prev_close) / float(row[0]) - 1.0}
 
     def _last_buy_bar(self) -> pd.Timestamp | None:
+        # A BUY that executed on the exchange starts the holding-horizon clock even when none of its
+        # trades could be imported (FILLS_INCOMPLETE, accepted by the operator with a rebaseline): the
+        # position exists and must still leave at the horizon (review R10).
         row = self.connection.execute(
-            "SELECT o.bar_ts FROM orders o JOIN fills f ON f.client_order_id = o.client_order_id "
-            "WHERE o.side = 'BUY' ORDER BY o.seq DESC LIMIT 1").fetchone()
+            "SELECT o.bar_ts FROM orders o WHERE o.side = 'BUY' AND (o.status IN ('FILLS_INCOMPLETE', "
+            "'FILLS_EXCESS_ACCEPTED') OR EXISTS (SELECT 1 FROM fills f WHERE f.client_order_id = o.client_order_id)) "
+            "ORDER BY o.seq DESC LIMIT 1").fetchone()
         return _utc(row[0]) if row else None
 
     def _decide(self, state: dict, timestamp: pd.Timestamp, open_price: float, features: dict,
@@ -1090,7 +1094,19 @@ def list_sessions(root: str | Path = DEFAULT_ROOT, *, repo_root: str | Path = ".
     return sorted(p for p in directory.iterdir() if (p / "live.sqlite").is_file()) if directory.is_dir() else []
 
 
+EXIT_BUSY = 75  # EX_TEMPFAIL: another process holds the session lock; retry later
+
+
 def main(argv=None) -> int:
+    """CLI entry point.  A busy session is reported as one JSON line and exit code 75, never a traceback."""
+    try:
+        return _main(argv)
+    except SessionBusy as exc:
+        print(json.dumps({"status": "BUSY", "detail": str(exc)}), flush=True)
+        return EXIT_BUSY
+
+
+def _main(argv=None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="S07 live runner (testnet / fixture exchange)")
