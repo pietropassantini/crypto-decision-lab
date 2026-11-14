@@ -1,6 +1,6 @@
 step_id: S04
 status: IN_REVIEW
-updated_at: "2026-11-13T12:20:00Z"
+updated_at: "2026-11-14"
 agent_role: applicazione Streamlit
 agent_model: Claude Opus 5.5 (claude-opus-5-5)
 base_commit: fc83faf73eefad8d76806e09e9fb63979eb9568d
@@ -61,8 +61,15 @@ decisions:
   - "Confronto: condizioni (dataset, manifest, periodo richiesto ed effettivo, digest eventi, latenza, orizzonte, fee, slippage, capitale, motore) separate dall'oggetto (strategia, rischio, modalita, esito)."
   - "Il paper replay e selezionabile come modalita del run; sessioni persistenti su feed restano in S06."
 blockers:
-  - "S02 e S03 sono IN_REVIEW; S03 non e committato. S04 non puo essere VERIFIED prima della verifica delle dipendenze."
-next_action: "Revisore diverso ripete CP04.1-3 con i comandi indicati dal base_commit + diff S03/S04 e apre l'app autonoma per una prova manuale; poi commit separati S03 e S04."
+  - "Nessuno per la prova manuale (eseguita). Per VERIFIED serve la decisione del coordinatore; la ripetizione di CP04.1-3 da un revisore non Claude e ancora aperta."
+next_action: "Un revisore non Claude ripete CP04.1-3 da clone pulito; poi il coordinatore decide VERIFIED. Le dipendenze S02 e S03 sono VERIFIED e committate (aa4f8e9 per S04)."
+manual_test_2026_11_14:
+  performed_by: "operatore (coordinatore)"
+  date: "2026-11-14"
+  environment: "venv locale (.venv, pip install -e '.[dashboard]'), app autonoma: streamlit run src/crypto_decision_lab/dashboard/studio_app.py su http://localhost:8501; repository su main 26c86f6"
+  procedure: "percorso CP04.1-3 di docs/S04-strategy-studio.md: salvataggio di una configurazione, backtest, lettura dei risultati, riapertura in una nuova sessione, confronto di due run"
+  outcome: "completata, riferita dall'operatore; nessun difetto segnalato"
+  not_recorded: "metriche e run osservati non sono stati trascritti dall'operatore; i run restano in var/studio (ignorato da Git). Una configurazione di prova e stata cancellata a mano dal file system: lo Studio non offre la cancellazione (configurazioni immutabili)."
 verification_2026_11_13:
   reviewer: "Claude Opus 5.5 (claude-opus-5-5), mandato dell'utente"
   status: VERIFIED
