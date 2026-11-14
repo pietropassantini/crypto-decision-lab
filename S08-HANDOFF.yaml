@@ -80,3 +80,6 @@ verification_2026_11_14:
   evidence: "CP08.1 drill dal wheel in venv nuovo 15/15; CP08.2 scheda ricostruita su commit pulito BLOCKED con ledger identici; CP08.3 decisioni coerenti; gate mainnet: 26/26 attacchi respinti; validate_card verificata fail-without/pass-with"
   limits: "valori osservati della scheda non rimisurati da validate_card (limite dichiarato); dipendenza S07 ancora IN_REVIEW (collaudo testnet con le chiavi dell'operatore): VERIFIED per decisione del coordinatore, requisito live registrato negli open_requirements di NOT_ACTIVATED"
   findings: "R12 LOW (release package richiede setuptools nell'ambiente), R13 e R15 INFO"
+review_fixes_2026_11_14_glm2:
+  r12: "pyproject.toml: extra dev include setuptools>=68 e wheel (release package usa pip wheel --no-build-isolation); release.build_package aggiunge un suggerimento alla ReleaseError quando manca setuptools/wheel. Test: tests/test_release.py::test_review_r12_*"
+  r13_r14: "INFO, non modificati: release verify usa exchange e ambiente di default (solo pre-volo, il gate reale e in LiveSession.create); accept-code-revision ignora --approval senza capitale reale"

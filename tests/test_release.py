@@ -301,6 +301,18 @@ def test_cp083_activation_requires_approval_and_live_session(studio_repo):
     assert entry["approval_sha256"] == release.file_sha256(approval)
 
 
+def test_review_r12_package_build_failure_points_to_the_build_tools(tmp_path, monkeypatch):
+    import tomllib
+
+    failed = subprocess.CompletedProcess([], 1, "", "ModuleNotFoundError: No module named 'setuptools'")
+    monkeypatch.setattr(release.subprocess, "run", lambda *args, **kwargs: failed)
+    with pytest.raises(ReleaseError, match="pip install setuptools wheel"):
+        release.build_package(tmp_path, tmp_path / "out")
+    pyproject = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    dev = " ".join(pyproject["project"]["optional-dependencies"]["dev"])
+    assert "setuptools" in dev and "wheel" in dev  # --no-build-isolation needs them in the environment
+
+
 # ====================================================================== CP08.1
 def test_cp081_runbook_drill_through_the_cli(studio_repo, tmp_path):
     result = release.run_drill(studio_repo, tmp_path / "drill", live_config=LIVE_CONFIG,

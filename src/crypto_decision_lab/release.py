@@ -424,7 +424,9 @@ def build_package(repo: Path, out: Path) -> dict:
     built = subprocess.run([sys.executable, "-m", "pip", "wheel", str(repo), "--no-deps", "--no-build-isolation",
                             "-w", str(dist)], capture_output=True, text=True)
     if built.returncode != 0:
-        raise ReleaseError(f"wheel build failed: {built.stderr[-500:]}")
+        hint = ("; install the build tools in this environment: pip install setuptools wheel "
+                "(included in the dev extra)") if "setuptools" in built.stderr or "wheel" in built.stderr else ""
+        raise ReleaseError(f"wheel build failed: {built.stderr[-500:]}{hint}")
     wheel = next(dist.glob("crypto_decision_lab-*.whl"))
     venv = out / "venv"
     if venv.exists():

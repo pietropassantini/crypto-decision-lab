@@ -58,3 +58,5 @@ verification:
   reviews:
     - "REVIEW-INDEP-2026-11-13.md (Codex GPT-6)"
     - "REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3)"
+review_fixes_2026_11_14_glm2:
+  r15: "ops_report._live_orders(register): rimosso il parametro hypothesis, inutilizzato dopo F5. Nessun effetto sui report."

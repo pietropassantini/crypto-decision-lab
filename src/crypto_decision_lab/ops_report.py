@@ -156,7 +156,7 @@ def _live_positions(register: dict, market: list[dict]) -> dict[str, bool]:
 
 
 # ====================================================================== live report
-def _live_orders(register: dict, hypothesis: dict) -> tuple[list[dict], dict]:
+def _live_orders(register: dict) -> tuple[list[dict], dict]:
     meta = register["meta"]
     rules = meta["symbol_rules"]
     base, quote_asset = rules["base_asset"], rules["quote_asset"]
@@ -224,7 +224,7 @@ def _live_report(register: dict) -> dict:
     config = meta["config"]
     run_config = config["run_config"]
     hypothesis = run_config["hypothesis"]
-    orders, opens = _live_orders(register, hypothesis)
+    orders, opens = _live_orders(register)
     ledger = register["ledger"]
     executed = [o for o in orders if o["executed_quantity"] > 0]
     by_status: dict[str, int] = {}
