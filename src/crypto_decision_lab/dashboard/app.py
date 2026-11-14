@@ -24,9 +24,15 @@ from crypto_decision_lab.dashboard.components.momentum_stability import render_m
 from crypto_decision_lab.dashboard.components.overview import render_overview
 from crypto_decision_lab.dashboard.components.parameter_robustness import render_parameter_robustness
 from crypto_decision_lab.dashboard.components.regime_policy import render_regime_policy
+from crypto_decision_lab.dashboard.components.strategy_studio import render_strategy_studio
 from crypto_decision_lab.dashboard.components.trading_simulation import render_trading_simulation
 from crypto_decision_lab.dashboard.components.validation_protocol import render_validation_protocol
-from crypto_decision_lab.dashboard.config import DashboardConfig, discover_snapshots, load_config
+from crypto_decision_lab.dashboard.config import (
+    REPO_ROOT_FALLBACK,
+    DashboardConfig,
+    discover_snapshots,
+    load_config,
+)
 from crypto_decision_lab.dashboard.data_loader import (
     DataValidationError,
     MarketData,
@@ -385,6 +391,7 @@ def main() -> None:
             "Parameter Robustness",
             "Validation Protocol",
             "Forward Data Status",
+            "Strategy Studio",
         ]
     )
     with tabs[0]:
@@ -446,6 +453,8 @@ def main() -> None:
         render_validation_protocol(config)
     with tabs[9]:
         render_forward_status(config)
+    with tabs[10]:
+        render_strategy_studio(REPO_ROOT_FALLBACK)
 
     st.divider()
     st.caption(

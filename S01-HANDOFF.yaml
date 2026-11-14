@@ -1,0 +1,37 @@
+step_id: S01
+status: IN_REVIEW
+updated_at: "2026-11-13T00:00:00Z"
+agent_role: Streamlit e operazioni dati
+agent_model: <modello usato per questa sessione>
+base_commit: 62c38c9
+head_commit: 8949237 (+ correzione fixture non ancora committata)
+review_ref: branch feat/s02-dataset-builder
+inputs:
+  - "S00A: commit 6414abd (IN_REVIEW)"
+changed_paths:
+  - "src/crypto_decision_lab/dashboard/forward_adapter.py — adattatore forward con report audit CP08-07"
+  - "src/crypto_decision_lab/dashboard/components/forward_status.py — vista Forward Data Status"
+  - "tests/dashboard/test_forward_status_dashboard.py — test audit (4 stati), vista senza snapshot, no-write; fixture _repo ora copia anche .sha256.v2.json"
+checkpoints:
+  - id: CP01.1
+    result: PASS
+    verification: "python -m pytest tests/dashboard/test_forward_status_dashboard.py::test_view_without_snapshot_data -q"
+    expected: "AppTest senza snapshot storico: la vista carica e mostra i dati del monitor"
+    observed: "test passato (suite dashboard 63 passed)"
+    evidence: "tests/dashboard/test_forward_status_dashboard.py"
+  - id: CP01.2
+    result: PASS
+    verification: "pytest tests/dashboard/test_forward_status_dashboard.py -k audit -q"
+    expected: "quattro stati distinti: audit corrente, su manifest precedente, assente, fallito"
+    observed: "test_audit_current_passes, test_audit_stale_manifest, test_audit_no_report_available, test_audit_failed passati. Non ho verificato manualmente nella UI la distinzione visiva"
+    evidence: "stesso file di test"
+  - id: CP01.3
+    result: PASS
+    verification: "pytest tests/dashboard/test_forward_status_dashboard.py -k 'never_write or never_writes' -q"
+    expected: "caricamento vista lascia intatti archivio e manifest forward"
+    observed: "test_adapter_and_commands_never_write e test_audit_never_writes_to_archive passati"
+    evidence: "stesso file di test"
+decisions:
+  - "Fallimento test_adapter_reads_status_readiness_and_provenance: causa = fixture _repo incompleta (mancava il sidecar .sha256.v2.json richiesto da verify_protocol_integrity). Non è regressione del codice. Corretto nella fixture; sul repo reale protocol_authority dà PROTOCOL_VERIFIED/ARCHIVE_VERIFIED."
+blockers: []
+next_action: "Revisore diverso dall'autore ripete CP01.1-3 dal commit che include la correzione fixture; poi VERIFIED."

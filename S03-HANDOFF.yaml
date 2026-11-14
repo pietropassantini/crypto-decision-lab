@@ -1,0 +1,90 @@
+step_id: S03
+status: VERIFIED
+updated_at: "2026-11-13"
+agent_role: backend del motore di trading
+agent_model: GPT-6 (Codex)
+base_commit: fc83faf73eefad8d76806e09e9fb63979eb9568d
+head_commit: working-tree diff against base_commit
+review_ref: feat/s02-dataset-builder; git diff + new files listed below
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S03, CP03.1-3"
+  - "S00A-HANDOFF.yaml: IN_REVIEW; anomaly in baseline counts and snapshot tracking decision remain open"
+  - "S02-HANDOFF.yaml and execution_contract.py: shared temporal/economic contract"
+changed_paths:
+  - src/crypto_decision_lab/simulation.py
+  - tests/test_simulation.py
+  - config/simulation.example.json
+  - docs/S03-simulation-engine.md
+  - README.md
+  - Crypto_Decision_Lab_PRD.md
+  - S03-HANDOFF.yaml
+checkpoints:
+  - id: CP03.1
+    result: PASS
+    verification: "python -m pytest tests/test_simulation.py -q --basetemp var/s03-cp031 -p no:cacheprovider"
+    expected: "Config selects Strategy; opening, closing, risk refusal and reasons recorded"
+    observed: "constant LONG/FLAT and momentum selectable; BUY/SELL, risk refusal, sizing and reasons verified"
+    evidence: tests/test_simulation.py
+  - id: CP03.2
+    result: PASS
+    verification: "python -m pytest tests/test_simulation.py -k cp032 -q -p no:cacheprovider"
+    expected: "Identical canonical decision/order/fill/balance ledger under common event clock"
+    observed: "Exact canonical JSON equality and identical portfolio; CLI smoke on raw-v1 also produced byte-identical ledgers"
+    evidence: "tests/test_simulation.py::test_cp032_backtest_paper_canonical_identity; local var/s03-smoke-{backtest,replay}/ledger.json"
+  - id: CP03.3
+    result: PASS
+    verification: "python -m pytest tests/test_simulation.py tests/test_execution_contract.py tests/test_dataset_builder.py tests/test_trading_simulator.py -q --basetemp var/s03-final-focused -p no:cacheprovider"
+    expected: "Costs, latency, duplicates, gaps, terminal positions and eligibility proven; CP07 differences reproducible"
+    observed: "69 passed after independent-review fixes. Nine latency/cost combinations reconcile real broker fills/cash with S02 resolve_round_trip and CP07 formulas. No fills before eligibility, no invented gap/terminal prices."
+    evidence: "tests/test_simulation.py; docs/S03-simulation-engine.md"
+validation:
+  full_suite:
+    command: "python -m pytest -q --basetemp var/s03-full-approved -p no:cacheprovider"
+    observed: "358 passed in 256.38s; run before adding four review regression tests. Final focused run includes all four."
+  cli:
+    command: "python -m crypto_decision_lab.simulation --source BTCUSDT-1h-raw-v1 --config config/simulation.example.json --output-dir var/s03-smoke-backtest"
+    observed: "HALTED_GAP at first historical missing hour; cash 9834.02390961377, quantity 0. Replay identical. A new directory is required for each rerun."
+  independent_review:
+    reviewer: "Mendel, independent subagent (read-only)"
+    observed: "42 focused tests passed; four boundary findings fixed with regressions: NaT, actual minimum notional, monotonic gap lifecycle clock, loaded-source provenance."
+  environment:
+    observed: "Sandbox runs hit Windows temporary-directory access denials; approved execution outside sandbox passed. No dependency installation required."
+decisions:
+  - "Reuse ExecutionHypothesis and CP07 execution_prices, self-financing spot quantities and fees. No changes to frozen CP08 or legacy simulator."
+  - "Gap halts; duplicates identical are idempotent, conflicts and temporal reordering fail. Terminal positions remain open, unfilled orders cancel."
+  - "Horizon scheduled from actual fill; supersedes pending strategy exit and forbids same-event reopening. Strategy exits otherwise pay decision latency."
+  - "API events are trusted admitted adapters/fixtures; CLI admission uses S02 catalog role/provenance/alias guards."
+  - "Hash engine source, normalized configuration, processed event contents; retain source identity/hash from original verified market load."
+blockers:
+  - "S00A remains IN_REVIEW with its existing review obligations; do not mark S03 VERIFIED until coordinator confirms dependency and review."
+review:
+  reviewer: "Claude Opus 5.5 (claude-opus-5-5), revisore diverso dall'autore S03. Conflitto: lo stesso agente ha aggiunto market_events() a simulation.py per S04; quella parte richiede un altro revisore"
+  date: "2026-11-13"
+  outcome: "CONFIRMED con riserva - CP03.1, CP03.2, CP03.3 ripetuti PASS; un difetto MEDIUM sulla identita del motore da correggere prima del commit"
+  evidence:
+    - "80 test mirati passati (vedi S02 review); suite completa 386 passed"
+    - "CLI: var/rev-s03-bt e var/rev-s03-rp -> HALTED_GAP, cash 9834.02390961377, quantity 0, identici all'handoff (il refactor market_events non cambia l'esito); ledger backtest e replay byte-identici"
+  findings:
+    - "MEDIUM: engine_sha256 = sha256 dei byte grezzi di simulation.py. (a) La copia di lavoro ha terminatori CRLF (319 CR) con core.autocrlf=true e *.py senza regola in .gitattributes: un checkout Linux con LF produce un hash diverso dallo stesso commit. (b) Non copre execution_contract.py e decision_contract.py, che definiscono prezzi di esecuzione e fee. PRD sez. 3 chiede che il run identifichi la revisione del motore. Suggerito: hash con terminatori normalizzati su tutti i moduli del motore, oppure SHA del commit piu flag di diff."
+    - "LOW: CP03.2 e garantito per costruzione (stessa funzione, la modalita compare solo nel manifest). Prova valida dell'unicita del motore; S06 deve ripeterla con il percorso paper persistente e il clock operativo."
+    - "LOW: run([]) produce status COMPLETED con timestamp 'None' nel record end. Suggerito: rifiutare un run senza eventi."
+review_fixes:
+  date: "2026-11-13"
+  author: "Claude Opus 5.5 (stesso agente del review: le correzioni richiedono un revisore diverso)"
+  changes:
+    - "MEDIUM risolto: engine_digests() calcola engine_sha256 su simulation.py, execution_contract.py, decision_contract.py con fine riga normalizzati a LF; il manifest riporta anche engine_files (digest per modulo)."
+    - "LOW risolto: run() solleva ValueError su un run senza eventi."
+    - "LOW CP03.2: nessuna modifica al codice; resta una nota vincolante per S06."
+    - "Aggiornamento S06: run() ora usa simulation.Engine (macchina a stati riprendibile). Registro CLI byte-identico al precedente; CP03.2 ripetuto attraverso sessioni persistenti (S06-HANDOFF.yaml). La revisione S03 va ripetuta su questa versione."
+  verification:
+    - "python -m pytest tests/test_simulation.py -k review -q -p no:cacheprovider -> nuovi test test_review_run_without_events_is_refused e test_review_engine_identity_covers_contracts_and_ignores_line_endings"
+    - "106 test mirati S02/S03/S04 passed; CLI raw-v1: HALTED_GAP, cash 9834.02390961377 (invariato), engine_sha256 96a7bf85a60cbf4a2caf5a6daf35e2aa674af332eeba3ced266e7b0236d22389"
+    - "Suite completa: 388 passed in 278.82s (386 + 2 test di regressione)"
+  note: "engine_sha256 dei run precedenti alla correzione (es. var/s03-smoke-*, var/studio) non e confrontabile con i nuovi: rigenerare i run da confrontare."
+next_action: "Reviewer reruns the 69 focused tests from the recorded base plus S03 diff and confirms S00A dependency before VERIFIED."
+verification:
+  date: "2026-11-13"
+  decided_by: "coordinatore (operatore)"
+  reviews:
+    - "REVIEW-INDEP-2026-11-13.md (Codex GPT-6)"
+    - "REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3)"

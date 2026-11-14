@@ -1,0 +1,29 @@
+{
+  "schema_version": "cdl.s08.criteria.v1",
+  "candidate": "btcusdt-momentum-v1",
+  "description": "Deterministic momentum candidate (S05 Decision Model REJECTED, PRD section 4: a deterministic candidate may be evaluated in S08). Criteria fixed before any S08 evaluation.",
+  "candidate_config": "config/live/btcusdt-momentum-v1.json",
+  "windows": {
+    "backtest": {"dataset_id": "BTCUSDT-1h-raw-v1", "start": "2021-02-01 00:00", "end": "2025-01-01 00:00"},
+    "paper": {"dataset_id": "BTCUSDT-1h-raw-v1", "start": "2025-01-01 00:00", "end": "2026-10-01 00:00"}
+  },
+  "backtest": [
+    {"id": "net_return", "metric": "net_return_pct", "op": ">", "threshold": 0, "description": "positive after fees and slippage"},
+    {"id": "drawdown", "metric": "max_drawdown_mtm_pct", "op": ">=", "threshold": -40, "description": "mark-to-market drawdown not worse than -40%"},
+    {"id": "trades", "metric": "closed_trades", "op": ">=", "threshold": 50, "description": "enough closed trades"}
+  ],
+  "paper": [
+    {"id": "net_return", "metric": "net_return_pct", "op": ">", "threshold": 0, "description": "positive after costs on the later, unseen-by-S08 window"},
+    {"id": "drawdown", "metric": "max_drawdown_mtm_pct", "op": ">=", "threshold": -25, "description": "mark-to-market drawdown not worse than -25%"},
+    {"id": "trades", "metric": "closed_trades", "op": ">=", "threshold": 20, "description": "enough closed trades"}
+  ],
+  "operational": {
+    "exchange": "binance-spot",
+    "environment": "mainnet",
+    "max_capital": 500,
+    "max_order_notional": 100,
+    "max_position_notional": 200,
+    "required_steps_verified": ["S00A", "S01", "S02", "S03", "S04", "S05", "S06", "S07"],
+    "testnet_evidence": ["var/s07-testnet/smoke-*.json", "releases/evidence/testnet/smoke-*.json"]
+  }
+}

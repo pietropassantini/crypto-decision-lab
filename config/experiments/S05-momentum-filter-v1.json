@@ -1,0 +1,58 @@
+{
+  "schema_version": "cdl.s05.experiment.v1",
+  "experiment_id": "S05-momentum-filter-v1",
+  "registered": "2026-11-13",
+  "hypothesis": "Among the daily entries of the deterministic strategy (momentum_24h > 0 at the 00:00 UTC cutoff, LONG/FLAT spot), a logistic model on cutoff-only stationary features identifies entries whose 24h LONG round trip is not worth trading; filtering them raises the out-of-sample net return after costs without worsening the mark-to-market drawdown.",
+  "dataset": {
+    "path": "data/datasets/research/BTCUSDT-1h-research-v1",
+    "features_content_sha256": "2cb8f741bbef4389ae486d6f5dae1d6eb0ce9c2aaa15edeaa53545e343da489b",
+    "targets_content_sha256": "8fffb2ec9a8c776c71360c7d25f8cacfd60e9579e52641f9fc3d14e7c7b5f30f",
+    "note": "S02 BTCUSDT-1h-research-v1: latency 0h, horizon 24h, fee 0.1% and slippage 0.05% per side, stride 24h"
+  },
+  "target": {
+    "column": "long_trade_worth",
+    "definition": "long_net_return_pct > 0 for a LONG opened at the cutoff open and closed at the open 24h later, CP07 costs on both sides (S02 execution contract)"
+  },
+  "baseline": {
+    "strategy": "scheduled_momentum",
+    "feature": "momentum_24h",
+    "momentum_threshold": 0.0,
+    "description": "LONG at a cutoff when momentum_24h > 0, FLAT otherwise; decisions only at S02 cutoffs, position held while the signal persists"
+  },
+  "model": {
+    "type": "logistic_regression",
+    "features": ["rsi14", "atr_pct", "volatility_24h", "volatility_168h", "momentum_24h", "momentum_168h", "dist_sma50_pct", "trend_strength_pct", "volume_ratio"],
+    "C": 1.0,
+    "class_weight": null,
+    "seed": 20261113,
+    "train_population": "baseline entries with targets mature before dev_start"
+  },
+  "folds": [
+    {"name": "F1", "dev_start": "2022-07-01", "test_start": "2023-07-01", "test_end": "2024-07-01"},
+    {"name": "F2", "dev_start": "2023-07-01", "test_start": "2024-07-01", "test_end": "2025-07-01"},
+    {"name": "F3", "dev_start": "2024-07-01", "test_start": "2025-07-01", "test_end": "2026-10-23"}
+  ],
+  "threshold_grid": [0.0, 0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.55, 0.6],
+  "threshold_selection": {
+    "objective": "sum of long_net_return_pct of kept development entries (S02 targets, same execution contract)",
+    "min_kept": 20,
+    "min_kept_fraction": 0.25,
+    "tie_break": "lower threshold (less filtering)"
+  },
+  "evaluation": {
+    "engine": "S03 event engine, backtest mode, hourly events from the first test cutoff to the closing fill",
+    "initial_cash": 10000,
+    "max_exposure": 1.0,
+    "min_notional": 10,
+    "max_holding_hours": 720
+  },
+  "criteria": {
+    "min_filtered_trades_per_fold": 20,
+    "min_winning_folds": 2,
+    "min_total_improvement_pct": 0.0,
+    "max_drawdown_tolerance_pct": 2.0,
+    "rule": "INCONCLUSIVE if any fold has fewer filtered trades than the minimum; CANDIDATE if total compound improvement > minimum AND winning folds >= minimum AND drawdown within tolerance in every fold; REJECTED if total improvement <= minimum; INCONCLUSIVE otherwise"
+  },
+  "calibration": {"bins": 5},
+  "reproducibility": {"tolerance": 1e-9, "note": "same spec, dataset and code give identical models and report"}
+}

@@ -1,0 +1,55 @@
+step_id: S09
+status: VERIFIED
+updated_at: "2026-11-13"
+agent_role: osservabilita e ricerca quantitativa
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: 57cff955dcb3b81371b658e1a1564bd63c74ff09
+head_commit: "working-tree diff against base_commit (include S07 e S08 non committati)"
+review_ref: "branch prd/integration; nessun commit creato"
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S09, CP09.1-2"
+  - "S08: decisione NOT_ACTIVATED (gate 2026-11-13T17:24:43Z) confermata dall'operatore 2026-11-13T17:35:54Z in releases/btcusdt-momentum-v1/fd1153cd/decisions.jsonl"
+  - "S08 evidenze: scheda BLOCKED, sessione paper di rilascio, drill parte C; diagnostica +40,5% lordo / -96% netto"
+changed_paths:
+  - "src/crypto_decision_lab/ops_report.py - report operativo (live e paper), riconciliazione, hash del contenuto, ipotesi dagli scostamenti, generatore di fixture live etichettata, CLI"
+  - "src/crypto_decision_lab/exchange.py - FakeExchange.adverse_bps / set_adverse_bps (slippage avverso iniettabile nei MARKET; 0 = comportamento invariato)"
+  - "reports/s09/{fixture-live,drill-c,paper}-btcusdt-momentum-v1/report.{json,md} - report di collaudo"
+  - "config/experiments/S09-E01-turnover-reduction-v1.json - esperimento preregistrato"
+  - "tests/test_ops_report.py (6 test)"
+  - "docs/S09-ops-report.md, README.md, Crypto_Decision_Lab_PRD.md (righe S08, S09, E01), S09-HANDOFF.yaml"
+checkpoints:
+  - id: CP09.1
+    result: PASS
+    verification: |
+      python -m pytest tests/test_ops_report.py -k "cp091 or totals or clean or paper or cli" -q -p no:cacheprovider --basetemp var/s09-cp091
+      python -m crypto_decision_lab.ops_report report --session-dir <sessione> --label <etichetta> --out reports/s09/<nome>
+    expected: "Report riproducibile da un registro noto; evidenzia feed, modalita, versione, fill mancanti, slippage osservato, costi e latenza; totali riconciliati con il registro"
+    observed: "Due generazioni dallo stesso registro danno lo stesso content_sha256. Fixture etichettata (slippage avverso 10 bps, rifiuto, timeout, MARKET parziale, barra in ritardo): slippage 10,00 vs 5,00 bps, commissioni 10,00 bps, fill ratio 0,813 con REJECTED ed EXPIRED elencati, ordine in timeout riconciliato, accordo segnali 1,000 e posizione 0,933, ipotesi H-slippage/H-fills/H-turnover; 12/12 controlli di riconciliazione OK. Sessione pulita: nessuna ipotesi di esecuzione, accordo segnali e posizione 1,000, P&L live - simulato < 1% del capitale (solo meccanica delle commissioni). Paper S08 (15312 barre, 3113 esecuzioni): slippage e commissioni = ipotesi, riconciliazione OK, H-turnover. Totali del report = somme del registro (commissioni, nozionale, quantita eseguite, ordini per stato)."
+    evidence: "reports/s09/fixture-live-btcusdt-momentum-v1 (content a31f8a79…), reports/s09/drill-c-btcusdt-momentum-v1 (0fae4fc9…), reports/s09/paper-btcusdt-momentum-v1 (469e78b3…); tests/test_ops_report.py"
+  - id: CP09.2
+    result: PASS
+    verification: "python -m pytest tests/test_ops_report.py -k cp092 -q -p no:cacheprovider; riga E01 del backlog"
+    expected: "Almeno un nuovo esperimento nel backlog con ipotesi, input, baseline, criterio di accettazione e prompt, riprendibile da un agente diverso"
+    observed: "E01 READY nel backlog: config/experiments/S09-E01-turnover-reduction-v1.json (sha256 d5527a6a9ab79a2acc22ae19358b8dcd66d1c4aa0cc32c0d63048f9d01ecc47f) con ipotesi H-turnover, input (dataset e manifest, motore, parametri fissi, griglia 4x3), finestre cronologiche senza sovrapposizione, regola di selezione solo sullo sviluppo, baseline btcusdt-momentum-v1, metriche, criteri e esiti CANDIDATE/INCONCLUSIVE/REJECTED, CP-E01.1-3, rischi e prompt autonomo. Il test verifica completezza, assenza di dati forward, cronologia e presenza nel backlog."
+    evidence: "config/experiments/S09-E01-turnover-reduction-v1.json; Crypto_Decision_Lab_PRD.md riga E01; tests/test_ops_report.py::test_cp092_preregistered_experiment_is_complete_and_resumable"
+validation:
+  s09_suite: "python -m pytest tests/test_ops_report.py -q -p no:cacheprovider -> 6 passed"
+  full_suite: "python -m pytest -q -p no:cacheprovider --basetemp var/s09-full -> 474 passed in 499s (468 fino a S08 + 6 S09)"
+decisions:
+  - "Live non attivo: collaudo su fixture live etichettata (data_label su ogni report), drill S08 e paper S08, come previsto dal PRD."
+  - "La posizione live per barra si ricostruisce dalle esecuzioni degli ordini decisi entro la barra: il record balance live e scritto prima dell'invio e sarebbe in ritardo di una barra."
+  - "Segnali confrontati rigiocando il motore S03 sugli stessi record di mercato della sessione; le uscite a orizzonte sono escluse dal confronto dei segnali di strategia."
+  - "Solo H-turnover diventa esperimento: H-slippage e H-fills della fixture nascono da guasti iniettati e diventeranno esperimenti solo con fill reali (testnet o live)."
+  - "Finestra di conferma di E01 = finestra paper S08 gia osservata per la baseline: usata una sola volta e mai per la selezione (rischio dichiarato nella specifica)."
+anomalies:
+  - "exchange.py e cambiato (adverse_bps): il digest del codice corrente (ca5a0336…) differisce da quello della scheda S08 fd1153cd. La scheda era BLOCKED; ogni futura approvazione richiede comunque una nuova scheda."
+  - "report.json del paper S08 pesa ~625 KB (dettaglio di 3113 esecuzioni)."
+blockers:
+  - "Nessun registro live reale: le ipotesi su slippage, fill e latenza reali restano da misurare su testnet (S07) o dopo un'attivazione."
+next_action: "Un revisore diverso ripete CP09.1-2; poi un agente esegue il prompt di S09-E01 (riga E01)."
+verification:
+  date: "2026-11-13"
+  decided_by: "coordinatore (operatore)"
+  reviews:
+    - "REVIEW-INDEP-2026-11-13.md (Codex GPT-6)"
+    - "REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3)"

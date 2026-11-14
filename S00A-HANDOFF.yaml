@@ -1,0 +1,55 @@
+step_id: S00A
+status: VERIFIED
+updated_at: "2026-11-13T00:00:00Z"
+agent_role: manutenzione del repository e QA
+agent_model: <modello usato per questa sessione>
+base_commit: 0daf402
+head_commit: 6414abd (+ correzioni 751224f, 775c57f, ad5f09b)
+review_ref: branch feat/s02-dataset-builder (PR da aprire verso main); handoff compilato a posteriori
+inputs:
+  - "S00 VERIFIED: S00-BASELINE-REPORT.md, baseline main=0daf402"
+changed_paths:
+  - "data/experiments (224 file rimossi dal tracking: output rigenerabili CP01-CP07/CP08 derivati)"
+  - "data/chunks (128), data/quarantine (12), data/diagnostics (3), data/reports (3), data/manifests (1), data/snapshots (2: report.json, forecast-windows.parquet), docs/screenshots (12)"
+  - ".gitignore — regole di esclusione per output rigenerabili, var/, nul, .env"
+checkpoints:
+  - id: CP00A.1
+    result: PASS
+    verification: "git show --name-status 6414abd ; git grep -F <percorso> HEAD per ogni gruppo ; vedi S00A-INVENTORY.md"
+    expected: "inventario con percorso, utilizzo noto e decisione per ogni elemento; verifica riferimenti per ogni rimozione"
+    observed: "S00A-INVENTORY.md: 11 gruppi, riferimenti verificati con git grep, decisione per ciascuno. Un punto resta aperto: report.json e forecast-windows.parquet dello snapshot congelato sono letti da 6 moduli e non rigenerabili sul posto (cdl freeze rifiuta cartelle esistenti); proposta di ripristino non ancora confermata. La vista Forecast/Timestral non e utilizzabile da clone pulito senza rigenerare i dati"
+    evidence: "S00A-INVENTORY.md"
+  - id: CP00A.2
+    result: PASS
+    verification: "git clone --branch feat/s02-dataset-builder <repo> <dir vuota> ; python -m venv ; pip install -e '.[dashboard,dev]' ; pytest -q"
+    expected: "installazione da checkout pulito con comandi documentati; test verdi; dipendenze dichiarate; fixture disponibili"
+    observed: "clone ad5f09b: 342 passed, 0 failed. Prima delle correzioni lo stesso clone dava 22 failed + 50 errors (chunk non tracciati, scikit-learn non dichiarato, evidenze CP08 non tracciate). Correzioni: 751224f (scikit-learn in extra dev; README 'Dati di test'), 775c57f (70 chunk fissati da raw-manifest.json: 64 in data/chunks + 6 in data/quarantine, 4.7 MB, hash verificati), ad5f09b (metrics_comparison.csv e archivio parameter-robustness). Confronto con S00: baseline main 430P/1S/0F su un insieme di test piu ampio (main); su questo branch 342P. Riconciliato: 288 test di main + 54 nuovi (S01 6, S02 48) = 342, nessun test rimosso. Il 430 del baseline S00 non e riproducibile per main (288 raccolti): 431 raccolti sono su cp09, quindi la tabella S00 sembra attribuire i numeri al branch sbagliato (inferenza dai conteggi, cp09 e cp08-07 non eseguiti). Dettagli in S00A-INVENTORY.md."
+    evidence: "git log 751224f 775c57f ad5f09b ; README.md sezione 'Dati di test'"
+  - id: CP00A.3
+    result: PASS
+    verification: "git check-ignore -v data/chunks .env var/tmp-s02 nul ; git ls-files | grep -iE '\\.env|secret|credential|\\.pem|\\.key$'"
+    expected: "output rigenerabili, config locali e credenziali esclusi; nessun segreto tracciato"
+    observed: ".env, var/, nul ignorati; nessun file sospetto tracciato. Nota: .agent-state/.orchestrix/.wibix non tracciati (verificato con git ls-files)"
+    evidence: ".gitignore righe 28, 146, 149"
+  - id: CP00A.4
+    result: PASS
+    verification: "git diff --stat 0daf402 HEAD -- data/forward data/experiments/S02-CP08-independent-validation-protocol-v1 data/experiments/S02-CP08-momentum-stability-v1 config/protocols ; protocol_authority() su repo reale"
+    expected: "dataset forward, manifest, sidecar e artefatti congelati CP08 intatti"
+    observed: "diff vuoto sui percorsi congelati; protocol_authority: sidecar_match=True, archive_manifest_match=True, hash_ok=True (PROTOCOL_VERIFIED, ARCHIVE_VERIFIED). Rimossi dal tracking solo output rigenerabili (es. data/snapshots report.json e forecast-windows.parquet)"
+    evidence: "comando sopra"
+decisions:
+  - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili se la procedura è documentata (README, sezione 'Dati di test'). I 70 chunk fissati da raw-manifest.json e le evidenze CP08 lette dai test restano tracciati."
+review_fixes:
+  date: "2026-11-14"
+  source: "REVIEW-S00A-2026-11-14.md (Claude Opus 5.5; non indipendente dalle correzioni Claude Sonnet 5.5)"
+  changes:
+    - "A1: PyYAML>=6,<7 nelle dipendenze principali (usato da forward_collection, independent_validation, protocol_integrity); README Sirio: pip install -e '.[dashboard,dev]' per la suite"
+    - "A3: corretto il dato main di S00 (288 raccolti, clone pulito 285P/3F; il 430P/1S era di 38dfa60) in S00-BASELINE-REPORT.md §7 e S00-HANDOFF.yaml; corretta la tabella di S00A-INVENTORY.md"
+    - "A4: .gitignore esclude docs/screenshots/, data/chunks/ e data/quarantine/ (i 70 chunk fissati restano tracciati per indice); README 'Dati di test' allineato (A6)"
+    - "F9: report.json e forecast-windows.parquet dello snapshot ritracciati (byte-identici a 0daf402), eccezioni in .gitignore"
+  open:
+    - "A2 (S06): pulsante 'Riconosci gap' disabilitato con stato vecchio; test fragile con streamlit 1.67"
+    - "A5 (INFO): percorsi locali in file tracciati, archivio forward non modificabile"
+blockers:
+  - "Conferma di un revisore non Claude (correzioni S00A di Claude Sonnet 5.5, review e fix di Claude Opus 5.5)."
+next_action: "Revisore non Claude ripete CP00A.1-4 da clone pulito in venv isolato con pip install -e '.[dashboard,dev]', poi VERIFIED."

@@ -1,0 +1,14 @@
+{
+  "schema_version": "cdl.s06.labfeed.v1",
+  "feed_id": "lab-btc-2024-03",
+  "source_dataset_id": "BTCUSDT-1h-raw-v1",
+  "start": "2024-03-01 00:00",
+  "end": "2024-03-15 00:00",
+  "description": "Lab feed outside CP08: March 2024 of the admitted research snapshot, published hour by hour with injected faults",
+  "faults": [
+    {"type": "late", "at": "2024-03-03 10:00", "delay_hours": 3},
+    {"type": "invalid", "at": "2024-03-04 20:00", "correct_after_hours": 2},
+    {"type": "outage", "from": "2024-03-06 06:00", "to": "2024-03-06 12:00"},
+    {"type": "gap", "at": "2024-03-08 03:00"}
+  ]
+}

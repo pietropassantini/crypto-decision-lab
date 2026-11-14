@@ -1,0 +1,69 @@
+step_id: S05
+status: VERIFIED
+updated_at: "2026-11-13"
+agent_role: ML e validazione quantitativa
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: fc83faf73eefad8d76806e09e9fb63979eb9568d
+head_commit: "working-tree diff against base_commit (include S03 e S04 non committati)"
+review_ref: "branch feat/s02-dataset-builder; nessun commit creato"
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S05, CP05.1-3"
+  - "S02 (IN_REVIEW, revisionato): dataset BTCUSDT-1h-research-v1, features 2cb8f741...489b, targets 8fffb2ec...5f30f"
+  - "S03 (IN_REVIEW, correzioni da confermare): motore, STRATEGIES, engine_sha256"
+  - "S04 (IN_REVIEW): studio_analytics per metriche e riconciliazione dei registri"
+changed_paths:
+  - "config/experiments/S05-momentum-filter-v1.json - specifica preregistrata (ipotesi, dataset, target, baseline, modello, fold, griglia soglie, criteri)"
+  - "src/crypto_decision_lab/decision_model.py - artefatto JSON con digest, DecisionModelAdapter, ScheduledMomentumStrategy, ModelFilteredMomentumStrategy"
+  - "src/crypto_decision_lab/pattern_experiment.py - runner: preregistrazione, fold con purge, soglie sullo sviluppo, valutazione motore, calibrazione, esito, candidato"
+  - "src/crypto_decision_lab/simulation.py - registrazione lazy di scheduled_momentum e model_filtered_momentum in STRATEGIES"
+  - "src/crypto_decision_lab/dashboard/components/strategy_studio.py - aiuto per le nuove strategie"
+  - "tests/test_pattern_experiment.py - 20 test"
+  - "docs/S05-pattern-decision-model.md, README.md, Crypto_Decision_Lab_PRD.md (riga S05), S05-HANDOFF.yaml"
+checkpoints:
+  - id: CP05.1
+    result: PASS
+    verification: "python -m pytest tests/test_pattern_experiment.py -k CP051 -q -p no:cacheprovider --basetemp var/s05-cp051"
+    expected: "Split temporali e maturazione dei target prima del confine; feature d'inferenza senza target; riproducibile entro la tolleranza"
+    observed: "Purge unitario (latenza+orizzonte 24h e 48h) e sui confini del report; schema con colonne target rifiutato da adapter e spec; invertire i target di sviluppo e test lascia identici i parametri del modello; gli score salvati dipendono solo dalle feature; due esecuzioni producono report e model_sha256 identici (coef entro 1e-9). Dati reali: riesecuzione in var/s05-real-rerun con report identico."
+    evidence: "tests/test_pattern_experiment.py::TestCP051Splits"
+  - id: CP05.2
+    result: PASS
+    verification: "python -m pytest tests/test_pattern_experiment.py -k CP052 -q -p no:cacheprovider --basetemp var/s05-cp052"
+    expected: "Report per finestra con conteggi, trade filtrati, rendimento netto, drawdown, variabilita; per output probabilistico calibrazione e numerosita"
+    observed: "Per fold: segnali, mantenuti, filtrati, trade, rendimento netto, drawdown MTM, costi, deviazione standard mensile e per trade, registri riconciliati; calibrazione con bin e conteggi, Brier, Brier di riferimento, AUC; aggregato e calibrazione cumulata. Gli ingressi del motore cadono solo ai cutoff mantenuti, al prezzo entry_exec_price dei target S02."
+    evidence: "tests/test_pattern_experiment.py::TestCP052Report; data/experiments/S05-momentum-filter-v1/report.json"
+  - id: CP05.3
+    result: PASS
+    verification: "python -m pytest tests/test_pattern_experiment.py -k \"CP053 or cp053 or Adapter\" -q -p no:cacheprovider --basetemp var/s05-cp053"
+    expected: "Modello, schema feature, soglie e dataset identificabili; esito motivato sui criteri; adattatore supera i test di contratto"
+    observed: "preregistration/report/modello citano lo stesso spec_sha256; candidate.json lega model_sha256, schema, soglia, digest del dataset; manifest con SHA-256 di ogni file. Regole d'esito testate per CANDIDATE, REJECTED e tre casi INCONCLUSIVE. Adapter: uguale a sklearn predict_proba entro 1e-12, in [0,1], None con feature mancante o non finita, digest alterato o diverso dall'atteso rifiutato; la strategia e selezionabile da RunConfig, mantiene l'esposizione fuori dai decision point, chiude su close_only e non apre senza score."
+    evidence: "tests/test_pattern_experiment.py::{TestCP053Identity,test_cp053_outcome_rules,TestAdapterContract}"
+experiment:
+  command: "python -m crypto_decision_lab.pattern_experiment --spec config/experiments/S05-momentum-filter-v1.json"
+  spec_sha256: ba6754d936329cf18e0e720cf0ddc62b36ad6648620500b81966c21a53094fb4
+  output: data/experiments/S05-momentum-filter-v1 (non tracciato, rigenerabile)
+  outcome: REJECTED
+  folds:
+    - "F1 test 2023-07-01/2024-07-01: soglia 0.375, segnali 189, mantenuti 126; baseline +10.73% (DD -24.88%), filtrata -26.08% (DD -34.22%); AUC 0.436"
+    - "F2 test 2024-07-01/2025-07-01: soglia 0.0 scelta sullo sviluppo (nessun filtro); baseline = filtrata -13.53%; AUC 0.529"
+    - "F3 test 2025-07-01/2026-10-23: soglia 0.375, segnali 235, mantenuti 143; baseline -33.04%, filtrata -33.31% (DD -40.78% vs -39.53%); AUC 0.449"
+  aggregate: "baseline composta -35.88%, filtrata -57.37%; AUC cumulata 0.472, Brier skill -0.032; tutti i registri riconciliati"
+  criteria: "numerosita PASS (90/95/103 trade); miglioramento totale FAIL (-21.48 punti); fold vinti FAIL (0 di 3, minimo 2); drawdown FAIL (F1 -9.34 punti)"
+  candidate: "models/F3.json, model_sha256 85975023a7a912cf2d5c8ca6af41c1ac40c51d201c85e2858c24f5b4d62edc8b, soglia 0.375, usable_by_strategy_layer=false"
+  interpretation: "Le feature stazionarie S02 non separano fuori campione le entrate momentum utili (AUC < 0.5 in due fold su tre). Anche la baseline deterministica perde dopo i costi nel periodo 2024-2026. Il PRD consente di chiudere S05 con esito negativo e valutare in S08 una candidata deterministica solo se supera i propri criteri: questa baseline non sembra soddisfarli."
+validation:
+  focused: "python -m pytest tests/test_pattern_experiment.py -q -p no:cacheprovider -> 20 passed"
+  full_suite: "python -m pytest -q -p no:cacheprovider --basetemp var/s05-full -> 408 passed in 185.56s"
+decisions:
+  - "Modello in JSON con digest (nessun pickle): portabile, verificabile e ricalcolabile in numpy; sklearn solo per il fit."
+  - "Training solo sulle entrate della baseline: il modello filtra ingressi, non genera segnali."
+  - "Strategie a decision point: decidono ai cutoff S02 e mantengono l'esposizione tra un cutoff e il successivo; con stride = orizzonte i fill coincidono con i prezzi dei target. Una posizione persistente non paga costi intermedi, per questo il motore e il riferimento economico e i target sono il criterio di selezione sullo sviluppo."
+  - "La specifica blocca dataset (digest), seed, fold, griglia e criteri; il runner rifiuta digest diversi, directory esistenti e output sotto data/forward."
+  - "max_holding_hours=720 nel motore: le uscite sono decise dalla strategia ai cutoff; l'orizzonte del motore e solo una protezione."
+  - "Fold di test nel segmento continuo 2023-03-24 -> 2026-10-23 perche il motore si arresta ai gap; sviluppo e training usano i target S02 che escludono gia le finestre con gap."
+  - "Il candidato registrato e il modello dell'ultimo fold; con esito diverso da CANDIDATE e marcato non utilizzabile."
+anomalies:
+  - "La specifica e stata eseguita sui dati reali prima di essere committata: la preregistrazione e garantita dal lock in preregistration.json (istante e digest), non dalla cronologia Git. Per esperimenti futuri: commit della specifica prima dell'esecuzione."
+blockers:
+  - "S02, S03 e S04 sono IN_REVIEW; S03 e S04 non sono committati."
+next_action: "Revisore diverso ripete CP05.1-3 e il comando dell'esperimento, verifica che il report coincida (spec_sha256 ba6754d9...) e conferma l'esito REJECTED; poi decidere la prossima ipotesi (es. feature diverse o baseline diversa) con una nuova specifica preregistrata."

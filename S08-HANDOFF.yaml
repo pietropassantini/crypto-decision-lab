@@ -1,0 +1,74 @@
+step_id: S08
+status: IN_REVIEW
+updated_at: "2026-11-13"
+agent_role: release e operazioni
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: 57cff955dcb3b81371b658e1a1564bd63c74ff09
+head_commit: "working-tree diff against base_commit (include S07 non committato)"
+review_ref: "branch prd/integration; nessun commit creato"
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S08, CP08.1-3; sezione 4 (candidata deterministica ammessa dopo esito negativo S05)"
+  - "S01 (IN_REVIEW), S05 (IN_REVIEW, esito REJECTED), S07 (IN_REVIEW, collaudo testnet reale non eseguito)"
+changed_paths:
+  - "src/crypto_decision_lab/release.py - criteri write-once, pacchetto + venv, drill del runbook, scheda READY/BLOCKED, approvazione, verify_activation, registro decisioni, CLI"
+  - "src/crypto_decision_lab/live.py - gate mainnet: approvazione obbligatoria e verificata (config, exchange, ambiente, simbolo, codice); CLI --exchange binance-mainnet --approval"
+  - "config/live/btcusdt-momentum-v1.json - configurazione live candidata"
+  - "config/release/criteria-btcusdt-momentum-v1.json - criteri di backtest, paper e operativi"
+  - "releases/btcusdt-momentum-v1/criteria.json - criteri registrati (2026-11-13T17:05:48Z)"
+  - "releases/btcusdt-momentum-v1/fd1153cd/{drill.json,release-card.json,release-card.md,decisions.jsonl,superseded-1/} - evidenze del rilascio"
+  - "tests/test_release.py (10 test)"
+  - "docs/S08-release.md (percorso, gate, runbook di produzione, esito), README.md, Crypto_Decision_Lab_PRD.md (riga S08), S08-HANDOFF.yaml"
+checkpoints:
+  - id: CP08.1
+    result: PASS
+    verification: |
+      python -m crypto_decision_lab.release package --out var/release/package
+      var/release/package/venv/Scripts/python.exe -m crypto_decision_lab.release drill --candidate btcusdt-momentum-v1 --python <venv python> --workdir var/release/drill-btcusdt-momentum-v1
+      python -m pytest tests/test_release.py -k cp081 -q -p no:cacheprovider --basetemp var/s08-cp081
+    expected: "Runbook ripetuto in collaudo: avvio da installazione pulita, ripresa con ordini aperti, riconciliazione e sospensione"
+    observed: "Wheel crypto_decision_lab-0.2.0 (sha256 0c99810f…) installato in venv nuovo; pacchetto importato da venv/Lib/site-packages. 15/15 step PASS tramite i CLI installati (FakeExchange + lab feed su BTCUSDT-1h-raw-v1, 2024-03): crash dopo l'invio (exit 97) -> ripresa WAITING, 1 submit, 1 fill; sospensione -> uscita a orizzonte, nessuna riapertura; trasferimento esterno -25 USDT -> HALTED -> rebaseline -> WAITING; flatten + finish -> COMPLETED; LIMIT in attesa attraverso il riavvio (nessun nuovo submit), fill parziale a runner fermo riconciliato, annullamento del residuo; candidata invariata per 24 barre: 6 ordini, nessun ordine aperto, saldi coerenti."
+    evidence: "releases/btcusdt-momentum-v1/fd1153cd/drill.json; tests/test_release.py::test_cp081_runbook_drill_through_the_cli"
+  - id: CP08.2
+    result: PASS
+    verification: "python -m crypto_decision_lab.release build-card --candidate btcusdt-momentum-v1 --drill var/release/drill-btcusdt-momentum-v1/drill.json --package-out var/release/package; python -m pytest tests/test_release.py -k \"cp082 or criteria or backtest\" -q -p no:cacheprovider"
+    expected: "Scheda di rilascio con versione esatta, evidenze di backtest e paper, criteri osservati, limiti e decisione READY o BLOCKED motivata"
+    observed: "Scheda btcusdt-momentum-v1-fd1153cd: BLOCKED con 14 motivi. Versione: commit 57cff95 + 6 percorsi non committati, wheel sha256 0c99810f…, codice fd1153cd…; criteri sha256 e registrazione precedente alla scheda. Backtest 2021-02-01 -> 2024-12-31 23:00 COMPLETED (34306 eventi, 7 gap riconosciuti, 14 ore mancanti): -96,0%, drawdown -96,4%, 2214 trade, costi 534,8. Paper S06 persistente 2025-01 -> 2026-09 COMPLETED: -91,1%, drawdown -91,1%, 1556 trade, ledger identico al backtest. Falliscono anche testnet assente, git non pulito, S00A-S07 non VERIFIED. I test coprono READY solo quando tutto passa, scheda write-once, criteri obbligatori e write-once, config modificata dopo la registrazione."
+    evidence: "releases/btcusdt-momentum-v1/fd1153cd/release-card.{json,md}; tests/test_release.py::{test_cp082_*,test_criteria_*,test_backtest_acknowledges_gaps_and_covers_the_window}"
+  - id: CP08.3
+    result: PASS
+    verification: "releases/btcusdt-momentum-v1/fd1153cd/decisions.jsonl; python -m pytest tests/test_release.py -k \"cp083 or activation or approval or mainnet\" -q -p no:cacheprovider"
+    expected: "Decisione ACTIVATED o NOT_ACTIVATED registrata; se non attivata, requisito aperto o decisione di operare in paper"
+    observed: "NOT_ACTIVATED (2026-11-13T17:24:43Z) sulla scheda BLOCKED, con 4 requisiti aperti e modalita paper (S06) + testnet (S07). Gate dimostrati sulla scheda reale: approve rifiutato (BLOCKED), decide ACTIVATED rifiutato, session-create mainnet rifiutato senza approvazione. I test coprono il percorso ACTIVATED: scheda READY, approvazione, sessione live richiesta; verify_activation rifiuta limiti, ambiente, codice, simbolo diversi e scheda modificata dopo l'approvazione."
+    evidence: "releases/btcusdt-momentum-v1/fd1153cd/decisions.jsonl; tests/test_release.py::{test_cp083_*,test_verify_activation_*,test_mainnet_live_session_requires_matching_approval,test_approval_requires_ready_card}"
+    pending: "La decisione e registrata come esito obbligato del gate dall'agente: l'operatore deve confermarla (o sostituirla con una nuova voce decide)."
+validation:
+  s08_suite: "python -m pytest tests/test_release.py -q -p no:cacheprovider -> 10 passed"
+  full_suite: "python -m pytest -q -p no:cacheprovider --basetemp var/s08-full -> 468 passed in 401s (458 fino a S07 + 10 S08)"
+decisions:
+  - "Candidata: momentum deterministico (config/live/btcusdt-momentum-v1.json, stessa run_config del collaudo S07), unica ammessa dopo il REJECTED di S05."
+  - "Criteri registrati prima di qualsiasi valutazione S08; la scheda verifica che la configurazione su disco sia ancora quella registrata e valuta quella registrata."
+  - "Finestre: backtest 2021-02 -> 2024-12, paper 2025-01 -> 2026-09 sullo snapshot di ricerca; nessun dato forward CP08."
+  - "Backtest con gap riconosciuti secondo la regola S06 (ordine pendente annullato, nessun prezzo inventato); contati nell'evidenza."
+  - "Gate mainnet nel runner: nessuna sessione con capitale reale senza approvazione coincidente con scheda READY, config, exchange, ambiente, simbolo e codice."
+  - "Schede write-once per revisione del codice; una scheda errata viene ritirata in superseded-N con motivazione, non sovrascritta."
+anomalies:
+  - "Prima scheda ritirata (superseded-1): run() del motore si ferma al primo gap; il backtest copriva solo 10 giorni (2021-02-01 -> 2021-02-11). Corretto prima della scheda valida; criteri invariati."
+  - "Diagnostica non preregistrata: senza costi la candidata fa +40,5% (3559 trade, drawdown -29%); con costi 0,3% a round trip -96%. Il turnover a soglia 0 e la causa."
+  - "Il digest del codice (live_digests) copre motore e runtime live, non release.py; la versione del tooling e tracciata dal commit e dallo sha del wheel."
+blockers:
+  - "Nessuna candidata soddisfa i criteri: serve una nuova ipotesi (S09) prima di una scheda READY."
+  - "S07 collaudo testnet reale e verifica indipendente di S00A-S07 aperti; rilascio da commit pulito richiesto."
+independent_review_fixes:
+  date: "2026-11-13"
+  source: "R1 HIGH delle revisioni indipendenti (Codex GPT-6, GLM-5.3); correzione in live.py, dettagli in S07-HANDOFF.yaml"
+  change: "accept-code-revision su sessione a capitale reale richiede una nuova approvazione verificata da verify_activation sul nuovo digest"
+  tests: "tests/test_live.py::test_review_r1_*"
+  confirmed_by: "REVIEW-INDEP-2026-11-13-deepseek.md (DeepSeek v4 Pro): R1 confermata con la verify_activation reale"
+forged_card_fix:
+  date: "2026-11-14"
+  source: "Rilievo emerso dal controllo della REVIEW-INDEP-2026-11-14-glm.md (non riportato dal revisore): verify_activation accettava una release-card.json scritta a mano con soli release_id e decision READY, purche l'approvazione ne riportasse il digest"
+  severity: "LOW (richiede accesso in scrittura al registro; tocca pero l'unico gate verso la mainnet)"
+  change: "release.validate_card: schema; posizione e release_id coerenti con candidato e codice; digest e istante di registrazione di <candidato>/criteria.json; configurazione, limiti, capitale e destinazione uguali ai criteri registrati; insieme esatto dei controlli richiesti (release.required_checks, fonte unica anche per build_card) con operatori e soglie registrati; passed ricalcolato dal valore osservato; READY solo se tutti i controlli passano. Usato da approve, verify_activation (che verifica anche i campi dell'approvazione contro la scheda) e record_decision. I valori osservati non vengono rimisurati: per questo occorre ricostruire la scheda."
+  tests: "tests/test_release.py::{test_hand_written_minimal_card_is_refused, test_tampered_blocked_card_cannot_be_approved_or_activated[4 casi], test_approval_must_match_card_fields}"
+  pending: "Conferma da un revisore non Claude"
+next_action: "Operatore conferma la decisione NOT_ACTIVATED; S09 apre un esperimento preregistrato sulla riduzione del turnover (soglia di ingresso, orizzonte, filtro costi) con la diagnostica +40% lordo / -96% netto come baseline."

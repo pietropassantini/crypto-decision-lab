@@ -1721,3 +1721,88 @@ def make_forward_readiness_figure(
     fig.update_layout(barmode="overlay")
     fig.update_xaxes(title_text="Valore")
     return _apply_layout(fig, "Requisiti minimi del campione indipendente", height)
+
+
+# ---------------------------------------------------------------------------
+# S04 · Strategy Studio
+# ---------------------------------------------------------------------------
+
+STUDIO_RUN_COLORS = ("#4cc9f0", "#f0b90b", "#b388ff", "#2dd4bf", "#ff6b6b", "#c7d2fe")
+
+
+def make_studio_equity_figure(
+    curves: Mapping[str, pd.Series],
+    *,
+    title: str = "Equity mark-to-market",
+    height: int = 380,
+) -> go.Figure:
+    """Equity curves of Studio runs, one distinct color per run."""
+
+    fig = go.Figure()
+    for position, (name, curve) in enumerate(curves.items()):
+        if curve.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=curve.index,
+                y=curve.to_numpy(dtype=float),
+                mode="lines",
+                name=name,
+                line={"color": STUDIO_RUN_COLORS[position % len(STUDIO_RUN_COLORS)], "width": 1.6},
+                hovertemplate="%{x|%Y-%m-%d %H:%M}<br>equity %{y:,.2f}<extra></extra>",
+            )
+        )
+    if not fig.data:
+        return empty_figure("Nessuna curva disponibile", height=height)
+    fig.update_yaxes(title_text="Equity (USDT)")
+    return _apply_layout(fig, title, height)
+
+
+def make_studio_trades_figure(
+    prices: pd.Series,
+    trades: pd.DataFrame,
+    *,
+    title: str = "Prezzo e operazioni",
+    height: int = 380,
+) -> go.Figure:
+    """Open prices of the run with entry/exit fills and their reasons."""
+
+    if prices.empty:
+        return empty_figure("Nessun evento di mercato", height=height)
+    fig = go.Figure(
+        go.Scatter(
+            x=prices.index,
+            y=prices.to_numpy(dtype=float),
+            mode="lines",
+            name="open",
+            line={"color": MUTED, "width": 1.2},
+            hovertemplate="%{x|%Y-%m-%d %H:%M}<br>open %{y:,.2f}<extra></extra>",
+        )
+    )
+    if not trades.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=trades["entry_at"],
+                y=trades["entry_price"],
+                mode="markers",
+                name="BUY",
+                marker={"symbol": "triangle-up", "size": 10, "color": GREEN},
+                customdata=trades[["entry_reason"]].to_numpy(),
+                hovertemplate="BUY %{y:,.2f}<br>%{customdata[0]}<extra></extra>",
+            )
+        )
+        closed = trades[trades["status"] == "CLOSED"]
+        if not closed.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=closed["exit_at"],
+                    y=closed["exit_price"],
+                    mode="markers",
+                    name="SELL",
+                    marker={"symbol": "triangle-down", "size": 10, "color": RED},
+                    customdata=closed[["exit_reason", "pnl"]].to_numpy(),
+                    hovertemplate="SELL %{y:,.2f}<br>%{customdata[0]}<br>P&L %{customdata[1]:,.2f}<extra></extra>",
+                )
+            )
+    fig.update_yaxes(title_text="Prezzo (USDT)")
+    return _apply_layout(fig, title, height)

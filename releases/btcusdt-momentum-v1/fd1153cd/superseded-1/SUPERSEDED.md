@@ -1,0 +1,1 @@
+Scheda superata il 2026-11-13: il backtest si fermava al primo gap dello snapshot (status HALTED_GAP dopo 244 eventi, 2021-02-11), quindi l'evidenza non copriva la finestra registrata. Corretto in release.evaluate_backtest (gap riconosciuti come in S06, controlli backtest.completed e backtest.window_covered). Criteri invariati.
