@@ -1,6 +1,6 @@
 step_id: S01
-status: IN_REVIEW
-updated_at: "2026-11-13T00:00:00Z"
+status: VERIFIED
+updated_at: "2026-11-14"
 agent_role: Streamlit e operazioni dati
 agent_model: <modello usato per questa sessione>
 base_commit: 62c38c9
@@ -34,7 +34,7 @@ checkpoints:
 decisions:
   - "Fallimento test_adapter_reads_status_readiness_and_provenance: causa = fixture _repo incompleta (mancava il sidecar .sha256.v2.json richiesto da verify_protocol_integrity). Non è regressione del codice. Corretto nella fixture; sul repo reale protocol_authority dà PROTOCOL_VERIFIED/ARCHIVE_VERIFIED."
 blockers: []
-next_action: "Revisore diverso dall'autore ripete CP01.1-3 dal commit che include la correzione fixture; poi VERIFIED."
+next_action: "Nessuna azione richiesta per S01; soglia di eta dell'audit nella UI da concordare con CP08."
 verification_2026_11_13:
   reviewer: "Claude Opus 5.5 (claude-opus-5-5), mandato dell'utente"
   status: IN_PROGRESS
@@ -76,3 +76,10 @@ verification_s01_resubmission:
   status: VERIFIED
   report: REVIEW-S00A-S06.md
   note: "VERIFIED il 2026-11-13: CP01.1-3 ripetuti da un checkout pulito del commit 9ac6f79 (nessun file non tracciato). CP01.1 1 passed; CP01.2 16 passed (9 stati in UI + casi malformati + luogo di ricerca); CP01.3 2 passed; file del monitor 25 passed; suite completa 440 passed; percorsi congelati CP08 intatti rispetto a 0daf402. Sull'archivio forward reale il banner mostra 'Audit CP08-07 assente' (NO_AUDIT, livello info, Corrispondenza n/d) e non piu il falso successo. REVISIONE NON INDIPENDENTE: la correzione e stata scritta da Claude Sonnet 5.5 e la verifica e della stessa istanza, su mandato dell'utente come coordinatore; il rinvio originale era di Claude Opus 5.5."
+verification_2026_11_14:
+  date: "2026-11-14"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-14-glm2.md (GLM-5.3, commit 6651afc, clone pulito, 544 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5 e Sonnet 5.5); lo stesso modello aveva firmato la review del 14-11 su b212033 in un'altra sessione, con probe scritti da zero"
+  evidence: "CP01.1-3 ripetuti (prove 2-5): banner di successo solo con AUDIT_CURRENT, 9 stati UI, no-write su fixture; probe proprio 5/5"
+  limit: "CP01.3 sull'archivio forward reale non eseguito dal revisore (perimetro CP08): verificato su fixture. Residuo non bloccante: nessuna soglia di eta dell'audit nella UI"

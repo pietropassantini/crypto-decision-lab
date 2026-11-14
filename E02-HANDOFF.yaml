@@ -1,5 +1,5 @@
 step_id: E02
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-14"
 agent_role: Ricerca quantitativa (detector, strategia, runner, esecuzione)
 agent_model: Claude Opus 5.5 (claude-opus-5-5)
@@ -49,6 +49,11 @@ decisions:
 anomalies:
   - "Nella griglia g01=g03 e g05=g07: con require_breakout true il filtro min_reward_risk 1,5 contro 2,5 non cambia nulla, quindi la griglia effettiva ha 6 configurazioni distinte. Va considerato in una v2."
   - "Il codice di detector, strategia e runner e dello stesso autore (Claude) che ha eseguito l'esperimento: serve un revisore non Claude."
-blockers:
-  - "Nessuno per la chiusura; un revisore non Claude deve ripetere CP-E02.0-2 da clone pulito."
-next_action: "Un revisore non Claude ripete CP-E02.0-2 da clone pulito e conferma gli 16 ledger_sha256. Una nuova ipotesi richiede una specifica v2 preregistrata; non modificare la v1."
+blockers: []
+next_action: "Nessuna azione richiesta; una nuova ipotesi richiede una specifica v2 preregistrata (non modificare la v1)."
+verification_2026_11_14:
+  date: "2026-11-14"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-14-glm2.md (GLM-5.3, commit 6651afc, clone pulito, 544 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5 e Sonnet 5.5); lo stesso modello aveva firmato la review del 14-11 su b212033 in un'altra sessione, con probe scritti da zero"
+  evidence: "CP-E02.0-2 ripetuti da clone pulito (prove 21-24): 35 test, due esecuzioni con 16 ledger_sha256 identici, REJECTED, sha256 della specifica conforme, detector causale (probe indipendente 6/6)"
