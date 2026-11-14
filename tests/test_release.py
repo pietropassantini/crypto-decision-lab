@@ -168,6 +168,96 @@ def test_verify_activation_matches_config_exchange_and_code(studio_repo):
         release.verify_activation(approval, live_config=LIVE_CONFIG, exchange=mainnet, code_sha256=code)
 
 
+def _forge_approval(card_path: Path, code: str) -> Path:
+    """Hand-written approval that matches the session and the (possibly forged) card digest."""
+    path = card_path.parent / "approval.json"
+    path.write_text(json.dumps({
+        "schema_version": release.APPROVAL_SCHEMA, "release_id": "fixture-momentum-forged",
+        "card_sha256": release.file_sha256(card_path), "code_sha256": code,
+        "target": {"exchange": "binance-spot", "environment": "mainnet", "symbol": "BTCUSDT"},
+        "live_config_sha256": release.live_config_sha256(LIVE_CONFIG)}), encoding="utf-8")
+    return path
+
+
+def _rewrite(card_path: Path, change) -> None:
+    data = json.loads(card_path.read_text(encoding="utf-8"))
+    change(data)
+    card_path.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def test_hand_written_minimal_card_is_refused(studio_repo):
+    from crypto_decision_lab.live import live_digests
+
+    code = live_digests()[0]
+    prepare(studio_repo, commit=False)
+    card_path = studio_repo / "releases" / "fixture-momentum" / code[:8] / "release-card.json"
+    card_path.parent.mkdir(parents=True)
+    card_path.write_text(json.dumps({"release_id": "fixture-momentum-forged", "decision": "READY"}), encoding="utf-8")
+    with pytest.raises(ReleaseError, match="unsupported schema"):
+        release.approve(card_path, operator="operator", note="n")
+    approval = _forge_approval(card_path, code)
+    with pytest.raises(ActivationError, match="release card"):
+        release.verify_activation(approval, live_config=LIVE_CONFIG, exchange={"name": "binance-spot",
+                                  "environment": "mainnet"}, code_sha256=code)
+
+
+def _flip_to_ready(data):
+    for check in data["checks"]:
+        check["passed"] = True
+    data["decision"], data["reasons"] = "READY", []
+
+
+def _drop_failed_checks(data):
+    data["checks"] = [c for c in data["checks"] if c["passed"]]
+    data["decision"], data["reasons"] = "READY", []
+
+
+def _weaken_thresholds(data):
+    for check in data["checks"]:
+        if not check["passed"] and check["op"] == ">":
+            check["threshold"], check["passed"] = -1e9, True
+
+
+def _other_criteria(data):
+    data["criteria"]["sha256"] = "0" * 64
+
+
+@pytest.mark.parametrize("tamper, message", [
+    (_flip_to_ready, "passed flag inconsistent"),
+    (_drop_failed_checks, "check set differs"),
+    (_weaken_thresholds, "operator or threshold"),
+    (_other_criteria, "criteria digest"),
+])
+def test_tampered_blocked_card_cannot_be_approved_or_activated(studio_repo, tamper, message):
+    from crypto_decision_lab.live import live_digests
+
+    code = live_digests()[0]
+    prepare(studio_repo, permissive=False, commit=False)
+    card_path = card(studio_repo)
+    assert release.validate_card(card_path)["decision"] == "BLOCKED"  # genuine BLOCKED card is valid
+    _rewrite(card_path, tamper)
+    with pytest.raises(ReleaseError, match=message):
+        release.approve(card_path, operator="operator", note="n")
+    approval = _forge_approval(card_path, code)
+    with pytest.raises(ActivationError, match=message):
+        release.verify_activation(approval, live_config=LIVE_CONFIG, exchange={"name": "binance-spot",
+                                  "environment": "mainnet"}, code_sha256=code)
+    with pytest.raises(ReleaseError, match=message):
+        release.record_decision(card_path.parent, decision="ACTIVATED", decided_by="op", reason="r",
+                                live_session="x")
+
+
+def test_approval_must_match_card_fields(studio_repo):
+    from crypto_decision_lab.live import live_digests
+
+    code = live_digests()[0]
+    approval = approved(studio_repo)
+    _rewrite(approval, lambda data: data.update(capital=50_000))
+    with pytest.raises(ActivationError, match="approval fields differ"):
+        release.verify_activation(approval, live_config=LIVE_CONFIG, exchange={"name": "binance-spot",
+                                  "environment": "mainnet"}, code_sha256=code)
+
+
 def test_mainnet_live_session_requires_matching_approval(studio_repo):
     approval = approved(studio_repo)
     feed = LabFeed.create(studio_repo / "var/lab/mainnet", {

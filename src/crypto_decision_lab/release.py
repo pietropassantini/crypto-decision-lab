@@ -16,9 +16,11 @@ Flow (each artefact is write-once and identified by SHA-256)::
   backlog status and every check with observed value.  Any failed check makes
   the card ``BLOCKED`` with the reasons.
 * **Activation** on mainnet is possible only through
-  :func:`verify_activation`: the approval must reference a READY card and
-  match the session's configuration digest, exchange, environment and code
-  digest.  :class:`~.live.LiveSession` calls it for every mainnet session.
+  :func:`verify_activation`: the approval must reference a READY card that
+  passes :func:`validate_card` (bound to its registered criteria: digest,
+  configuration, target, full check set with registered thresholds, decision
+  consistent with the checks) and match the session's configuration digest,
+  exchange, environment and code digest.  :class:`~.live.LiveSession` calls it for every mainnet session.
 """
 from __future__ import annotations
 
@@ -444,6 +446,42 @@ def _check(check_id: str, kind: str, observed: Any, op: str, threshold: Any, des
             "threshold": threshold, "passed": bool(passed)}
 
 
+def required_checks(criteria: dict) -> list[dict]:
+    """Every check a card for ``criteria`` must carry: id, kind, operator, threshold (no observed value).
+
+    Single source for :func:`build_card` and :func:`validate_card`, so a card cannot drop or
+    weaken a check without failing validation.
+    """
+    operational, windows = criteria["operational"], criteria["windows"]
+
+    def spec(check_id, kind, op, threshold, description=""):
+        return {"id": check_id, "kind": kind, "op": op, "threshold": threshold, "description": description}
+
+    checks = [spec(f"backtest.{c['id']}", "backtest", c["op"], c["threshold"], c.get("description", ""))
+              for c in criteria["backtest"]]
+    checks += [spec(f"paper.{c['id']}", "paper", c["op"], c["threshold"], c.get("description", ""))
+               for c in criteria["paper"]]
+    checks += [
+        spec("backtest.completed", "backtest", "==", "COMPLETED", "the backtest covers the whole registered window"),
+        spec("backtest.window_covered", "backtest", "==", _last_hour(windows["backtest"]["end"]),
+             "last processed bar is the last hour of the window"),
+        spec("paper.matches_backtest", "paper", "==", True, "persistent paper replay reproduces the backtest ledger"),
+        spec("paper.completed", "paper", "==", "COMPLETED"),
+        spec("ops.candidate_config_unchanged", "operational", "==", criteria["candidate_live_config_sha256"],
+             "configuration on disk = registered candidate"),
+        spec("ops.capital", "operational", "<=", operational["max_capital"]),
+        spec("ops.max_order_notional", "operational", "<=", operational["max_order_notional"]),
+        spec("ops.max_position_notional", "operational", "<=", operational["max_position_notional"]),
+        spec("ops.git_commit", "operational", "==", True, "release built from a git checkout"),
+        spec("ops.git_clean", "operational", "==", 0, "no uncommitted change under src/, config/, pyproject.toml"),
+        spec("ops.testnet_collaudo", "operational", "==", True, "S07 smoke test passed on the Binance Spot testnet"),
+        spec("ops.runbook_drill", "operational", "==", True, "CP08.1 drill passed on this code revision"),
+    ]
+    checks += [spec(f"ops.step_{step}_verified", "operational", "==", "VERIFIED", "PRD backlog status")
+               for step in operational.get("required_steps_verified", [])]
+    return checks
+
+
 def build_card(candidate: str, *, repo_root: str | Path = ".", releases: str | Path = DEFAULT_RELEASES,
                drill: dict | None = None, package: dict | None = None, paper_root: str | Path = "var/release/paper",
                prd: str | Path = "Crypto_Decision_Lab_PRD.md") -> Path:
@@ -469,36 +507,26 @@ def build_card(candidate: str, *, repo_root: str | Path = ".", releases: str | P
     steps = prd_status(repo / prd)
     testnet = testnet_evidence(repo, operational.get("testnet_evidence", ["var/s07-testnet/smoke-*.json"]))
     limits = {**live_config.get("limits", {})}
-    checks = [_check(f"backtest.{c['id']}", "backtest", backtest.get(c["metric"]), c["op"], c["threshold"],
-                     c.get("description", "")) for c in criteria["backtest"]]
-    checks += [_check(f"paper.{c['id']}", "paper", paper.get(c["metric"]), c["op"], c["threshold"],
-                      c.get("description", "")) for c in criteria["paper"]]
-    checks += [
-        _check("backtest.completed", "backtest", backtest["status"], "==", "COMPLETED",
-               "the backtest covers the whole registered window"),
-        _check("backtest.window_covered", "backtest", backtest["last_event"], "==",
-               _last_hour(windows["backtest"]["end"]), "last processed bar is the last hour of the window"),
-        _check("paper.matches_backtest", "paper", paper["matches_backtest"], "==", True,
-               "persistent paper replay reproduces the backtest ledger"),
-        _check("paper.completed", "paper", paper["session_status"], "==", "COMPLETED"),
-        _check("ops.candidate_config_unchanged", "operational", live_config_sha256(current_config), "==",
-               criteria["candidate_live_config_sha256"], "configuration on disk = registered candidate"),
-        _check("ops.capital", "operational", float(run_config["initial_cash"]), "<=", operational["max_capital"]),
-        _check("ops.max_order_notional", "operational", float(limits.get("max_order_notional", 1e18)), "<=",
-               operational["max_order_notional"]),
-        _check("ops.max_position_notional", "operational", float(limits.get("max_position_notional", 1e18)), "<=",
-               operational["max_position_notional"]),
-        _check("ops.git_commit", "operational", git["available"], "==", True, "release built from a git checkout"),
-        _check("ops.git_clean", "operational", len(git["dirty_paths"]), "==", 0,
-               "no uncommitted change under src/, config/, pyproject.toml"),
-        _check("ops.testnet_collaudo", "operational", testnet["passed"], "==", True,
-               "S07 smoke test passed on the Binance Spot testnet"),
-        _check("ops.runbook_drill", "operational", bool(drill and drill.get("passed")), "==", True,
-               "CP08.1 drill passed on this code revision"),
-    ]
-    for step in operational.get("required_steps_verified", []):
-        checks.append(_check(f"ops.step_{step}_verified", "operational", steps.get(step), "==", "VERIFIED",
-                             "PRD backlog status"))
+    observed = {f"backtest.{c['id']}": backtest.get(c["metric"]) for c in criteria["backtest"]}
+    observed.update({f"paper.{c['id']}": paper.get(c["metric"]) for c in criteria["paper"]})
+    observed.update({
+        "backtest.completed": backtest["status"],
+        "backtest.window_covered": backtest["last_event"],
+        "paper.matches_backtest": paper["matches_backtest"],
+        "paper.completed": paper["session_status"],
+        "ops.candidate_config_unchanged": live_config_sha256(current_config),
+        "ops.capital": float(run_config["initial_cash"]),
+        "ops.max_order_notional": float(limits.get("max_order_notional", 1e18)),
+        "ops.max_position_notional": float(limits.get("max_position_notional", 1e18)),
+        "ops.git_commit": git["available"],
+        "ops.git_clean": len(git["dirty_paths"]),
+        "ops.testnet_collaudo": testnet["passed"],
+        "ops.runbook_drill": bool(drill and drill.get("passed")),
+    })
+    observed.update({f"ops.step_{step}_verified": steps.get(step)
+                     for step in operational.get("required_steps_verified", [])})
+    checks = [_check(s["id"], s["kind"], observed[s["id"]], s["op"], s["threshold"], s["description"])
+              for s in required_checks(criteria)]
     failed = [c for c in checks if not c["passed"]]
     card = {
         "schema_version": CARD_SCHEMA, "release_id": f"{candidate}-{code_sha[:8]}", "candidate": candidate,
@@ -567,10 +595,87 @@ def render_card(card: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def validate_card(card_path: str | Path) -> dict:
+    """Return the card if it is bound to its registered criteria; raise :class:`ReleaseError` otherwise.
+
+    Checks, against ``<candidate>/criteria.json`` next to the card's revision folder: schema,
+    location and release id, criteria digest, configuration digest, target, limits and capital,
+    the exact set of required checks with their registered operators and thresholds, each
+    ``passed`` flag recomputed from the observed value, and the decision implied by the checks.
+    Observed evidence values are not re-measured here (that is what rebuilding the card does).
+    """
+    card_path = Path(card_path)
+    if not card_path.is_file():
+        raise ReleaseError(f"release card not found: {card_path}")
+    try:
+        card = _read(card_path)
+    except (OSError, ValueError) as exc:
+        raise ReleaseError(f"release card unreadable: {exc}") from exc
+    problems: list[str] = []
+    if not isinstance(card, dict) or card.get("schema_version") != CARD_SCHEMA:
+        raise ReleaseError("release card: unsupported schema")
+    criteria_path = card_path.parent.parent / "criteria.json"
+    if not criteria_path.is_file():
+        raise ReleaseError(f"release card: registered criteria not found at {criteria_path}")
+    criteria = _read(criteria_path)
+    try:
+        candidate = card["candidate"]
+        code_sha = card["version"]["code_sha256"]
+        if criteria.get("schema_version") != CRITERIA_SCHEMA or criteria.get("candidate") != candidate:
+            problems.append("criteria schema or candidate differs from the card")
+        if not (isinstance(code_sha, str) and re.fullmatch(r"[0-9a-f]{64}", code_sha)):
+            problems.append("code_sha256 is not a sha256 digest")
+        elif (card_path.parent.name != code_sha[:8] or card_path.parent.parent.name != candidate
+              or card["release_id"] != f"{candidate}-{code_sha[:8]}"):
+            problems.append("release id or location does not match candidate and code revision")
+        if card["criteria"].get("sha256") != file_sha256(criteria_path):
+            problems.append("criteria digest differs from the registered criteria")
+        if card["criteria"].get("registered_utc") != criteria.get("registered_utc") \
+                or criteria.get("registered_utc", "") > card.get("created_utc", ""):
+            problems.append("criteria registration time inconsistent with the card")
+        live_config = criteria["candidate_live_config"]
+        configuration = card["configuration"]
+        registered_sha = criteria["candidate_live_config_sha256"]
+        if configuration.get("live_config_sha256") != registered_sha \
+                or live_config_sha256(configuration.get("live_config", {})) != registered_sha:
+            problems.append("configuration differs from the registered candidate")
+        if configuration.get("limits") != live_config.get("limits", {}) \
+                or configuration.get("capital") != live_config["run_config"]["initial_cash"]:
+            problems.append("limits or capital differ from the registered candidate")
+        operational = criteria["operational"]
+        if card["target"] != {"exchange": operational["exchange"], "environment": operational["environment"],
+                              "symbol": live_config.get("symbol", "BTCUSDT")}:
+            problems.append("target differs from the registered criteria")
+        expected = {s["id"]: s for s in required_checks(criteria)}
+        checks = card["checks"]
+        ids = [c["id"] for c in checks]
+        if len(ids) != len(set(ids)) or set(ids) != set(expected):
+            missing, extra = sorted(set(expected) - set(ids)), sorted(set(ids) - set(expected))
+            problems.append(f"check set differs from the criteria (missing {missing}, unexpected {extra}"
+                            f"{', duplicated' if len(ids) != len(set(ids)) else ''})")
+        for check in checks:
+            spec = expected.get(check["id"])
+            if spec is None:
+                continue
+            if check["op"] != spec["op"] or check["threshold"] != spec["threshold"]:
+                problems.append(f"check {check['id']}: operator or threshold differs from the criteria")
+            recomputed = check["observed"] is not None and OPS[spec["op"]](check["observed"], spec["threshold"])
+            if bool(recomputed) != check["passed"]:
+                problems.append(f"check {check['id']}: passed flag inconsistent with the observed value")
+        all_passed = bool(checks) and all(c["passed"] for c in checks)
+        if card["decision"] not in ("READY", "BLOCKED") or (card["decision"] == "READY") != all_passed:
+            problems.append(f"decision {card['decision']!r} inconsistent with the checks")
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise ReleaseError(f"release card malformed: missing or invalid {exc}") from exc
+    if problems:
+        raise ReleaseError("release card invalid: " + "; ".join(problems))
+    return card
+
+
 # ====================================================================== 4. approval and activation gate
 def approve(card_path: str | Path, *, operator: str, note: str) -> Path:
     card_path = Path(card_path)
-    card = _read(card_path)
+    card = validate_card(card_path)
     if card["decision"] != "READY":
         raise ReleaseError(f"only READY cards can be approved; this card is {card['decision']}")
     if not operator or not note:
@@ -597,8 +702,20 @@ def verify_activation(approval_path: str | Path, *, live_config: dict, exchange:
         problems.append("unsupported approval schema")
     if not card_path.is_file() or file_sha256(card_path) != approval.get("card_sha256"):
         problems.append("release card missing or changed after approval")
-    elif _read(card_path)["decision"] != "READY":
-        problems.append("release card is not READY")
+    else:
+        try:
+            card = validate_card(card_path)
+        except ReleaseError as exc:
+            problems.append(str(exc))
+        else:
+            if card["decision"] != "READY":
+                problems.append("release card is not READY")
+            bound = {"release_id": card["release_id"], "target": card["target"],
+                     "live_config_sha256": card["configuration"]["live_config_sha256"],
+                     "limits": card["configuration"]["limits"], "capital": card["configuration"]["capital"],
+                     "code_sha256": card["version"]["code_sha256"]}
+            if any(approval.get(key) != value for key, value in bound.items()):
+                problems.append("approval fields differ from the release card")
     if live_config_sha256(live_config) != approval.get("live_config_sha256"):
         problems.append("live configuration differs from the approved one (strategy, capital or limits)")
     target = approval.get("target", {})
@@ -627,7 +744,7 @@ def record_decision(release_dir: str | Path, *, decision: str, decided_by: str, 
         raise ReleaseError(f"decision must be one of {DECISIONS}")
     if not card_path.is_file():
         raise ReleaseError("decision requires a release card")
-    card = _read(card_path)
+    card = validate_card(card_path)
     entry = {"schema_version": DECISION_SCHEMA, "release_id": card["release_id"], "decided_utc": _now(),
              "decision": decision, "decided_by": decided_by, "reason": reason,
              "card_sha256": file_sha256(card_path), "card_decision": card["decision"]}
