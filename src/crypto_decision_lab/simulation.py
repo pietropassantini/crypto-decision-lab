@@ -120,6 +120,12 @@ def _pattern(**parameters) -> Strategy:
     return PatternStrategy(**parameters)
 
 
+def _regime_momentum(**parameters) -> Strategy:
+    from .regime_momentum import RegimeMomentumStrategy
+
+    return RegimeMomentumStrategy(**parameters)
+
+
 STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "constant": ConstantStrategy, "momentum": MomentumStrategy,
     # S05: decide only at decision points (S02 cutoffs); lazy to avoid import cycles.
@@ -127,6 +133,8 @@ STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "model_filtered_momentum": _model_filtered_momentum,
     # E02 (draft): patterns in formation; features from pattern_detector.pattern_market_events.
     "pattern": _pattern,
+    # E03: momentum with hysteresis and trend-regime filter; trend_ratio from regime_momentum.trend_features.
+    "regime_momentum": _regime_momentum,
 }
 
 
