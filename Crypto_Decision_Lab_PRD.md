@@ -225,6 +225,8 @@ Revisione indipendente del 2026-11-14 su `b212033`: [GLM-5.3 del 2026-11-14](REV
 - **Rilievi nuovi:** R9 INFO (i comandi CLI non gestiscono `SessionBusy`), R10 INFO (BUY `FILLS_INCOMPLETE` senza fill non avvia l'orizzonte), R11 INFO (`model_sha256` S05 dipende dalla versione di scikit-learn).
 - **Stati:** S00A, S02 e S05 VERIFIED per decisione del coordinatore il 2026-11-14; S01, S04, S07 e S08 restano IN_REVIEW.
 
+Correzioni del 2026-11-14 ai rilievi A2, R9, R10 e F5 (branch `fix/review-findings-a2-r9-r10-f5`, suite verde): A2 `st.rerun()` dopo ogni azione della scheda Paper trading; R9 i comandi `live` rispondono a una sessione occupata con una riga JSON `{"status":"BUSY"}` e codice di uscita 75; R10 un BUY eseguito con trade non importati (`FILLS_INCOMPLETE`) avvia l'orizzonte di detenzione; F5 il `fill_ratio` degli ordini MARKET a importo in quote si calcola sull'importo speso. Un revisore non Claude conferma le correzioni; i report già committati in `reports/s09` precedono F5 e non sono rigenerati.
+
 Stati operativi: `TODO`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `VERIFIED`, `BLOCKED`. `DONE` nella tabella identifica l'analisi storica già svolta.
 
 ### Scheda di handoff da compilare a ogni cambio agente o consegna

@@ -79,4 +79,9 @@ independent_review_fixes:
 blockers:
   - "Collaudo sull'API reale della testnet: servono chiavi testnet nelle variabili d'ambiente; lo esegue l'operatore con scripts/s07_testnet_smoke.py."
   - "S02-S06 IN_REVIEW: S07 non modifica i moduli S03/S06, ma ne riusa Strategy, RiskEngine e feed."
+review_fixes_2026_11_14:
+  source: "REVIEW-INDEP-2026-11-14-glm.md, rilievi R9 e R10 (INFO)"
+  r9: "live.main avvolge _main: SessionBusy diventa una riga JSON {status: BUSY, detail} su stdout e codice di uscita 75 (EX_TEMPFAIL), mai un traceback; session-run --loop continua a riprovare. Test: tests/test_live.py::test_review_r9_*"
+  r10: "LiveSession._last_buy_bar considera anche i BUY in stato FILLS_INCOMPLETE e FILLS_EXCESS_ACCEPTED: l'orologio dell'orizzonte parte anche se nessun trade e stato importato; dopo il rebaseline la posizione accettata esce a orizzonte. Test: tests/test_live.py::test_review_r10_*"
+  pending: "Conferma da un revisore non Claude"
 next_action: "Operatore esegue scripts/s07_testnet_smoke.py con chiavi testnet e allega l'evidenza; poi un revisore diverso ripete CP07.1-3 e una sessione live su testnet di alcune ore."

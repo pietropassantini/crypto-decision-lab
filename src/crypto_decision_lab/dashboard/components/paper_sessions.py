@@ -96,23 +96,26 @@ def render_paper_sessions(studio, repo_root: str | Path, *, root: str = "var/pap
     try:
         snapshot = session.snapshot()
         controls = st.columns(5)
+        acted = False  # an action changes the state the other controls were rendered from: rerun afterwards
         if controls[0].button("Elabora eventi disponibili", key="paper_poll", disabled=snapshot["status"] in BLOCKING):
-            snapshot = session.poll()
+            snapshot, acted = session.poll(), True
         if controls[1].button("Riconosci gap e riprendi", key="paper_ack", disabled=snapshot["status"] != "PAUSED_GAP"):
-            snapshot = session.acknowledge_gap("acknowledged from Strategy Studio")
+            snapshot, acted = session.acknowledge_gap("acknowledged from Strategy Studio"), True
         if snapshot["status"] == "SUSPENDED":
             if controls[2].button("Riprendi", key="paper_resume"):
-                snapshot = session.resume()
+                snapshot, acted = session.resume(), True
         elif controls[2].button("Sospendi", key="paper_suspend", disabled=snapshot["status"] == "COMPLETED"):
-            snapshot = session.suspend("suspended from Strategy Studio")
+            snapshot, acted = session.suspend("suspended from Strategy Studio"), True
         if controls[3].button("Chiudi sessione", key="paper_finish", disabled=snapshot["status"] == "COMPLETED"):
-            snapshot = session.finish("closed from Strategy Studio")
+            snapshot, acted = session.finish("closed from Strategy Studio"), True
         if snapshot["source"]["kind"] == "lab_feed":
             hours = controls[4].number_input("Ore feed", min_value=1, value=1, step=1, key="paper_feed_hours")
             if controls[4].button("Avanza feed (lab)", key="paper_feed_advance"):
                 feed_path = Path(session.meta["source"]["path"])
                 LabFeed(feed_path if feed_path.is_absolute() else repo / feed_path).advance(int(hours))
-                snapshot = session.poll()
+                snapshot, acted = session.poll(), True
+        if acted:
+            st.rerun()  # A2: buttons rendered before the action (e.g. "Riconosci gap") otherwise show a stale state
 
         status = snapshot["status"]
         message = f"Stato **{status}** · {STATUS_HELP.get(status, '')} · {snapshot['detail']}"

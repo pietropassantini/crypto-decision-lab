@@ -621,6 +621,41 @@ def test_review_r2_trades_never_reported_halt_until_resolved(studio_repo):
     assert snap["halted"] is None and snap["cursor"] == str(START + 4 * H)
 
 
+def test_review_r10_buy_without_imported_trades_still_exits_at_the_horizon(studio_repo):
+    session, feed, fake = make(studio_repo, "r10")
+    fake.push({"hide_fills": True})
+    step(session, feed, START)
+    client_id = session.orders()[0]["client_order_id"]
+    assert step(session, feed, START + 2 * H)["status"] == "HALTED"
+    session.resolve_missing_order(client_id, "myTrades on the exchange shows the fill; accepted from balances")
+    session.rebaseline("BTC bought by the order whose trades were never reported")
+    assert session.fills() == [] and session.book()["position"] > 0
+    assert session._last_buy_bar() == START  # the horizon clock starts at the executed BUY
+    step(session, feed, START + 4 * H)
+    exits = [o for o in session.orders() if o["purpose"] == "horizon_exit"]
+    assert exits
+    assert pd.Timestamp(exits[0]["bar_ts"]) == START + 3 * H  # horizon_hours = 3
+
+
+def test_review_r9_busy_session_gives_a_json_line_and_exit_code_not_a_traceback(studio_repo, capsys, monkeypatch):
+    session, feed, fake = make(studio_repo, "r9")
+    original = live._SessionLock.acquire
+    monkeypatch.setattr(live._SessionLock, "acquire", lambda self, wait: original(self, min(wait, 0.1)))
+    holder = LiveSession(session.directory, repo_root=studio_repo)
+    holder.lock.acquire(0)
+    try:
+        for command in (["suspend-openings", "--note", "x"], ["flatten"], ["session-finish"]):
+            code = live.main(["--repo-root", str(studio_repo), command[0], "--session-dir", str(session.directory),
+                              *command[1:]])
+            line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+            assert code == live.EXIT_BUSY == 75, command
+            assert line["status"] == "BUSY" and "retry" in line["detail"], command
+    finally:
+        holder.lock.release()
+    assert live.main(["--repo-root", str(studio_repo), "session-status", "--session-dir",
+                      str(session.directory)]) == 0
+
+
 def test_review_r8_trades_beyond_final_executed_quantity_halt_at_once(studio_repo):
     session, feed, fake = make(studio_repo, "r8")
     fake.push({"understate_executed": True})
