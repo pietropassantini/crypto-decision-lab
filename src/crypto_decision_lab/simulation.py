@@ -114,11 +114,19 @@ def _model_filtered_momentum(**parameters) -> Strategy:
     return ModelFilteredMomentumStrategy(**parameters)
 
 
+def _pattern(**parameters) -> Strategy:
+    from .pattern_detector import PatternStrategy
+
+    return PatternStrategy(**parameters)
+
+
 STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "constant": ConstantStrategy, "momentum": MomentumStrategy,
     # S05: decide only at decision points (S02 cutoffs); lazy to avoid import cycles.
     "scheduled_momentum": _scheduled_momentum,
     "model_filtered_momentum": _model_filtered_momentum,
+    # E02 (draft): patterns in formation; features from pattern_detector.pattern_market_events.
+    "pattern": _pattern,
 }
 
 

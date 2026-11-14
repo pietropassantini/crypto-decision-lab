@@ -1,0 +1,82 @@
+step_id: S07
+status: IN_REVIEW
+updated_at: "2026-11-13"
+agent_role: integrazione exchange e affidabilita
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: 57cff955dcb3b81371b658e1a1564bd63c74ff09
+head_commit: "working-tree diff against base_commit (nessun commit creato)"
+review_ref: "branch prd/integration; diff non committato"
+inputs:
+  - "Crypto_Decision_Lab_PRD.md: S07, CP07.1-3"
+  - "S06 (IN_REVIEW, commit 57cff95): feed di laboratorio, momentum_24h su barre chiuse, SQLite transazionale, pin di config/motore"
+  - "S03 (IN_REVIEW): Strategy, RiskEngine, Portfolio, Proposal riusati senza modifiche"
+  - "Documentazione ufficiale Binance Spot (developers.binance.com: trading-endpoints, general-api-information, enums, filters, errors; testnet.binance.vision), letta il 2026-11-13"
+changed_paths:
+  - "src/crypto_decision_lab/exchange.py - contratto di esecuzione (ExecutionAdapter, OrderRequest/Report, Fill, SymbolRules, errori Rejected/Unknown/NotFound) e FakeExchange con guasti e stato su file"
+  - "src/crypto_decision_lab/binance_spot.py - BinanceSpotAdapter (HMAC, testnet di default, mainnet bloccata, classificazione errori) e BinanceKlineFeed"
+  - "src/crypto_decision_lab/live.py - LiveSession SQLite: ordini write-ahead, riconciliazione, guardie, comandi operatore, CLI"
+  - "config/live/testnet.example.json - configurazione con limiti"
+  - "scripts/s07_testnet_smoke.py - collaudo sull'API reale della testnet con evidenza in var/s07-testnet"
+  - "tests/test_live.py (29 test), tests/fixtures/binance_spot/*.json (forme di risposta ufficiali, valori sintetici)"
+  - "docs/S07-live-adapter.md (scelte, API verificata, runbook), README.md, Crypto_Decision_Lab_PRD.md (riga S07), S07-HANDOFF.yaml"
+checkpoints:
+  - id: CP07.1
+    result: PASS
+    verification: "python -m pytest tests/test_live.py -k \"cp071 or adapter or signature or end_to_end\" -q -p no:cacheprovider --basetemp var/s07-cp071"
+    expected: "Prove riproducibili di invio, conferma, rifiuto, annullamento ed esecuzione parziale; quantita, prezzi, costi e stato locale riconciliati con gli eventi restituiti"
+    observed: "MARKET BUY FILLED, prezzo = open della barra, commissione in BTC sottratta alla posizione, cassa = capitale - quote; uscita a orizzonte FILLED con residuo sotto minQty. Rifiuto -2010 -> REJECTED senza fill; la barra dopo usa un nuovo client id. LIMIT parziale 40% -> PARTIALLY_FILLED, fill successivo importato in riconciliazione, annullamento per timeout -> CANCELED con executedQty = somma dei fill. MARKET parziale -> EXPIRED. LIMIT in attesa -> cancel-open-orders -> CANCELED. assert_reconciled: fill locali = executedQty remoto, stato uguale, trade_id unici, saldi = baseline + fill, nessun client id inviato due volte. Adattatore Binance: firma = esempio ufficiale, parsing di exchangeInfo/FULL/order+myTrades/account, 8 casi di errore classificati, percorso adattatore+runner su shim Binance con timeout e riavvio."
+    evidence: "tests/test_live.py::{test_cp071_*,test_signature_matches_the_official_example,test_adapter_*,test_binance_adapter_end_to_end_with_timeout_and_restart}"
+    pending: "Ripetizione sull'API reale: scripts/s07_testnet_smoke.py richiede CDL_BINANCE_TESTNET_API_KEY/SECRET (non disponibili all'agente). Esito atteso: tutti gli step PASS e var/s07-testnet/smoke-<id>.json."
+  - id: CP07.2
+    result: PASS
+    verification: "python -m pytest tests/test_live.py -k cp072 -q -p no:cacheprovider --basetemp var/s07-cp072"
+    expected: "Timeout dopo l'invio e riavvio con ordine aperto; il runner riconcilia prima di inviare altri ordini e il fixture non mostra duplicati"
+    observed: "Timeout dopo l'invio -> UNKNOWN/UNRESOLVED; con la query di riconciliazione a sua volta in timeout il cursore resta fermo e submit = 1; alla poll successiva FILLED, barre elaborate, submit = 1. Timeout prima dell'invio -> UNKNOWN entro la grace, poi NOT_PLACED e nuovo ordine con id diverso; sull'exchange un solo ordine. Crash before_send/after_send (hook) e riapertura dalla sola directory: INTENT riconciliato (FILLED oppure NOT_PLACED), submit = 1 per decisione. Ordine LIMIT in attesa, eseguito in parte a runner fermo: alla riapertura PARTIALLY_FILLED importato, nessun invio. Kill del processo CLI con os._exit(97) dopo l'invio: la ripresa CLI riconcilia, un solo ordine FILLED."
+    evidence: "tests/test_live.py::{test_cp072_timeout_after_send_is_reconciled_before_any_new_order,test_cp072_timeout_before_reaching_the_exchange_becomes_not_placed,test_cp072_restart_with_order_in_flight_does_not_duplicate,test_cp072_restart_with_resting_order_reconciles_and_sends_nothing,test_cp072_hard_kill_of_runner_process_after_send}"
+  - id: CP07.3
+    result: PASS
+    verification: "python -m pytest tests/test_live.py -k \"cp073 or mainnet or pins\" -q -p no:cacheprovider --basetemp var/s07-cp073"
+    expected: "Limite di esposizione, feed obsoleto, disallineamento del saldo e sospensione manuale bloccano le nuove aperture; runbook su ordini aperti e posizioni"
+    observed: "max_position_notional 250 -> quoteOrderQty 250; 3 -> nessun ordine, guardia exposure_limit. Barre piu vecchie di 1h -> guardia stale_feed; senza barre per oltre 2h -> STALE; le barre arrivate in ritardo non aprono. Trasferimento esterno di 0,5 BTC -> HALTED, uscita a orizzonte e flatten bloccati; rebaseline con nota -> rettifica della posizione, uscita eseguita, saldi coerenti. Sospensione manuale -> OPENINGS_SUSPENDED, uscita a orizzonte eseguita, nessuna riapertura fino a resume. Mainnet rifiutata (adattatore e sessione), credenziali nella specifica rifiutate, revisione del codice fissata (ENGINE_MISMATCH fino ad accept). Runbook in docs/S07-live-adapter.md."
+    evidence: "tests/test_live.py::{test_cp073_*,test_live_specs_refuse_mainnet_and_inline_credentials,test_session_pins_code_revision}; docs/S07-live-adapter.md#runbook"
+validation:
+  s07_suite: "python -m pytest tests/test_live.py -q -p no:cacheprovider --basetemp var/s07-dev -> 29 passed"
+  full_suite: "python -m pytest -q -p no:cacheprovider --basetemp var/s07-full -> 458 passed in 237s (429 S06 + 29 S07)"
+  flake_fixed: "Prima esecuzione: 1 fallimento di WinError 5 su os.replace dello stato FakeExchange (file trattenuto da uno scanner Windows). Corretto con retry in FakeExchange._save; test_live ripetuto 3 volte e suite completa verdi."
+decisions:
+  - "Exchange Binance Spot (fonte di tutti i dati del repo), collaudo su Spot Testnet; mainnet richiede allow_mainnet e CDL_LIVE_ALLOW_MAINNET=1, decisione S08."
+  - "Ordini write-ahead: intento e client id committati prima dell'invio. Un client id non viene mai reinviato, perche Binance lo riaccetta dopo il fill: si interroga sempre l'ordine."
+  - "Esito incerto (timeout, 5xx, -1007) -> UNKNOWN: nessuna barra elaborata e nessun ordine inviato finche la query non lo risolve; non trovato oltre unknown_grace_seconds -> NOT_PLACED."
+  - "Portafoglio derivato solo dai fill dell'exchange (chiave trade_id) e dalle rettifiche dell'operatore; mai da prezzi simulati."
+  - "Saldo disallineato blocca anche le uscite (stato non affidabile); le altre guardie bloccano solo le aperture."
+  - "Esecuzione live immediata alla decisione (MARKET o LIMIT GTC con offset): latency_hours e slippage della RunConfig restano ipotesi di simulazione, da confrontare con l'osservato in S09."
+  - "client id cdl-<prefisso8>-<seq6>: la documentazione letta non riporta regex e lunghezza, quindi alfabeto e lunghezza sono conservativi."
+anomalies:
+  - "Commissioni in un asset terzo (BNB) non sono convertite in quote: compaiono in book()['other_fees'] e nei delta di saldo, non nei costi in USDT."
+  - "BinanceKlineFeed e BinanceSpotAdapter.submit/query non sono stati eseguiti contro la rete reale in questo step: solo fixture e shim."
+review_fixes:
+  date: "2026-11-13"
+  source: "REVIEW-2026-11-13.md (F1 HIGH, F2, F3); autore delle correzioni = stesso agente: serve un revisore diverso"
+  changes:
+    - "F1/F2: COMPLETED ed ENGINE_MISMATCH non vengono piu sovrascritti da _refresh_status; _require rifiuta i comandi su COMPLETED e le azioni sull'exchange con ENGINE_MISMATCH"
+    - "F3: stato MISSING per ordini aperti sconosciuti all'exchange -> UNRESOLVED nella tolleranza, HALTED oltre; resolve-missing-order (LOST) e rebaseline; runbook aggiornato"
+  verification: "python -m pytest tests/test_live.py -k review -q -p no:cacheprovider -> 4 passed; suite completa nella riga di backlog"
+independent_review_fixes:
+  date: "2026-11-13"
+  source: "REVIEW-INDEP-2026-11-13.md (Codex GPT-6) e REVIEW-INDEP-2026-11-13-glm.md (GLM-5.3): R1 HIGH, R2 MEDIUM, R3 HIGH; correzioni di Claude Opus 5.5, serve un revisore non Claude"
+  changes:
+    - "R3: lock esclusivo di sessione (session.lock, msvcrt/fcntl, rilasciato dal sistema alla morte del processo). poll, reconcile e tutti i comandi operatore lo tengono per l'intera azione: un session-finish concorrente riceve SessionBusy invece di intercalarsi. Il lock rilegge meta (rettifiche, revisione accettata) e ricontrolla il pin del codice. Difesa in profondita: poll ricontrolla lo stato a ogni barra e _send non invia un intento se la sessione e chiusa (NOT_PLACED). session-run --loop su SessionBusy attende e riprova."
+    - "R1: accept-code-revision su sessione a capitale reale (mainnet o creata col gate S08) richiede --approval e verify_activation sul nuovo digest; l'attivazione aggiornata e registrata in meta. Testnet e fixture invariati."
+    - "R2: myTrades paginato con fromId (limit 1000). Nuovo stato locale FILLS_PENDING per ordini terminali con fill incompleti: restano in riconciliazione, fermano le barre, sospendono il controllo saldi; oltre unknown_grace_seconds -> HALTED. resolve-missing-order li chiude come FILLS_INCOMPLETE, poi rebaseline. updated_at ora cambia solo con stato o fill nuovi."
+  tests: "test_review_r1_* (2), test_review_r3_* (3), test_review_r2_* (3)"
+  verification: "python -m pytest tests/test_live.py -q -p no:cacheprovider -> 41 passed; suite completa -> 488 passed in 398s; con R8 -> 489 passed in 295s"
+  open: "La combinazione orderId+fromId di myTrades va confermata sul testnet reale (scripts/s07_testnet_smoke.py); con meno di 1000 trade per ordine non e usata."
+  confirmed_by: "REVIEW-INDEP-2026-11-13-deepseek.md (DeepSeek v4 Pro): R1-R3 confermate, F1-F4 confermate, 488 passed sul working tree, 36/36 probe propri"
+  deepseek_findings:
+    - "R6 LOW: paginazione myTrades presuppone ordine crescente dei trade -> resta aperto, da confermare con lo smoke testnet; un trade mancante porta a FILLS_PENDING/HALTED, non a perdita silenziosa"
+    - "R7 INFO: session.lock vale solo sulla stessa macchina -> documentato nel runbook"
+    - "R8 LOW: trade oltre l'executedQty finale -> corretto: stato FILLS_EXCESS, HALTED alla riconciliazione successiva senza tolleranza, resolve-missing-order -> FILLS_EXCESS_ACCEPTED, poi rebaseline; test test_review_r8_* (correzione di Claude Opus 5.5, da confermare da un revisore non Claude)"
+blockers:
+  - "Collaudo sull'API reale della testnet: servono chiavi testnet nelle variabili d'ambiente; lo esegue l'operatore con scripts/s07_testnet_smoke.py."
+  - "S02-S06 IN_REVIEW: S07 non modifica i moduli S03/S06, ma ne riusa Strategy, RiskEngine e feed."
+next_action: "Operatore esegue scripts/s07_testnet_smoke.py con chiavi testnet e allega l'evidenza; poi un revisore diverso ripete CP07.1-3 e una sessione live su testnet di alcune ore."

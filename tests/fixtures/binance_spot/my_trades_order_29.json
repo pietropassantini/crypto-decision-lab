@@ -1,0 +1,3 @@
+[{"symbol": "BTCUSDT", "id": 2001, "orderId": 29, "orderListId": -1, "price": "99000.00000000", "qty": "0.00200000",
+  "quoteQty": "198.00000000", "commission": "0.00000200", "commissionAsset": "BTC", "time": 1731456060000,
+  "isBuyer": true, "isMaker": true, "isBestMatch": true}]

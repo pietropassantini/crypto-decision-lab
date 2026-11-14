@@ -1,0 +1,54 @@
+step_id: E02
+status: IN_REVIEW
+updated_at: "2026-11-14"
+agent_role: Ricerca quantitativa (detector, strategia, runner, esecuzione)
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: b21203335035a34adb2e268d42f07224469f521d
+head_commit: "working-tree diff against base_commit (nessun commit creato)"
+review_ref: "branch prd/integration; revisore non Claude da assegnare"
+inputs:
+  - "config/experiments/E02-pattern-formation-v1.json, PREREGISTERED, sha256 LF b0b757a02dd14d12d26f36e5daf726070eb2f3e71aec9a3bb8ff8844ce0900d4 (uguale alla riga E02 del backlog)"
+  - "BTCUSDT-1h-raw-v1 tramite catalogo, source_manifest_sha256 75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+  - "S03 (VERIFIED): motore; engine_sha256 della run 13b0c8321142... (include la registrazione della strategia pattern)"
+changed_paths:
+  - "src/crypto_decision_lab/pattern_detector.py - detector causale (dbot, atri, flag, rng), pattern_features, PatternStrategy"
+  - "src/crypto_decision_lab/pattern_formation_experiment.py - runner preregistrato"
+  - "src/crypto_decision_lab/simulation.py - registrazione lazy della strategia pattern (cambia engine_sha256)"
+  - "tests/test_pattern_detector.py (22 test), tests/test_pattern_formation_experiment.py (13 test)"
+  - "config/experiments/E02-pattern-formation-v1.json, docs/E02-pattern-formation.md, Crypto_Decision_Lab_PRD.md (riga E02), E02-HANDOFF.yaml"
+checkpoints:
+  - id: CP-E02.0
+    result: PASS
+    verification: "python -m pytest tests/test_pattern_detector.py -q -p no:cacheprovider"
+    expected: "Causalita del detector: invarianza sui prefissi, barra corrente e future ignorate, reset ai gap"
+    observed: "22 passed prima dell'esecuzione; suite completa 524 passed"
+    evidence: "tests/test_pattern_detector.py"
+  - id: CP-E02.1
+    result: PASS
+    verification: "python -m crypto_decision_lab.pattern_formation_experiment --spec config/experiments/E02-pattern-formation-v1.json (run A, output di default) e lo stesso con --output-dir var/e02-run-b (run B); confronto dei ledger_sha256"
+    expected: "8 configurazioni riproducibili; selection.json scritto dallo sviluppo prima di validazione e conferma"
+    observed: "16 ledger_sha256 identici tra A e B (8 griglia + 2 baseline sviluppo, selezionata + 2 baseline su validazione e conferma); esito identico. preregistration 12:46:31Z, selection 12:47:40Z, poi validazione e conferma."
+    evidence: "data/experiments/E02-pattern-formation-v1/ (ignorato da Git, rigenerabile): preregistration.json e4f62026..., selection.json d8f503ba..., report.json 70c457aa..., manifest.json bdb40bea... (sha256 LF)"
+  - id: CP-E02.2
+    result: PASS
+    verification: "lettura di report.json"
+    expected: "Metriche dichiarate per finestra, baseline e selezionata; esito motivato sui criteri"
+    observed: "Esito REJECTED: costs_share_of_gross 0,857 > 0,5 in validazione. Dettagli nella sezione decisions."
+    evidence: "data/experiments/E02-pattern-formation-v1/report.json"
+  - id: CP-E02.3
+    result: PASS
+    verification: "riga E02 del backlog"
+    expected: "Se non CANDIDATE, evidenza di chiusura nel backlog"
+    observed: "Nessuna configurazione live ne criteri S08 registrati; esito e numeri nella riga E02"
+    evidence: "Crypto_Decision_Lab_PRD.md, riga E02"
+decisions:
+  - "Sviluppo (2021-02 / 2023-07): tutte le 8 configurazioni negative, da -35,9% a -46,2%, gia in perdita prima dei costi (guadagno lordo <= 0). Baseline: momentum -95,4%, buy and hold -4,0%. Selezionata g05 (pivot_bars 5, rr 1,5, require_breakout true): -35,9%, 113 trade, 46,9 trade/anno, win rate 11,5%."
+  - "Validazione (2023-07 / 2025-01): g05 +1,42% netto, drawdown -11,2%, 55 trade, lordo +49,6 su 500 e costi 42,5 (quota 0,857). Supera 4 criteri su 5, fallisce costs_share_of_gross <= 0,5. Baseline: momentum -85,4%, buy and hold +103,2%."
+  - "Conferma (2025-01 / 2026-10, valutata una volta come da specifica): g05 -6,33%, drawdown -8,8%, 68 trade. Baseline: momentum -91,1%, buy and hold -5,4%."
+  - "Esito REJECTED secondo i criteri registrati. Il turnover e sceso di circa 20 volte rispetto a momentum, ma il vantaggio lordo e quasi nullo: su ogni finestra la maggior parte delle uscite e per invalidazione (validazione 37 su 55, conferma 55 su 68)."
+anomalies:
+  - "Nella griglia g01=g03 e g05=g07: con require_breakout true il filtro min_reward_risk 1,5 contro 2,5 non cambia nulla, quindi la griglia effettiva ha 6 configurazioni distinte. Va considerato in una v2."
+  - "Il codice di detector, strategia e runner e dello stesso autore (Claude) che ha eseguito l'esperimento: serve un revisore non Claude."
+blockers:
+  - "Nessuno per la chiusura; un revisore non Claude deve ripetere CP-E02.0-2 da clone pulito."
+next_action: "Un revisore non Claude ripete CP-E02.0-2 da clone pulito e conferma gli 16 ledger_sha256. Una nuova ipotesi richiede una specifica v2 preregistrata; non modificare la v1."

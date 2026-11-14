@@ -4,7 +4,12 @@ Pipeline **Spot BTCUSDT 1h**, sola lettura, dati di mercato pubblici. Nessuna ch
 
 ## Dati di test (checkout pulito)
 
-`data/` è quasi tutto rigenerabile e non è tracciato (S00A). Per eseguire i test da un clone pulito sono tracciati solo gli artefatti congelati CP08 e i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB), usati dai test sull'archivio reale e dalle fixture forward.
+`data/` è quasi tutto rigenerabile e non è tracciato (S00A). In `data/` sono tracciati soltanto:
+
+- l'archivio forward `data/forward/` (evidenza indipendente CP08);
+- gli artefatti congelati CP08 e le evidenze lette dai test (`data/experiments/S02-CP0*`, `data/datasets/S02-CP0*`, `data/reports/S02-CP08-05R-…json`);
+- i 70 chunk fissati per hash da `data/snapshots/BTCUSDT-1h-raw-v1/raw-manifest.json` (64 in `data/chunks/BTCUSDT/1h/`, 6 in `data/quarantine/BTCUSDT/1h/`, circa 4,7 MB). Sono tracciati per indice: le cartelle sono escluse, quindi un chunk nuovo creato da `cdl ingest` non entra in un commit;
+- lo snapshot `data/snapshots/BTCUSDT-1h-raw-v1/` (`raw-manifest.json`, `anomalies.json`, `report.json`, `forecast-windows.parquet`), che `cdl freeze` non può rigenerare sul posto.
 
 Per gli altri dati rigenerabili (altri chunk, `data/manifests/`, `data/diagnostics/`, `data/reports/`, `data/experiments/` derivati, `data/datasets/`):
 
@@ -21,9 +26,11 @@ sudo apt-get update && sudo apt-get install -y python3-venv python3-pip
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e '.[dev]'
+pip install -e '.[dashboard,dev]'
 pytest -q
 ```
+
+La suite completa richiede gli extra `dashboard` (Streamlit, Plotly, Kaleido per i test della UI) e `dev` (pytest, scikit-learn). Per il solo servizio di raccolta forward basta `pip install -e .`: PyYAML è una dipendenza principale.
 
 Se il repository è stato estratto da ZIP, entra prima nella cartella `crypto-decision-lab`.
 
@@ -386,3 +393,29 @@ Sessioni paper su SQLite (una transazione per evento, ripresa identica dopo inte
 replay di snapshot e feed di laboratorio riproducibile con guasti, stati espliciti e scheda
 "Paper trading" nello Studio: `python -m crypto_decision_lab.paper --help`.
 [Guida](docs/S06-paper-trading.md), [evidenze dei checkpoint](S06-HANDOFF.yaml).
+
+## S07 del PRD - Adattatore live e collaudo
+
+Adattatore Binance Spot dietro un contratto di esecuzione, runner live su SQLite con ordini
+write-ahead (client id persistito prima dell'invio), riconciliazione di esiti incerti, rifiuti,
+annullamenti ed esecuzioni parziali, guardie sulle aperture e runbook. Collaudo su Binance Spot
+Testnet (mainnet bloccata fino a S08): `python -m crypto_decision_lab.live --help`,
+`python scripts/s07_testnet_smoke.py`.
+[Guida e runbook](docs/S07-live-adapter.md), [evidenze dei checkpoint](S07-HANDOFF.yaml).
+
+## S08 del PRD - Rilascio e attivazione controllata
+
+Criteri preregistrati write-once, pacchetto installato in un venv pulito, drill del runbook in
+collaudo, scheda di rilascio READY/BLOCKED, approvazione e gate che lega ogni sessione mainnet
+alla versione, ai limiti e all'exchange approvati: `python -m crypto_decision_lab.release --help`.
+Prima esecuzione: candidata momentum **BLOCKED**, decisione **NOT_ACTIVATED**.
+[Guida](docs/S08-release.md), [scheda](releases/btcusdt-momentum-v1/fd1153cd/release-card.md),
+[evidenze dei checkpoint](S08-HANDOFF.yaml).
+
+## S09 del PRD - Misura operativa e ciclo successivo
+
+Report operativo da un registro live o paper: versione, feed, ordini legati alle decisioni,
+costi, slippage, latenza, fill mancanti, accordo con la simulazione, riconciliazione e ipotesi
+dagli scostamenti: `python -m crypto_decision_lab.ops_report --help`. Primo esperimento del ciclo
+successivo: [S09-E01](config/experiments/S09-E01-turnover-reduction-v1.json).
+[Guida](docs/S09-ops-report.md), [report](reports/s09), [evidenze dei checkpoint](S09-HANDOFF.yaml).

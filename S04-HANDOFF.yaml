@@ -1,5 +1,5 @@
 step_id: S04
-status: VERIFIED
+status: IN_REVIEW
 updated_at: "2026-11-13T12:20:00Z"
 agent_role: applicazione Streamlit
 agent_model: Claude Opus 5.5 (claude-opus-5-5)

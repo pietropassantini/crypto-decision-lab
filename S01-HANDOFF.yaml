@@ -1,5 +1,5 @@
 step_id: S01
-status: VERIFIED
+status: IN_REVIEW
 updated_at: "2026-11-13T00:00:00Z"
 agent_role: Streamlit e operazioni dati
 agent_model: <modello usato per questa sessione>

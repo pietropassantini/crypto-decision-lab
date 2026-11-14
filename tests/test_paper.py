@@ -66,6 +66,31 @@ def test_replay_session_matches_backtest_ledger(studio_repo):
     assert [r["sequence"] for r in ledger] == list(range(len(ledger)))
 
 
+# ------------------------------------------------------------------ review 2026-11-13 regressions
+def test_review_f4_completed_session_cannot_be_suspended_or_resumed(studio_repo):
+    session = replay(studio_repo, name="f4")
+    assert session.poll()["status"] == "COMPLETED"
+    with pytest.raises(SessionError, match="COMPLETED"):
+        session.suspend("operator")
+    with pytest.raises(SessionError):
+        session.resume()
+    with pytest.raises(SessionError, match="COMPLETED"):
+        session.accept_engine_revision("x")
+    assert session.poll()["status"] == "COMPLETED"
+    assert session.ledger() == reference_ledger(studio_repo)
+
+
+def test_review_resume_rechecks_engine_pin(studio_repo, monkeypatch):
+    session = replay(studio_repo, name="f4-pin")
+    session.poll(max_events=3)
+    session.suspend("operator")
+    monkeypatch.setattr(paper, "engine_digests", lambda: ("0" * 64, {}))
+    snapshot = session.resume()
+    assert snapshot["status"] == "ENGINE_MISMATCH"
+    events = snapshot["events"]
+    assert session.poll()["events"] == events  # nothing processed with an unpinned engine
+
+
 # ------------------------------------------------------------------ CP06.1
 class Crash(Exception):
     pass

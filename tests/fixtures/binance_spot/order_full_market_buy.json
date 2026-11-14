@@ -1,0 +1,9 @@
+{"symbol": "BTCUSDT", "orderId": 28, "orderListId": -1, "clientOrderId": "cdl-1a2b3c4d-000000",
+ "transactTime": 1731456000123, "price": "0.00000000", "origQty": "0.00400000", "executedQty": "0.00400000",
+ "origQuoteOrderQty": "400.00000000", "cummulativeQuoteQty": "399.96000000", "status": "FILLED",
+ "timeInForce": "GTC", "type": "MARKET", "side": "BUY", "workingTime": 1731456000123,
+ "selfTradePreventionMode": "EXPIRE_MAKER",
+ "fills": [
+  {"price": "99990.00000000", "qty": "0.00300000", "commission": "0.00000300", "commissionAsset": "BTC", "tradeId": 1001},
+  {"price": "99990.00000000", "qty": "0.00100000", "commission": "0.00000100", "commissionAsset": "BTC", "tradeId": 1002}
+ ]}

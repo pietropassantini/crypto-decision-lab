@@ -1,0 +1,119 @@
+{
+  "dataset_id": "BTCUSDT-1h-raw-v1",
+  "feed": [
+    "2024-03-01 00:00",
+    "2024-03-05 00:00"
+  ],
+  "package_location": "C:\\Users\\ACER2023\\Desktop\\progetti-python\\crypto-decision-lab\\var\\release\\package\\venv\\Lib\\site-packages\\crypto_decision_lab\\__init__.py",
+  "passed": true,
+  "python": "C:\\Users\\ACER2023\\Desktop\\progetti-python\\crypto-decision-lab\\var\\release\\package\\venv\\Scripts\\python.exe",
+  "run_utc": "2026-11-13T17:14:22Z",
+  "schema_version": "cdl.s08.drill.v1",
+  "steps": [
+    {
+      "expected": "package importable from the tested installation",
+      "id": "install",
+      "observed": "C:\\Users\\ACER2023\\Desktop\\progetti-python\\crypto-decision-lab\\var\\release\\package\\venv\\Lib\\site-packages\\crypto_decision_lab\\__init__.py",
+      "procedure": "C:\\Users\\ACER2023\\Desktop\\progetti-python\\crypto-decision-lab\\var\\release\\package\\venv\\Scripts\\python.exe -c 'import crypto_decision_lab'",
+      "result": "PASS"
+    },
+    {
+      "expected": "feed and live session created; status CREATED",
+      "id": "a.start",
+      "observed": "CREATED",
+      "procedure": "paper feed-create; live session-create (fixture exchange, lab feed)",
+      "result": "PASS"
+    },
+    {
+      "expected": "runner killed (exit 97) after sending",
+      "id": "a.crash_after_send",
+      "observed": "exit 97",
+      "procedure": "session-run with CDL_LIVE_CRASH=after_send",
+      "result": "PASS"
+    },
+    {
+      "expected": "order reconciled FILLED, one submit, WAITING",
+      "id": "a.resume_reconcile",
+      "observed": "status=WAITING submits=1 fills=1 position=0.00160839",
+      "procedure": "session-run after the crash",
+      "result": "PASS"
+    },
+    {
+      "expected": "status OPENINGS_SUSPENDED, horizon exit executed, no reopening",
+      "id": "a.suspension",
+      "observed": "status=OPENINGS_SUSPENDED exchange orders=['BUY', 'SELL']",
+      "procedure": "suspend-openings; advance past the horizon; session-run",
+      "result": "PASS"
+    },
+    {
+      "expected": "status HALTED with balance mismatch",
+      "id": "a.balance_mismatch",
+      "observed": "status=HALTED halted=balance mismatch: USDT expected 1899.6840822400 observed 1874.6840822400",
+      "procedure": "external transfer of -25 USDT; session-run",
+      "result": "PASS"
+    },
+    {
+      "expected": "halt cleared, session running again",
+      "id": "a.rebaseline",
+      "observed": "status=WAITING halted=None",
+      "procedure": "rebaseline --note; session-run",
+      "result": "PASS"
+    },
+    {
+      "expected": "position sold, session COMPLETED, no open orders",
+      "id": "a.flatten_finish",
+      "observed": "flatten=0 finish=0 status=COMPLETED position=0.00000678",
+      "procedure": "flatten; session-finish",
+      "result": "PASS"
+    },
+    {
+      "expected": "feed and live session created; status CREATED",
+      "id": "b.start",
+      "observed": "CREATED",
+      "procedure": "paper feed-create; live session-create (fixture exchange, lab feed)",
+      "result": "PASS"
+    },
+    {
+      "expected": "one order NEW on the exchange",
+      "id": "b.resting_order",
+      "observed": "{'cdl-7b4eec22-000000': 'NEW'}",
+      "procedure": "session-run with a LIMIT order left resting",
+      "result": "PASS"
+    },
+    {
+      "expected": "order reconciled, still NEW, no new submit",
+      "id": "b.restart_with_open_order",
+      "observed": "submits=1 status=WAITING",
+      "procedure": "second session-run (runner restart) with the order open",
+      "result": "PASS"
+    },
+    {
+      "expected": "fill imported, order still open",
+      "id": "b.reconcile_partial",
+      "observed": "fills=1 open=['cdl-7b4eec22-000000']",
+      "procedure": "partial fill while idle; session-reconcile",
+      "result": "PASS"
+    },
+    {
+      "expected": "remainder CANCELED, partial position sold, COMPLETED",
+      "id": "b.cancel_and_close",
+      "observed": "orders=['CANCELED', 'FILLED'] status=COMPLETED position=0.00000920",
+      "procedure": "cancel-open-orders; flatten; session-finish",
+      "result": "PASS"
+    },
+    {
+      "expected": "feed and live session created; status CREATED",
+      "id": "c.start",
+      "observed": "CREATED",
+      "procedure": "paper feed-create; live session-create (fixture exchange, lab feed)",
+      "result": "PASS"
+    },
+    {
+      "expected": "every bar processed, no unresolved order, balances reconciled (status not HALTED/UNRESOLVED)",
+      "id": "c.candidate_run",
+      "observed": "status=WAITING orders=6 fills=6 cursor=2024-03-03 01:00:00+00:00",
+      "procedure": "candidate configuration, 24 hourly session-run",
+      "result": "PASS"
+    }
+  ]
+}

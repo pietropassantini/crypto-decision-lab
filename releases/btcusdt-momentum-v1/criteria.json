@@ -1,0 +1,123 @@
+{
+  "backtest": [
+    {
+      "description": "positive after fees and slippage",
+      "id": "net_return",
+      "metric": "net_return_pct",
+      "op": ">",
+      "threshold": 0
+    },
+    {
+      "description": "mark-to-market drawdown not worse than -40%",
+      "id": "drawdown",
+      "metric": "max_drawdown_mtm_pct",
+      "op": ">=",
+      "threshold": -40
+    },
+    {
+      "description": "enough closed trades",
+      "id": "trades",
+      "metric": "closed_trades",
+      "op": ">=",
+      "threshold": 50
+    }
+  ],
+  "candidate": "btcusdt-momentum-v1",
+  "candidate_config": "config/live/btcusdt-momentum-v1.json",
+  "candidate_live_config": {
+    "allow_exits_when_suspended": true,
+    "limit_offset": 0.001,
+    "limits": {
+      "balance_abs_tolerance": 1e-08,
+      "balance_rel_tolerance": 1e-06,
+      "max_order_notional": 100,
+      "max_position_notional": 200,
+      "max_signal_age_hours": 1,
+      "order_timeout_seconds": 300,
+      "stale_after_hours": 2,
+      "unknown_grace_seconds": 60
+    },
+    "order_type": "MARKET",
+    "run_config": {
+      "hypothesis": {
+        "fee_rate": 0.001,
+        "horizon_hours": 6,
+        "latency_hours": 0,
+        "slippage": 0.0005
+      },
+      "initial_cash": 500,
+      "risk": {
+        "allow_open": true,
+        "max_exposure": 0.5,
+        "min_notional": 10
+      },
+      "strategy": {
+        "name": "momentum",
+        "parameters": {
+          "threshold": 0.0
+        }
+      }
+    },
+    "symbol": "BTCUSDT"
+  },
+  "candidate_live_config_sha256": "838e1b3accd18fe30ffc5bc9c7611a75b5762de47e190a0d76a4a8fd6e2ebbc4",
+  "description": "Deterministic momentum candidate (S05 Decision Model REJECTED, PRD section 4: a deterministic candidate may be evaluated in S08). Criteria fixed before any S08 evaluation.",
+  "operational": {
+    "environment": "mainnet",
+    "exchange": "binance-spot",
+    "max_capital": 500,
+    "max_order_notional": 100,
+    "max_position_notional": 200,
+    "required_steps_verified": [
+      "S00A",
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07"
+    ],
+    "testnet_evidence": [
+      "var/s07-testnet/smoke-*.json",
+      "releases/evidence/testnet/smoke-*.json"
+    ]
+  },
+  "paper": [
+    {
+      "description": "positive after costs on the later, unseen-by-S08 window",
+      "id": "net_return",
+      "metric": "net_return_pct",
+      "op": ">",
+      "threshold": 0
+    },
+    {
+      "description": "mark-to-market drawdown not worse than -25%",
+      "id": "drawdown",
+      "metric": "max_drawdown_mtm_pct",
+      "op": ">=",
+      "threshold": -25
+    },
+    {
+      "description": "enough closed trades",
+      "id": "trades",
+      "metric": "closed_trades",
+      "op": ">=",
+      "threshold": 20
+    }
+  ],
+  "registered_utc": "2026-11-13T17:05:48Z",
+  "schema_version": "cdl.s08.criteria.v1",
+  "windows": {
+    "backtest": {
+      "dataset_id": "BTCUSDT-1h-raw-v1",
+      "end": "2025-01-01 00:00",
+      "start": "2021-02-01 00:00"
+    },
+    "paper": {
+      "dataset_id": "BTCUSDT-1h-raw-v1",
+      "end": "2026-10-01 00:00",
+      "start": "2025-01-01 00:00"
+    }
+  }
+}

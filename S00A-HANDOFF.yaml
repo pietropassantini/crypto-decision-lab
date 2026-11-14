@@ -39,10 +39,20 @@ checkpoints:
     evidence: "comando sopra"
 decisions:
   - "Dati rigenerabili fuori dal tracking (data/chunks, data/experiments derivati): riproducibili se la procedura è documentata (README, sezione 'Dati di test'). I 70 chunk fissati da raw-manifest.json e le evidenze CP08 lette dai test restano tracciati."
+review_fixes:
+  date: "2026-11-14"
+  source: "REVIEW-S00A-2026-11-14.md (Claude Opus 5.5; non indipendente dalle correzioni Claude Sonnet 5.5)"
+  changes:
+    - "A1: PyYAML>=6,<7 nelle dipendenze principali (usato da forward_collection, independent_validation, protocol_integrity); README Sirio: pip install -e '.[dashboard,dev]' per la suite"
+    - "A3: corretto il dato main di S00 (288 raccolti, clone pulito 285P/3F; il 430P/1S era di 38dfa60) in S00-BASELINE-REPORT.md §7 e S00-HANDOFF.yaml; corretta la tabella di S00A-INVENTORY.md"
+    - "A4: .gitignore esclude docs/screenshots/, data/chunks/ e data/quarantine/ (i 70 chunk fissati restano tracciati per indice); README 'Dati di test' allineato (A6)"
+    - "F9: report.json e forecast-windows.parquet dello snapshot ritracciati (byte-identici a 0daf402), eccezioni in .gitignore"
+  open:
+    - "A2 (S06): pulsante 'Riconosci gap' disabilitato con stato vecchio; test fragile con streamlit 1.67"
+    - "A5 (INFO): percorsi locali in file tracciati, archivio forward non modificabile"
 blockers:
-  - "Decisione aperta: ripristinare nel tracking snapshots/BTCUSDT-1h-raw-v1/{report.json,forecast-windows.parquet} (93 KB). Chi puo sbloccare: coordinatore."
-  - "Anomalia in S00 (VERIFIED): numeri di test per main/cp09 apparentemente scambiati; S00 va ricontrollato da un revisore."
-next_action: "Confermare il ripristino dei 2 file dello snapshot; revisore diverso ripete CP00A.1-4 e ricontrolla S00 per portare S00A a VERIFIED."
+  - "Conferma di un revisore non Claude (correzioni S00A di Claude Sonnet 5.5, review e fix di Claude Opus 5.5)."
+next_action: "Revisore non Claude ripete CP00A.1-4 da clone pulito in venv isolato con pip install -e '.[dashboard,dev]', poi VERIFIED."
 verification_2026_11_13:
   reviewer: "Claude Opus 5.5 (claude-opus-5-5), mandato dell'utente"
   status: VERIFIED

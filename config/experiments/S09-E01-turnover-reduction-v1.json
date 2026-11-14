@@ -1,0 +1,66 @@
+{
+  "schema_version": "cdl.s09.experiment.v1",
+  "experiment_id": "S09-E01-turnover-reduction-v1",
+  "status": "PREREGISTERED",
+  "registered": "2026-11-13",
+  "origin": {
+    "deviation": "H-turnover: costs exceed the gross result (reports/s09/paper-btcusdt-momentum-v1, reports/s09/drill-c-btcusdt-momentum-v1)",
+    "evidence": [
+      "releases/btcusdt-momentum-v1/fd1153cd/release-card.json: backtest -96.0% (2214 trades, costs 534.8 on 500), paper -91.1% (1556 trades)",
+      "S08-HANDOFF.yaml anomalies: same candidate without costs +40.5% (3559 trades, drawdown -29.3%), diagnostic not preregistered"
+    ]
+  },
+  "hypothesis": "The momentum_24h signal carries a gross edge that turnover destroys. A higher entry threshold and a longer holding horizon reduce the number of round trips enough that the net return after costs (fee 0.10% + slippage 0.05% per side) is positive out of sample.",
+  "inputs": {
+    "dataset_id": "BTCUSDT-1h-raw-v1",
+    "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+    "engine": "crypto_decision_lab.simulation (S03), gaps acknowledged as in crypto_decision_lab.release.evaluate_backtest",
+    "fixed": {
+      "strategy": "momentum",
+      "initial_cash": 500,
+      "hypothesis": {"latency_hours": 0, "fee_rate": 0.001, "slippage": 0.0005},
+      "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true}
+    },
+    "grid": {"threshold": [0.005, 0.01, 0.02, 0.03], "horizon_hours": [12, 24, 48]},
+    "windows": {
+      "development": {"start": "2021-02-01 00:00", "end": "2023-07-01 00:00", "use": "selection only"},
+      "validation": {"start": "2023-07-01 00:00", "end": "2025-01-01 00:00", "use": "one evaluation of the selected configuration"},
+      "confirmation": {"start": "2025-01-01 00:00", "end": "2026-10-01 00:00", "use": "one evaluation; window already observed by S08 for the baseline only"}
+    },
+    "forbidden": ["BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"]
+  },
+  "baseline": {
+    "candidate": "btcusdt-momentum-v1 (threshold 0.0, horizon 6)",
+    "metrics_same_engine": "evaluate the baseline on the development and validation windows with the same code; record net_return_pct, closed_trades, closed_trades_per_year, costs, costs / gross"
+  },
+  "metrics": {
+    "primary": "net_return_pct after costs",
+    "secondary": ["closed_trades_per_year (turnover)", "costs / gross result", "max_drawdown_mtm_pct", "closed_trades"]
+  },
+  "selection_rule": "On development only: among configurations with closed_trades >= 30, the highest net_return_pct; ties -> fewer closed trades. No choice may use validation or confirmation results.",
+  "acceptance": {
+    "validation": [
+      "net_return_pct > 0",
+      "max_drawdown_mtm_pct >= -25",
+      "closed_trades >= 15",
+      "closed_trades_per_year <= 30% of the baseline on the same window",
+      "costs <= 50% of the gross result (net + costs)"
+    ],
+    "confirmation": ["net_return_pct > 0", "max_drawdown_mtm_pct >= -25"],
+    "outcomes": {
+      "CANDIDATE": "all validation and confirmation criteria pass -> register S08 criteria for btcusdt-momentum-v2 and run the S08 flow",
+      "INCONCLUSIVE": "validation passes, confirmation fails, or fewer than 15 trades",
+      "REJECTED": "validation fails"
+    }
+  },
+  "checkpoints": [
+    {"id": "CP-E01.1", "check": "Grid of 12 configurations reproducible from this spec (same ledger digests on two runs); selection computed from development results only, recorded before validation is run."},
+    {"id": "CP-E01.2", "check": "Report per window (development, validation, confirmation) for baseline and selected configuration: net return, drawdown, trades, trades/year, costs, costs/gross; outcome CANDIDATE / INCONCLUSIVE / REJECTED justified on the criteria above."},
+    {"id": "CP-E01.3", "check": "If CANDIDATE: config/live/btcusdt-momentum-v2.json and S08 criteria registered (release register-criteria) before any S08 evaluation; else record the closing evidence in the backlog."}
+  ],
+  "threats": [
+    "CP08 robustness studies already explored momentum parameters on this snapshot: selection bias is possible; the confirmation window and a later lab/testnet paper session are the guard.",
+    "The confirmation window was seen by S08 for the baseline; it is used once and never for selection."
+  ],
+  "prompt": "Lavora esclusivamente sull'esperimento S09-E01 del repository Crypto Decision Lab. Leggi Crypto_Decision_Lab_PRD.md, S08-HANDOFF.yaml, S09-HANDOFF.yaml e questa specifica (config/experiments/S09-E01-turnover-reduction-v1.json); verifica che il suo sha256 coincida con quello registrato nel backlog. Usa solo BTCUSDT-1h-raw-v1 tramite il catalogo; non leggere data/forward. Valuta la baseline e le 12 configurazioni della griglia sulla finestra di sviluppo con il motore S03 e i gap riconosciuti come in release.evaluate_backtest; registra in un file versionato la configurazione selezionata con la regola di selezione PRIMA di eseguire validazione e conferma; poi valuta una sola volta baseline e selezionata su validazione e conferma. Calcola le metriche dichiarate, applica i criteri di accettazione e motiva l'esito CANDIDATE, INCONCLUSIVE o REJECTED. Esegui CP-E01.1-3 e restituisci per ciascuno comando, atteso, osservato ed evidenza nel formato di handoff del PRD; aggiorna la riga E01 del backlog."
+}
