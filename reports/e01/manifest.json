@@ -1,0 +1,27 @@
+{
+  "created_utc": "2026-11-14T21:37:51Z",
+  "experiment_id": "S09-E01-turnover-reduction-v1",
+  "files": {
+    "ledgers/confirmation-baseline.json": "17a02e8e14ef4359751f999e687f408d476fe76dc6580b1bd7a962c0a5b3768f",
+    "ledgers/confirmation-g11.json": "63279192a3ba10bbc3122ba8705c2e262810f7f7b7fd369299771266235e3a38",
+    "ledgers/development-baseline.json": "b581bc413bcebe291af32ffbda6f8275335bcfd9ee8172b56f2f2ac02600b4db",
+    "ledgers/development-g00.json": "c6ccec63c04b56c61c90eca068ad4e79713c41dd85bf90cc4ede1f98793b717c",
+    "ledgers/development-g01.json": "abe033f95c12192698a4d2c291f1dbda925b361c7e791bf031c6fa61e89da78c",
+    "ledgers/development-g02.json": "ac45342e97ac73f0f9bc2efa4d16f7c9ed7dd2bb4e400eb8ef69b6025316ddf9",
+    "ledgers/development-g03.json": "cb64e4c5c59a9134e5e69f0f237ac59541c45117b665c04440d14f3adf80c6ed",
+    "ledgers/development-g04.json": "ebee4fcf22ef6c1fe9e68181e2e680c5049683e0710782ee7b3a5568cb568d83",
+    "ledgers/development-g05.json": "13c3abb63f908b39300d2ec32aff46796c9c1f9f876fc0844ca6b0023a3feb4e",
+    "ledgers/development-g06.json": "7e85e7e816029312133852f1e7a0f29bc69d867a8e5a224893476c88b646a248",
+    "ledgers/development-g07.json": "001a22c0612a1e6188f9b26e8dd14dee6c2264fd30ed08aadef6b2169fa50052",
+    "ledgers/development-g08.json": "d9823ccb840e2944800e736261d9adda3ffabd05fe4568019d9fd3d3afdf6b1d",
+    "ledgers/development-g09.json": "0427bf023c80be6778deb8f23d503ef4a68c4e9c060cd63095f5d34a64fa44dc",
+    "ledgers/development-g10.json": "6b3e7bdf0992496551cacc901c87ce7e50227ae131839d12074c020c0cd8503d",
+    "ledgers/development-g11.json": "7de22b9926d3a39548637d8ed649aaebf749040447c0cb847e0aecb1482785eb",
+    "ledgers/validation-baseline.json": "eaf3578e93e6b4a284c7221e975369b9057c42ea7d3fd76fcdcd38ddbb892977",
+    "ledgers/validation-g11.json": "b32750a42799a56dc142b8f1fdefe977d976cb21d801cd3baf5998660228ba22",
+    "preregistration.json": "781fcbfb2264f428d081b7762e169277a4778d29361752cc80cca5633e8af702",
+    "report.json": "c9b300f2d48fc02a0c1d7e9e559e5d52998f9c29acfe3f560fefac3c8f3391e0",
+    "selection.json": "d57eb85818ffd158aad23ef29eb1eaed9ac1587683ca0975588fb791fe1a0e3e"
+  },
+  "spec_sha256": "d5527a6a9ab79a2acc22ae19358b8dcd66d1c4aa0cc32c0d63048f9d01ecc47f"
+}

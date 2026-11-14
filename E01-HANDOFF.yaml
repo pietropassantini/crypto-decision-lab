@@ -1,0 +1,58 @@
+step_id: E01
+status: IN_REVIEW
+updated_at: "2026-11-14"
+agent_role: Ricerca quantitativa (runner ed esecuzione dell'esperimento preregistrato)
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: 717abcbd135fd6579242d89f4be427d615bf6016
+head_commit: "94cd1d7 (runner, prima di leggere i dati reali), ca74636 (selezione bloccata prima della validazione), commit di questo handoff"
+review_ref: "branch main; revisore non Claude da assegnare"
+inputs:
+  - "config/experiments/S09-E01-turnover-reduction-v1.json, PREREGISTERED il 2026-11-13, sha256 LF d5527a6a9ab79a2acc22ae19358b8dcd66d1c4aa0cc32c0d63048f9d01ecc47f (uguale alla riga E01 del backlog), non modificata"
+  - "BTCUSDT-1h-raw-v1 tramite catalogo, source_manifest_sha256 75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+  - "S03 (VERIFIED): motore, engine_sha256 13b0c8321142...; gap riconosciuti come in release.evaluate_backtest"
+changed_paths:
+  - "src/crypto_decision_lab/turnover_experiment.py - runner a due fasi (develop, evaluate) con i criteri della specifica scritti alla lettera"
+  - "tests/test_turnover_experiment.py (12 test su dati sintetici)"
+  - "reports/e01/{preregistration,selection,report,manifest}.json - artefatti della run A (i ledger restano in data/experiments/, ignorato da Git)"
+  - "E01-HANDOFF.yaml, Crypto_Decision_Lab_PRD.md (riga E01)"
+checkpoints:
+  - id: CP-E01.1
+    result: PASS
+    verification: |
+      python -m crypto_decision_lab.turnover_experiment develop --spec config/experiments/S09-E01-turnover-reduction-v1.json
+      (commit ca74636 di reports/e01/selection.json)
+      python -m crypto_decision_lab.turnover_experiment evaluate --spec config/experiments/S09-E01-turnover-reduction-v1.json
+      python -m crypto_decision_lab.turnover_experiment all --spec config/experiments/S09-E01-turnover-reduction-v1.json --output-dir var/e01-run-b
+    expected: "Griglia di 12 configurazioni riproducibile (stessi digest dei ledger in due esecuzioni); selezione calcolata solo sullo sviluppo e registrata prima della validazione"
+    observed: "17 ledger_sha256 identici tra run A (due fasi) e run B (una fase): 12 configurazioni + baseline sullo sviluppo, selezionata + baseline su validazione e conferma. Selezione g11 in entrambe. selection.json (sha256 d57eb858...) committato in ca74636 prima di eseguire la fase evaluate; il runner era committato in 94cd1d7 prima di leggere i dati reali."
+    evidence: "reports/e01/selection.json, reports/e01/report.json (selection_sha256 = d57eb858...), git log 94cd1d7 -> ca74636 -> handoff"
+  - id: CP-E01.2
+    result: PASS
+    verification: "lettura di reports/e01/report.json"
+    expected: "Report per finestra di baseline e selezionata: rendimento netto, drawdown, trade, trade/anno, costi, costi/lordo; esito motivato sui criteri"
+    observed: "Esito REJECTED: in validazione falliscono net_return_pct > 0 (-20,28%) e costi <= 50% del lordo (costi 137,45 contro un tetto di 18,04). Dettagli nella sezione decisions."
+    evidence: "reports/e01/report.json"
+  - id: CP-E01.3
+    result: PASS
+    verification: "riga E01 del backlog"
+    expected: "Se non CANDIDATE, evidenza di chiusura nel backlog"
+    observed: "Nessuna config live v2 ne criteri S08 registrati; esito e numeri nella riga E01"
+    evidence: "Crypto_Decision_Lab_PRD.md, riga E01"
+validation:
+  tests: "python -m pytest tests/test_turnover_experiment.py -q -p no:cacheprovider -> 12 passed"
+decisions:
+  - "Sviluppo (2021-02 / 2023-07): tutte le 12 configurazioni negative, da -87,2% (g00: soglia 0,005, 12 h) a -29,6% (g11: soglia 0,03, 48 h); il rendimento migliora in modo monotono con soglia e orizzonte. Baseline (soglia 0, 6 h): -95,4%, 2148 trade, 891,5 trade/anno, lordo +55,9 e costi 532,7. Selezionata g11: -29,6%, drawdown -42,1%, 468 trade (194,2/anno), lordo +146,3, costi 294,6."
+  - "Validazione (2023-07 / 2025-01): g11 -20,28%, drawdown -24,26%, 206 trade (136,8/anno = 14,6% della baseline), lordo +36,1, costi 137,5. Passano drawdown, numero di trade e turnover (<= 30% della baseline); falliscono rendimento netto > 0 e costi <= 50% del lordo. Baseline -85,40%, 1411 trade."
+  - "Conferma (2025-01 / 2026-10, valutata una volta come da specifica): g11 -28,21%, drawdown -32,43%, 184 trade, lordo -28,6. Baseline -91,09%."
+  - "Esito REJECTED secondo i criteri registrati. L'ipotesi H-turnover e confermata solo a meta: soglia e orizzonte piu alti riducono il turnover di circa 7 volte e il danno dei costi, ma il vantaggio lordo di momentum_24h e troppo piccolo (validazione +7,2% lordo su 18 mesi) per coprire i costi anche con 137 trade l'anno, e in conferma il lordo e negativo."
+  - "Osservazione per una ipotesi successiva (non preregistrata): quasi tutte le uscite sono della strategia (momentum sotto soglia), solo 1 a orizzonte in sviluppo e conferma: l'orizzonte non vincola, il turnover lo decide il segnale che oscilla attorno alla soglia. Un'isteresi (soglia di uscita diversa da quella di ingresso) o un filtro di regime sarebbero il passo successivo, in una specifica nuova."
+interpretations:
+  - "Specifica muta, regole dichiarate nel runner: nessuna configurazione con almeno 30 trade sullo sviluppo -> INCONCLUSIVE senza validazione (non e successo); spareggio finale per ordine di griglia (non usato); meno di 15 trade in validazione -> INCONCLUSIVE prima di REJECTED (non e successo)."
+  - "La baseline e valutata anche sulla conferma (CP-E01.2 chiede il report per finestra per baseline e selezionata)."
+  - "Il file versionato della selezione e reports/e01/selection.json, copia identica byte per byte di quello scritto dal runner."
+anomalies:
+  - "Runner e esecuzione sono dello stesso autore (Claude Opus 5.5): serve un revisore non Claude."
+  - "Rischio di selection bias dichiarato nella specifica (studi CP08 sui parametri di momentum su questo snapshot): non incide su un esito REJECTED."
+blockers:
+  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E01.1-2 da clone pulito."
+next_action: "Un revisore non Claude ripete CP-E01.1-2 da clone pulito e conferma i 17 ledger_sha256. Una nuova ipotesi (per esempio isteresi o filtro di regime su momentum) richiede una nuova specifica preregistrata; non modificare la v1."
