@@ -1,0 +1,325 @@
+{
+  "baseline": {
+    "closed_trades": 2148,
+    "closed_trades_per_year": 891.5420454545455,
+    "costs": 532.6923144981572,
+    "costs_share_of_gross": 9.53589552769285,
+    "exit_causes": {
+      "horizon": 1216,
+      "strategy": 932
+    },
+    "gaps_acknowledged": 7,
+    "gross_pnl": 55.86180269605353,
+    "ledger_sha256": "c91626fb993831b84e01cbd6384fdb3cdc9e4240920dfdb40434d241f8c2c165",
+    "max_drawdown_mtm_pct": -95.86048446646485,
+    "missing_hours": 14,
+    "net_pnl": -476.8305118021037,
+    "net_return_pct": -95.36610236042074,
+    "position_open": true,
+    "time_in_market_pct": 44.79294987207429,
+    "win_rate_pct": 28.864059590316575
+  },
+  "configurations": {
+    "g00": {
+      "horizon_hours": 12,
+      "threshold": 0.005
+    },
+    "g01": {
+      "horizon_hours": 24,
+      "threshold": 0.005
+    },
+    "g02": {
+      "horizon_hours": 48,
+      "threshold": 0.005
+    },
+    "g03": {
+      "horizon_hours": 12,
+      "threshold": 0.01
+    },
+    "g04": {
+      "horizon_hours": 24,
+      "threshold": 0.01
+    },
+    "g05": {
+      "horizon_hours": 48,
+      "threshold": 0.01
+    },
+    "g06": {
+      "horizon_hours": 12,
+      "threshold": 0.02
+    },
+    "g07": {
+      "horizon_hours": 24,
+      "threshold": 0.02
+    },
+    "g08": {
+      "horizon_hours": 48,
+      "threshold": 0.02
+    },
+    "g09": {
+      "horizon_hours": 12,
+      "threshold": 0.03
+    },
+    "g10": {
+      "horizon_hours": 24,
+      "threshold": 0.03
+    },
+    "g11": {
+      "horizon_hours": 48,
+      "threshold": 0.03
+    }
+  },
+  "development": {
+    "g00": {
+      "closed_trades": 1344,
+      "closed_trades_per_year": 557.8363636363637,
+      "costs": 435.4020976446982,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "horizon": 403,
+        "strategy": 941
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -0.3548418728798879,
+      "ledger_sha256": "eaa5993c3ec3e6de39d8b5dbe78563a31f58b453c928a397a9d18bb8fce1a76a",
+      "max_drawdown_mtm_pct": -88.63692886219296,
+      "missing_hours": 14,
+      "net_pnl": -435.7569395175781,
+      "net_return_pct": -87.15138790351561,
+      "position_open": false,
+      "time_in_market_pct": 39.10262484601535,
+      "win_rate_pct": 26.860119047619047
+    },
+    "g01": {
+      "closed_trades": 1107,
+      "closed_trades_per_year": 459.46789772727277,
+      "costs": 418.77895730937115,
+      "costs_share_of_gross": 33.45529326135715,
+      "exit_causes": {
+        "horizon": 148,
+        "strategy": 959
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 12.517569463158338,
+      "ledger_sha256": "aab272c90ea53540a096bee22ab06653079ca03105c0ce9979f8c418a7d46255",
+      "max_drawdown_mtm_pct": -84.01073390573107,
+      "missing_hours": 14,
+      "net_pnl": -406.2613878462128,
+      "net_return_pct": -81.25227756924257,
+      "position_open": false,
+      "time_in_market_pct": 40.253956220979816,
+      "win_rate_pct": 22.673893405600722
+    },
+    "g02": {
+      "closed_trades": 1009,
+      "closed_trades_per_year": 418.79232954545455,
+      "costs": 388.8796366115998,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "horizon": 23,
+        "strategy": 986
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -4.313517285468549,
+      "ledger_sha256": "145eef7c7c677ac8cc1db777e24f34be9e011de2c8a9d7f84634b343d22b70ea",
+      "max_drawdown_mtm_pct": -81.67821630369825,
+      "missing_hours": 14,
+      "net_pnl": -393.1931538970683,
+      "net_return_pct": -78.63863077941366,
+      "position_open": false,
+      "time_in_market_pct": 40.779873021889514,
+      "win_rate_pct": 20.218037661050545
+    },
+    "g03": {
+      "closed_trades": 1156,
+      "closed_trades_per_year": 479.8056818181818,
+      "costs": 407.04211343029533,
+      "costs_share_of_gross": 229.0183204107076,
+      "exit_causes": {
+        "horizon": 326,
+        "strategy": 830
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 1.7773342879308984,
+      "ledger_sha256": "2fbf35464bc4dec7cd1fc36eb17538aed801f6e1c9b80b65dd1a38fb8125517c",
+      "max_drawdown_mtm_pct": -82.41956383392657,
+      "missing_hours": 14,
+      "net_pnl": -405.26477914236443,
+      "net_return_pct": -81.05295582847289,
+      "position_open": false,
+      "time_in_market_pct": 32.13304273666256,
+      "win_rate_pct": 26.557093425605537
+    },
+    "g04": {
+      "closed_trades": 959,
+      "closed_trades_per_year": 398.03948863636367,
+      "costs": 395.15102974336537,
+      "costs_share_of_gross": 11.456420409813385,
+      "exit_causes": {
+        "horizon": 113,
+        "strategy": 846
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 34.49166629786782,
+      "ledger_sha256": "79a83e76305e3cf9d6087b5e92f162fd203d90f2d43f6982e59f570cbbca8889",
+      "max_drawdown_mtm_pct": -75.08419902599076,
+      "missing_hours": 14,
+      "net_pnl": -360.65936344549755,
+      "net_return_pct": -72.13187268909951,
+      "position_open": false,
+      "time_in_market_pct": 33.09959253292902,
+      "win_rate_pct": 22.62773722627737
+    },
+    "g05": {
+      "closed_trades": 879,
+      "closed_trades_per_year": 364.8349431818182,
+      "costs": 370.1560030133287,
+      "costs_share_of_gross": 27.331031252580228,
+      "exit_causes": {
+        "horizon": 11,
+        "strategy": 868
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 13.543433454542026,
+      "ledger_sha256": "0d9d40ede265bcada792aff55d7039607a41ec6a543874fbca05b37866c705fa",
+      "max_drawdown_mtm_pct": -74.23675637456375,
+      "missing_hours": 14,
+      "net_pnl": -356.6125695587867,
+      "net_return_pct": -71.32251391175734,
+      "position_open": false,
+      "time_in_market_pct": 33.51653558229887,
+      "win_rate_pct": 21.843003412969285
+    },
+    "g06": {
+      "closed_trades": 794,
+      "closed_trades_per_year": 329.55511363636367,
+      "costs": 401.5913930473219,
+      "costs_share_of_gross": 3.0050293529859258,
+      "exit_causes": {
+        "horizon": 205,
+        "strategy": 589
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 133.63975717850593,
+      "ledger_sha256": "aa58b57d899cdccf9053f726de53eb29b20d7a420ff0778c80cba2d74882b7f2",
+      "max_drawdown_mtm_pct": -57.24308059590049,
+      "missing_hours": 14,
+      "net_pnl": -267.95163586881597,
+      "net_return_pct": -53.590327173763185,
+      "position_open": false,
+      "time_in_market_pct": 21.567326826494835,
+      "win_rate_pct": 30.35264483627204
+    },
+    "g07": {
+      "closed_trades": 671,
+      "closed_trades_per_year": 278.503125,
+      "costs": 349.5474108444306,
+      "costs_share_of_gross": 3.115239587236294,
+      "exit_causes": {
+        "horizon": 71,
+        "strategy": 600
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 112.20562690477811,
+      "ledger_sha256": "eabc0304240c61e28c7eebc08aebab458dec3c9d34b3ba9da76bc55b4bbbace0",
+      "max_drawdown_mtm_pct": -50.86128183827778,
+      "missing_hours": 14,
+      "net_pnl": -237.3417839396525,
+      "net_return_pct": -47.468356787930496,
+      "position_open": false,
+      "time_in_market_pct": 22.1643134653653,
+      "win_rate_pct": 26.08047690014903
+    },
+    "g08": {
+      "closed_trades": 628,
+      "closed_trades_per_year": 260.65568181818185,
+      "costs": 342.2899468344987,
+      "costs_share_of_gross": 2.673063014374115,
+      "exit_causes": {
+        "horizon": 3,
+        "strategy": 625
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 128.0515816476718,
+      "ledger_sha256": "fbf69ae6dc392047b6a802d0f1b33f3d93cb87c2476f42a98122ac79026c7a05",
+      "max_drawdown_mtm_pct": -47.49692863523267,
+      "missing_hours": 14,
+      "net_pnl": -214.2383651868269,
+      "net_return_pct": -42.84767303736538,
+      "position_open": false,
+      "time_in_market_pct": 22.429640860418836,
+      "win_rate_pct": 26.273885350318473
+    },
+    "g09": {
+      "closed_trades": 570,
+      "closed_trades_per_year": 236.58238636363637,
+      "costs": 346.5544756657136,
+      "costs_share_of_gross": 2.085465430880571,
+      "exit_causes": {
+        "horizon": 127,
+        "strategy": 443
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 166.17608258286197,
+      "ledger_sha256": "d54cc6adb4da0c1806b11b09260f79aea571c36db07fad8141890730bf7d18ea",
+      "max_drawdown_mtm_pct": -46.58453743407692,
+      "missing_hours": 14,
+      "net_pnl": -180.37839308285163,
+      "net_return_pct": -36.07567861657033,
+      "position_open": false,
+      "time_in_market_pct": 14.569316781957736,
+      "win_rate_pct": 28.94736842105263
+    },
+    "g10": {
+      "closed_trades": 493,
+      "closed_trades_per_year": 204.62301136363638,
+      "costs": 300.57489224651135,
+      "costs_share_of_gross": 2.170662263569115,
+      "exit_causes": {
+        "horizon": 42,
+        "strategy": 451
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 138.4715150261518,
+      "ledger_sha256": "b25bf78568cef34e54ae22a8ce7dd4ebba37ea87654ae6da39507fe3247fec8a",
+      "max_drawdown_mtm_pct": -44.04635724432262,
+      "missing_hours": 14,
+      "net_pnl": -162.10337722035956,
+      "net_return_pct": -32.42067544407191,
+      "position_open": false,
+      "time_in_market_pct": 14.976783852932815,
+      "win_rate_pct": 26.774847870182555
+    },
+    "g11": {
+      "closed_trades": 468,
+      "closed_trades_per_year": 194.2465909090909,
+      "costs": 294.5561068058833,
+      "costs_share_of_gross": 2.0128870518900057,
+      "exit_causes": {
+        "horizon": 1,
+        "strategy": 467
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 146.33513913724522,
+      "ledger_sha256": "297836d67bfb291a92ec223bf7d2d6723059690c8b5bde86b0cbe9f6efcfb4c4",
+      "max_drawdown_mtm_pct": -42.11891784350645,
+      "missing_hours": 14,
+      "net_pnl": -148.22096766863808,
+      "net_return_pct": -29.644193533727613,
+      "position_open": false,
+      "time_in_market_pct": 15.114185539656969,
+      "win_rate_pct": 26.923076923076923
+    }
+  },
+  "engine_sha256": "13b0c832114230e7587fa93d6032466c8105ede96eaf82f1b9722e05c621ef61",
+  "experiment_id": "S09-E01-turnover-reduction-v1",
+  "locked_utc": "2026-11-14T21:37:17Z",
+  "note": "written before validation and confirmation are evaluated",
+  "rule": "highest net_return_pct among 12 configurations with closed_trades >= 30; ties -> fewer closed trades -> grid order",
+  "selected": "g11",
+  "selected_grid": {
+    "horizon_hours": 48,
+    "threshold": 0.03
+  },
+  "spec_sha256": "d5527a6a9ab79a2acc22ae19358b8dcd66d1c4aa0cc32c0d63048f9d01ecc47f"
+}
