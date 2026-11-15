@@ -6,7 +6,8 @@
   "origin": {
     "experiment": "E05-daily-trend-v1, outcome CANDIDATE (reports/e05/report.json, E05-HANDOFF.yaml)",
     "checkpoint": "CP-E05.3: preregistered paper session on new data before any S08 step",
-    "reason": "E05 passed on windows already seen by five experiments; the confirmation result depends on one trade. Only data produced after registration can confirm or refute the candidate."
+    "reason": "E05 passed on windows already seen by five experiments; the confirmation result depends on one trade. Only data produced after registration can confirm or refute the candidate.",
+    "deviation_note": "DEV-1 below changes the data source of the forward session with respect to the CANDIDATE outcome text of E05."
   },
   "candidate": {
     "strategy": {
@@ -55,13 +56,14 @@
     "checkpoints": [
       {
         "id": "P1.week12",
-        "when": "12 full weeks after start",
+        "when": "12 full weeks after the session start",
         "decides": "operational and fidelity criteria; stop rules"
       },
       {
         "id": "P1.edge",
-        "when": "first of: 8 closed trades, or 52 full weeks after start",
-        "decides": "edge criteria"
+        "when": "the first Monday 00:00 UTC, checked weekly, on which the session has at least 8 CLOSED trades; if that has not happened after 52 full weeks, P1.edge is not run and the outcome is INCONCLUSIVE",
+        "decides": "edge criteria, evaluated exactly once",
+        "trigger_rule": "The trigger depends on the number of closed trades only, never on the result. P1.edge is evaluated once: a failure closes the candidate, a pass is not repeated or extended, and nobody may wait for a better figure."
       }
     ]
   },
@@ -71,26 +73,40 @@
       "a decision taken with a feature computed from a bar not yet closed, or a change to the frozen candidate -> outcome INVALID"
     ],
     "week12_operational": [
-      "daily decisions processed within 2 hours of 00:00 UTC on at least 95% of the days",
+      "timeliness: for each day, the 00:00 UTC event is committed (status_log.at, wall clock, of the row whose detail is 'last event <bar>') no later than 2 hours after the bar; at least 95% of the days since the start; a late poll that processes several bars at once is measured on each bar",
       "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
-      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored)",
+      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored). It certifies the internal consistency of the session, not the authenticity of the bars",
       "max_drawdown_mtm_pct >= -20"
     ],
-    "edge": [
-      "net_return_pct > 0",
-      "max_drawdown_mtm_pct >= -20",
-      "costs <= 50% of the gross result (net + costs)",
-      "net_return_pct >= net return of buy and hold at the same exposure minus 10 percentage points (the rule must not give up most of a rising market)"
-    ],
+    "edge": {
+      "definitions": {
+        "equity_net_return_pct": "net return of the session including the open position valued at the last open (as in the E05 backtest)",
+        "realized_net_return_pct": "net result of the CLOSED trades only, over the initial capital; an open position is excluded",
+        "realized_gross_and_costs": "gross result and costs of the closed trades only (entry and exit costs of each closed trade)",
+        "buy_and_hold": "the constant LONG strategy of the same engine, with the candidate's initial capital, risk limits (max_exposure 0.5), fee and slippage, one entry at the first event of the session and valued at the same last event as the candidate; computed on the session's recorded bars",
+        "report": "both equity and realized figures, the open position and its unrealized result are always reported side by side (E05 review R16)"
+      },
+      "criteria": [
+        "realized_net_return_pct > 0",
+        "max_drawdown_mtm_pct >= -20 (equity, including the open position)",
+        "realized costs <= 50% of the realized gross result of the closed trades",
+        "equity_net_return_pct >= buy and hold net return - 10 percentage points over the same bars (the rule must not give up most of a rising market)"
+      ]
+    },
     "outcomes": {
       "week12": {
-        "OPERATIONAL_PASS": "all week-12 criteria pass -> the session continues unchanged to the edge checkpoint",
-        "OPERATIONAL_FAIL": "a week-12 criterion fails -> fix the runner (not the strategy) and restart with a new session id; the candidate is unchanged"
+        "OPERATIONAL_PASS": "all week-12 criteria pass -> the session continues unchanged to P1.edge",
+        "OPERATIONAL_FAIL": "a week-12 criterion fails -> the runner is fixed (never the candidate) and a new session starts; see restarts"
+      },
+      "restarts": {
+        "rule": "at most 2 restarts, each approved by the coordinator and recorded; the candidate, the features and the criteria stay frozen",
+        "clocks": "week 12 and the 8-closed-trade count restart with the new session; closed trades of an abandoned session never count for P1.edge",
+        "deadline": "P1.edge must happen within 78 full weeks after the START OF THE FIRST SESSION; otherwise the outcome is INCONCLUSIVE and the candidate is not confirmed"
       },
       "edge": {
-        "CONFIRMED": "all edge criteria pass -> S08 criteria may be registered for a new release of this exact candidate",
-        "NOT_CONFIRMED": "an edge criterion fails -> the candidate is closed as REJECTED on forward data",
-        "INCONCLUSIVE": "fewer than 5 closed trades after 52 weeks"
+        "CONFIRMED": "all four edge criteria pass at P1.edge -> S08 criteria may be registered for a new release of this exact candidate",
+        "NOT_CONFIRMED": "an edge criterion fails at P1.edge -> the candidate is closed as REJECTED on forward data",
+        "INCONCLUSIVE": "fewer than 8 closed trades after 52 full weeks, or the 78-week deadline of the restarts is reached"
       }
     }
   },
@@ -124,16 +140,39 @@
       "id": "PRE-6",
       "what": "Fidelity tool for the week-12 criterion: session_fidelity (python -m crypto_decision_lab.session_fidelity --session-dir ...) rebuilds the bars the session saw from its own history and events, replays the frozen candidate with the experiment-side features and compares the ledgers.",
       "status": "implemented, pending review"
+    },
+    {
+      "id": "PRE-7",
+      "what": "Report tool for the checkpoints: week-12 timeliness from status_log and the edge figures (equity and realized net, realized gross and costs, drawdown, open position, buy and hold on the session's recorded bars) with the outcome from the criteria above. Not written yet: the criteria are prose until the tool exists and has tests.",
+      "status": "missing"
     }
   ],
   "evidence_to_record": [
     "session meta: candidate digest, engine_sha256, feed identity, start, warmup digest",
     "weekly: equity, drawdown, decisions taken on time, gaps, closed trades",
-    "at each checkpoint: report with the criteria above, observed values and outcome, committed to reports/e05-p1/"
+    "at each checkpoint: report with the criteria above, observed values and outcome, committed to reports/e05-p1/",
+    "at P1.edge: the report with equity and realized figures side by side, the open position and its unrealized result, the buy and hold figure and the outcome; at each restart: coordinator approval and reason"
   ],
   "threats": [
     "Few trades even at the edge checkpoint (8): the confirmation stays weak; the comparison with buy and hold and the drawdown bound limit the damage of a wrong CONFIRMED.",
     "One asset, one regime: 12 to 52 weeks may fall entirely in a rising or falling market.",
-    "Paper fills at the open with assumed slippage; real fills are observed only in the optional testnet mirror and, later, with minimal capital under S08."
+    "Paper fills at the open with assumed slippage; real fills are observed only in the optional testnet mirror and, later, with minimal capital under S08.",
+    "Warmup bars are read once and frozen in the session history (INSERT OR IGNORE): a later revision of a warmup bar is not seen; Binance does not revise closed bars in practice, and the features stay consistent with the stored history (review R17).",
+    "Judging the edge on realized trades only is stricter than the E05 backtest, whose confirmation passed through the unrealized gain of an open position (review R16): a candidate that holds a winning position at the checkpoint is judged on what it has already closed."
+  ],
+  "deviations": [
+    {
+      "id": "DEV-1",
+      "from": "E05-daily-trend-v1.json, acceptance.outcomes.CANDIDATE: paper session on new data with Binance Spot testnet klines, S06/S07 runner, operator's keys",
+      "to": "paper session on real-market public klines (read-only market data host, no account, no keys), execution simulated by the S06 engine with the backtest cost model; testnet only as an optional mirror of the orders that does not enter any criterion",
+      "why": [
+        "the signal must be judged on real prices; testnet prices come from the test market and were not compared with the real market",
+        "no keys are needed for the evidence, so no credential risk and no dependence on the S07 testnet smoke, which is still open",
+        "the engine, features and costs are exactly those of the backtest, so the fidelity check can compare the session with the engine"
+      ],
+      "what_is_kept": "frozen candidate, new data only, at least 12 weeks before any S08 step, own criteria",
+      "requires": "explicit approval by the coordinator recorded in approvals before preregistration; E05 itself stays unchanged (its text is part of the preregistered specification)",
+      "approval": null
+    }
   ]
 }
