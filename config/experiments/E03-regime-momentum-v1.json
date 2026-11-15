@@ -1,8 +1,8 @@
 {
   "schema_version": "cdl.e03.experiment.v1",
   "experiment_id": "E03-regime-momentum-v1",
-  "status": "DRAFT",
-  "registered": null,
+  "status": "PREREGISTERED",
+  "registered": "2026-11-15",
   "origin": {
     "deviation": "E01 REJECTED (reports/e01/report.json): the best turnover-reduced momentum (threshold 0.03, horizon 48h) still lost -20.3% on validation; almost every exit was the signal crossing back under the entry threshold, the holding horizon never bound (1 horizon exit per window).",
     "evidence": [
