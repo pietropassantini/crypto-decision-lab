@@ -1,5 +1,5 @@
 step_id: E03
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-15"
 agent_role: Ricerca quantitativa (strategia, runner ed esecuzione dell'esperimento preregistrato)
 agent_model: Claude Opus 5.5 (claude-opus-5-5)
@@ -58,6 +58,11 @@ anomalies:
   - "exit_reasons classifica le uscite delle baseline momentum come 'other' o 'horizon': la classificazione e pensata per regime_momentum; solo descrittiva, non entra nei criteri."
   - "7 gap riconosciuti nello sviluppo (come in E01); nessuno in validazione e conferma."
   - "Strategia, runner ed esecuzione sono dello stesso autore (Claude Opus 5.5): serve un revisore non Claude."
-blockers:
-  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E03.0-2 da clone pulito."
-next_action: "Un revisore non Claude ripete CP-E03.0-2 e conferma i 23 ledger_sha256. Nessuna nuova variante di momentum orario sullo stesso snapshot senza una ipotesi diversa e una specifica nuova preregistrata."
+blockers: []
+next_action: "Nessuna azione richiesta; una nuova ipotesi richiede una specifica nuova preregistrata."
+verification_2026_11_15:
+  date: "2026-11-15"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, commit 73e7277, clone pulito, 597 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5, Fable 5.2, Sonnet 5.5); lo stesso modello aveva firmato le review del 13 e 14-11 in altre sessioni, con probe scritti da zero"
+  evidence: "CP-E03.0-2 ripetuti: selezione g09, REJECTED riprodotto due volte con 23 ledger_sha256 identici; nessun leakage nelle feature (probe indipendente); ordine di preregistrazione verificato (4476553, afc21f4, e318fc3)"

@@ -1,5 +1,5 @@
 step_id: E04
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-15"
 agent_role: Ricerca quantitativa (strategia, protocollo condiviso, runner ed esecuzione dell'esperimento preregistrato)
 agent_model: Claude Fable 5.2 (claude-fable-5-2)
@@ -59,6 +59,11 @@ anomalies:
   - "exit_reasons classifica le uscite della baseline momentum come 'other' o 'horizon' (classificazione pensata per mean_reversion); solo descrittiva."
   - "2 uscite 'missing_feature' per configurazione in sviluppo: posizioni chiuse dopo un gap, quando lo z-score non e definito (comportamento dichiarato, fail closed)."
   - "Strategia, protocollo ed esecuzione sono dello stesso autore (Claude Fable 5.2); il protocollo condiviso e nuovo e va rivisto insieme all'esperimento da un revisore non Claude."
-blockers:
-  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E04.0-2 da clone pulito."
-next_action: "Un revisore non Claude ripete CP-E04.0-2 e conferma i 20 ledger_sha256. Prima di un E05 il coordinatore decide la direzione: orizzonte piu lungo, costi piu bassi o altro mercato."
+blockers: []
+next_action: "Nessuna azione richiesta; una nuova ipotesi richiede una specifica nuova preregistrata."
+verification_2026_11_15:
+  date: "2026-11-15"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, commit 73e7277, clone pulito, 597 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5, Fable 5.2, Sonnet 5.5); lo stesso modello aveva firmato le review del 13 e 14-11 in altre sessioni, con probe scritti da zero"
+  evidence: "CP-E04.0-2 ripetuti: selezione g05, REJECTED riprodotto due volte con 20 ledger_sha256 identici; nessun leakage; ordine di preregistrazione verificato (f11dfe3, b32db6a, 69a39f5)"

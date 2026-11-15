@@ -1,6 +1,6 @@
 step_id: E01
-status: IN_REVIEW
-updated_at: "2026-11-14"
+status: VERIFIED
+updated_at: "2026-11-15"
 agent_role: Ricerca quantitativa (runner ed esecuzione dell'esperimento preregistrato)
 agent_model: Claude Opus 5.5 (claude-opus-5-5)
 base_commit: 717abcbd135fd6579242d89f4be427d615bf6016
@@ -53,6 +53,11 @@ interpretations:
 anomalies:
   - "Runner e esecuzione sono dello stesso autore (Claude Opus 5.5): serve un revisore non Claude."
   - "Rischio di selection bias dichiarato nella specifica (studi CP08 sui parametri di momentum su questo snapshot): non incide su un esito REJECTED."
-blockers:
-  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E01.1-2 da clone pulito."
-next_action: "Un revisore non Claude ripete CP-E01.1-2 da clone pulito e conferma i 17 ledger_sha256. Una nuova ipotesi (per esempio isteresi o filtro di regime su momentum) richiede una nuova specifica preregistrata; non modificare la v1."
+blockers: []
+next_action: "Nessuna azione richiesta; una nuova ipotesi richiede una specifica nuova preregistrata."
+verification_2026_11_15:
+  date: "2026-11-15"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, commit 73e7277, clone pulito, 597 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5, Fable 5.2, Sonnet 5.5); lo stesso modello aveva firmato le review del 13 e 14-11 in altre sessioni, con probe scritti da zero"
+  evidence: "CP-E01.1-2 ripetuti: selezione g11, REJECTED riprodotto due volte con 17 ledger_sha256 identici; criteri e metriche ricalcolati dai ledger; ordine di preregistrazione verificato sui commit (94cd1d7, ca74636, c1c87a0)"

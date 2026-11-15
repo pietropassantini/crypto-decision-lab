@@ -1,5 +1,5 @@
 step_id: E05
-status: IN_REVIEW
+status: VERIFIED
 updated_at: "2026-11-15"
 agent_role: Ricerca quantitativa (strategia, runner ed esecuzione dell'esperimento preregistrato)
 agent_model: Claude Fable 5.2 (claude-fable-5-2)
@@ -66,6 +66,12 @@ anomalies:
   - "La conferma si chiude con una posizione aperta, valorizzata mark-to-market all'ultimo open (comportamento del motore, uguale per tutti gli esperimenti)."
   - "Strategia, modifica del protocollo ed esecuzione sono dello stesso autore (Claude Fable 5.2): serve un revisore non Claude, a maggior ragione per un esito CANDIDATE."
 blockers:
-  - "Revisione indipendente non Claude di CP-E05.0-2 (compresa la modifica al protocollo condiviso) prima di qualsiasi uso dell'esito."
-  - "CP-E05.3: specifica preregistrata della sessione paper su testnet (richiede le chiavi testnet dell'operatore e il collaudo S07 ancora aperto)."
-next_action: "1) Un revisore non Claude ripete CP-E05.0-2 da clone pulito e conferma i 20 ledger_sha256. 2) Il coordinatore approva una specifica di sessione paper su testnet di almeno 12 settimane con criteri propri (CP-E05.3). Nessun passo S08 e nessuna modifica a strategia o parametri prima di allora."
+  - "CP-E05.3: specifica E05-P1 da correggere (R21-R25) e preregistrare; richiede macchina sempre accesa (operatore). Il collaudo S07 serve solo per lo specchio facoltativo su testnet."
+next_action: "CP-E05.3 aperto: correggere la bozza E05-P1 secondo R21-R25, il coordinatore approva la deviazione dal testnet ai prezzi reali, poi preregistrazione. Nessun passo S08 e nessuna modifica a strategia o parametri."
+verification_2026_11_15:
+  date: "2026-11-15"
+  decided_by: "coordinatore (operatore)"
+  review: "REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, commit 73e7277, clone pulito, 597 test verdi)"
+  independence: "revisore diverso dagli autori (Claude Opus 5.5, Fable 5.2, Sonnet 5.5); lo stesso modello aveva firmato le review del 13 e 14-11 in altre sessioni, con probe scritti da zero"
+  evidence: "CP-E05.0-2 ripetuti: selezione g10, CANDIDATE riprodotto due volte con 20 ledger_sha256 identici; 1.999 decisioni ricalcolate dai dati ammessi senza discrepanze, 102 ordini su 102 alle 00:00 UTC; nessun leakage; selezione e criteri conformi alla specifica; ordine di preregistrazione verificato (3b7a42c, 32d137b, 1ef1a1e)"
+  limits: "R16 LOW: la conferma e superata solo grazie al plusvalore non realizzato (+48,8) di una posizione aperta a fine finestra; i 17 trade chiusi valgono -23,9. Giudizio del revisore: l'esito giustifica la sessione paper su dati nuovi (E05-P1), NON un passo S08 ne capitale reale. CP-E05.3 resta OPEN: E05-P1 non e preregistrabile prima delle modifiche R21-R25 e dell'approvazione della deviazione dal testnet"
