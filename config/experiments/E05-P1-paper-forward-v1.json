@@ -1,0 +1,85 @@
+{
+  "schema_version": "cdl.e05.paper-session.v1",
+  "session_id": "E05-P1-paper-forward-v1",
+  "status": "DRAFT",
+  "registered": null,
+  "origin": {
+    "experiment": "E05-daily-trend-v1, outcome CANDIDATE (reports/e05/report.json, E05-HANDOFF.yaml)",
+    "checkpoint": "CP-E05.3: preregistered paper session on new data before any S08 step",
+    "reason": "E05 passed on windows already seen by five experiments; the confirmation result depends on one trade. Only data produced after registration can confirm or refute the candidate."
+  },
+  "candidate": {
+    "strategy": {"name": "daily_trend", "parameters": {"entry_threshold": 0.0, "exit_threshold": 0.0, "regime_min": 0.0}},
+    "features": {"momentum_days": 28, "sma_days": 100},
+    "initial_cash": 500,
+    "hypothesis": {"latency_hours": 0, "horizon_hours": 1000000, "fee_rate": 0.001, "slippage": 0.0005},
+    "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true},
+    "frozen": "Identical to E05 g10. No parameter, feature or rule may change during the session; a change ends this session and needs a new specification."
+  },
+  "data": {
+    "symbol": "BTCUSDT",
+    "bars": "hourly klines of the real market (Binance Spot public market data, read-only, no account and no keys)",
+    "new_data_only": "Decisions are evaluated only on bars that open after the session start, which follows the registration date.",
+    "warmup": "The 101 daily closes before the start are needed for the features. They come from the same public klines and are used only as feature input; no trade is evaluated on them. Their source and digest are recorded at session creation.",
+    "forbidden": ["BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"],
+    "why_not_testnet_prices": "Testnet prices are those of the test market and were not checked against the real market; a signal must be judged on real prices. The testnet is used for the execution check below, not for the evidence on the edge."
+  },
+  "execution": {
+    "primary": "Paper execution simulated by the S06 engine with the cost model above (same engine as the backtest). This is the evidence for the criteria.",
+    "secondary_optional": "The same decisions mirrored as orders on the Binance Spot testnet through the S07 runner with the operator's testnet keys, to observe real fills, fees and operational faults. It does not enter the edge criteria. It requires the S07 testnet smoke (still open) first."
+  },
+  "duration": {
+    "minimum_weeks": 12,
+    "note": "The candidate closed 16-17 trades per 1.5-2.4 years in the backtest (about 7-11 per year): 12 weeks give roughly 2-3 trades. Twelve weeks can show that the runner behaves as the backtest and that risk stays bounded; they cannot show that the edge exists.",
+    "checkpoints": [
+      {"id": "P1.week12", "when": "12 full weeks after start", "decides": "operational and fidelity criteria; stop rules"},
+      {"id": "P1.edge", "when": "first of: 8 closed trades, or 52 full weeks after start", "decides": "edge criteria"}
+    ]
+  },
+  "criteria": {
+    "stop_rules_any_time": [
+      "max_drawdown_mtm_pct < -20 -> the session is closed, outcome FAILED (backtest worst drawdown was -17.2%)",
+      "a decision taken with a feature computed from a bar not yet closed, or a change to the frozen candidate -> outcome INVALID"
+    ],
+    "week12_operational": [
+      "daily decisions processed within 2 hours of 00:00 UTC on at least 95% of the days",
+      "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
+      "fidelity: a backtest of the frozen candidate over the session's own recorded bars reproduces the session ledger (same decisions, orders and fills)",
+      "max_drawdown_mtm_pct >= -20"
+    ],
+    "edge": [
+      "net_return_pct > 0",
+      "max_drawdown_mtm_pct >= -20",
+      "costs <= 50% of the gross result (net + costs)",
+      "net_return_pct >= net return of buy and hold at the same exposure minus 10 percentage points (the rule must not give up most of a rising market)"
+    ],
+    "outcomes": {
+      "week12": {
+        "OPERATIONAL_PASS": "all week-12 criteria pass -> the session continues unchanged to the edge checkpoint",
+        "OPERATIONAL_FAIL": "a week-12 criterion fails -> fix the runner (not the strategy) and restart with a new session id; the candidate is unchanged"
+      },
+      "edge": {
+        "CONFIRMED": "all edge criteria pass -> S08 criteria may be registered for a new release of this exact candidate",
+        "NOT_CONFIRMED": "an edge criterion fails -> the candidate is closed as REJECTED on forward data",
+        "INCONCLUSIVE": "fewer than 5 closed trades after 52 weeks"
+      }
+    }
+  },
+  "prerequisites": [
+    {"id": "PRE-1", "what": "Daily features in the session runners: paper.py and live.py compute only momentum_24h; daily_trend needs daily_decision, d_momentum and d_trend from daily_trend.daily_features, with at least 101 daily closes of history.", "status": "missing"},
+    {"id": "PRE-2", "what": "A live market-data source for the paper runner: today it accepts only a snapshot or a lab feed; it needs read-only public klines of the real market with enough history for the warmup (about 2450 hourly bars; the current kline feed reads 30).", "status": "missing"},
+    {"id": "PRE-3", "what": "A scheduled runner on a machine that stays on (one poll per hour is enough), with the session directory backed up.", "status": "operator"},
+    {"id": "PRE-4", "what": "Independent non-Claude review of E05 (CP-E05.0-2) and of the code added for PRE-1 and PRE-2.", "status": "open"},
+    {"id": "PRE-5", "what": "Only for the optional testnet mirror: S07 testnet smoke with the operator's keys.", "status": "open"}
+  ],
+  "evidence_to_record": [
+    "session meta: candidate digest, engine_sha256, feed identity, start, warmup digest",
+    "weekly: equity, drawdown, decisions taken on time, gaps, closed trades",
+    "at each checkpoint: report with the criteria above, observed values and outcome, committed to reports/e05-p1/"
+  ],
+  "threats": [
+    "Few trades even at the edge checkpoint (8): the confirmation stays weak; the comparison with buy and hold and the drawdown bound limit the damage of a wrong CONFIRMED.",
+    "One asset, one regime: 12 to 52 weeks may fall entirely in a rising or falling market.",
+    "Paper fills at the open with assumed slippage; real fills are observed only in the optional testnet mirror and, later, with minimal capital under S08."
+  ]
+}
