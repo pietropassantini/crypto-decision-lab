@@ -60,17 +60,20 @@ def recorded_frame(session: PaperSession) -> pd.DataFrame:
     return frame
 
 
-def run_engine(session: PaperSession, config: dict | None = None, *, with_features: bool = True
-               ) -> tuple[list[dict], int]:
+def run_engine(session: PaperSession, config: dict | None = None, *, with_features: bool = True,
+               until: pd.Timestamp | None = None) -> tuple[list[dict], int]:
     """Ledger of ``config`` (default: the session's frozen candidate) over the session's recorded bars.
 
     The same bars, gap rule and finishing as the session: the ledger ends with the engine's finish
     records only if the session itself is COMPLETED.  ``with_features=False`` runs strategies that need
-    nothing beyond ``momentum_24h`` (the buy and hold of the P1 report).
+    nothing beyond ``momentum_24h`` (the buy and hold of the P1 report).  ``until`` keeps only the bars up to
+    and including that instant and never finishes the run (evaluation as of a past instant).
     """
     run_config = build_run_config(config or session.meta["config"])
     frame = recorded_frame(session)
     processed = sorted(pd.Timestamp(ts) for (ts,) in session.connection.execute("SELECT timestamp FROM events"))
+    if until is not None:
+        processed = [ts for ts in processed if ts <= until]
     if not processed:
         return [], 0
     spec = session.meta.get("features") if with_features else None
@@ -88,7 +91,7 @@ def run_engine(session: PaperSession, config: dict | None = None, *, with_featur
             ledger.extend(engine.acknowledge_gap(event.timestamp, note="fidelity replay"))
             records = engine.step(event)
         ledger.extend(records)
-    if session.snapshot()["status"] == "COMPLETED":
+    if until is None and session.snapshot()["status"] == "COMPLETED":
         ledger.extend(engine.finish())
     return ledger, len(events)
 

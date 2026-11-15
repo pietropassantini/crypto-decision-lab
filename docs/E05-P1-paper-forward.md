@@ -30,29 +30,41 @@ l'approvazione esplicita del coordinatore, registrata nella specifica (`deviatio
 
 ## Checkpoint e criteri
 
-**In qualsiasi momento:** drawdown sotto −20% chiude la sessione (FAILED); una decisione presa su una barra non
-chiusa o una modifica alla candidata rende la sessione INVALID.
+**In qualsiasi momento (regole di stop, controllate da entrambi i rapporti):**
+- drawdown dell'equity sotto -20%: `FAILED`, la sessione si chiude;
+- la sessione non è la candidata congelata: `INVALID`. Si confrontano il digest della configurazione (fissato nella
+  specifica, `candidate.config_sha256`) e i parametri delle feature; in produzione la sessione deve anche essere una
+  sessione dal vivo su `public_klines`;
+- una decisione presa su una barra non chiusa: la rileva il controllo di fedeltà (il motore rigioca solo barre chiuse);
+  un mancato accordo è `OPERATIONAL_FAIL` alla settimana 12 e `INVALID` nel rapporto sul vantaggio.
+
+Spetta all'operatore lanciare i rapporti almeno una volta a settimana: il runner non chiude da solo la sessione.
 
 **Settimana 12 (operativo e fedeltà):**
 - **tempestività:** per ogni giorno, l'evento delle 00:00 UTC risulta registrato entro 2 ore dalla barra, in almeno il
-  95% dei giorni. La prova è l'ora reale (`status_log.at`) della riga con dettaglio `last event <barra>`; una poll in
-  ritardo che elabora più barre insieme si misura barra per barra;
+  95% dei giorni conteggiati. La prova è l'ora reale (`status_log.at`) della riga con dettaglio `last event <barra>`; una
+  poll in ritardo che elabora più barre insieme si misura barra per barra. I giorni la cui barra delle 00:00 manca per un
+  gap di mercato riconosciuto non si contano (li controlla il criterio successivo); un giorno mai elaborato conta come
+  non puntuale;
 - nessun giorno senza decisione per colpa del runner;
 - fedeltà: `session_fidelity` esce con 0 (decisioni, ordini, fill e saldi uguali a quelli del motore sulle barre registrate
   dalla sessione). Certifica la coerenza interna della sessione, non l'autenticità delle barre;
 - drawdown ≥ −20%.
 
-**Checkpoint sul vantaggio (P1.edge)**, valutato **una volta sola**: il primo lunedì alle 00:00 UTC in cui la sessione ha
-almeno **8 trade chiusi** (controllo settimanale). Se dopo 52 settimane non c'è, non si valuta e l'esito è INCONCLUSIVE. Il
-momento dipende solo dal numero di trade chiusi, mai dal risultato: un fallimento chiude la candidata, un successo non si
-ripete né si prolunga.
+**Checkpoint sul vantaggio (P1.edge)**, valutato **una volta sola**: scatta il primo lunedì alle 00:00 UTC in cui la
+sessione ha almeno **8 trade chiusi** (controllo settimanale). Se dopo 52 settimane non c'è, non si valuta e l'esito è
+INCONCLUSIVE. Il momento dipende solo dal numero di trade chiusi, mai dal risultato. Il rapporto è **calcolato sulla
+sessione fino a quel lunedì incluso, qualunque sia il giorno in cui si lancia lo strumento**: aspettare una cifra migliore
+non cambia il risultato, e il rapporto indica il ritardo della valutazione. Un fallimento chiude la candidata, un successo
+non si ripete né si prolunga. Il rapporto esegue anche il controllo di fedeltà: un mancato accordo dà `INVALID`.
 
 Si riportano sempre affiancati il netto con la posizione aperta (equity) e il netto dei soli trade chiusi, la posizione
 aperta e il suo risultato non realizzato (rilievo R16 della review: la conferma di E05 passa solo per un plusvalore non
 realizzato). I criteri sono:
 - netto **realizzato** (trade chiusi) > 0;
 - drawdown dell'equity ≥ −20%;
-- costi ≤ 50% del lordo, sui soli trade chiusi;
+- costi ≤ 50% del lordo, sui soli trade chiusi (con lordo realizzato non positivo la quota non è definita e il
+  criterio non è superato);
 - netto dell'equity non inferiore a quello di buy and hold meno 10 punti.
 
 Buy and hold = la strategia `constant` LONG dello stesso motore, con capitale, esposizione 0,5, fee e slippage della
@@ -78,7 +90,7 @@ avvenuto, altrimenti INCONCLUSIVE.
 | PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
 | PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato**, da rivedere: tempestività da `status_log`, cifre di P1.edge (netto equity e realizzato, lordo e costi dei trade chiusi, drawdown, posizione aperta, buy and hold) e l'esito dai criteri |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo la review del 15-11 (R27-R34)**, da rivedere di nuovo: tempestività da `status_log`, regole di stop (`FAILED`, `INVALID`), cifre di P1.edge calcolate fino al lunedì di trigger, decisioni registrate nella sessione |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
@@ -108,17 +120,23 @@ Il controllo esce con codice 0 se il registro coincide con quello del motore sul
 sessione; i valori delle feature si confrontano a 12 cifre significative, perché la somma delle chiusure
 giornaliere ha un ordine diverso e l'ultima cifra può cambiare.
 
-Rapporti dei checkpoint (da lanciare ogni lunedì alle 00:00 UTC; `--as-of` serve solo per provare):
+Rapporti dei checkpoint (da lanciare ogni lunedì alle 00:00 UTC):
 
 ```powershell
 python -m crypto_decision_lab.session_report week12 --session-dir <cartella della sessione>
 python -m crypto_decision_lab.session_report edge --session-dir <cartella della sessione>
 ```
 
-`week12` dà `NOT_DUE` prima delle 12 settimane, poi `OPERATIONAL_PASS` o `OPERATIONAL_FAIL` (e `FAILED` se il drawdown
-supera −20% in qualsiasi momento). `edge` dà `NOT_DUE` finché i trade chiusi sono meno di 8 (e non sono passate 52
-settimane), poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi dà `INCONCLUSIVE`. Quando
-decide scrive `p1-edge-report.json` **una volta sola**: una seconda valutazione è rifiutata (codice di uscita 2).
+Con `--as-of "<istante UTC>"` il rapporto è una **prova**: non scrive niente (né file né registrazione nella sessione).
+In produzione non si usa mai `--as-of`. `--spec` indica la specifica (di default quella di E05-P1).
+
+- `week12`: `NOT_DUE` prima delle 12 settimane, poi `OPERATIONAL_PASS` o `OPERATIONAL_FAIL`; `FAILED` o `INVALID` in qualsiasi
+  momento. Ogni esito si registra una volta (`p1-week12-<ESITO>.json` e una riga nel database della sessione): un
+  `FAILED` successivo si affianca a un `OPERATIONAL_PASS` precedente, senza sovrascriverlo.
+- `edge`: `NOT_DUE` finché i trade chiusi sono meno di 8 (e non sono passate 52 settimane) o finché non è arrivato il lunedì
+  di trigger; poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi `INCONCLUSIVE`; `FAILED` o `INVALID`
+  per le regole di stop. La decisione si registra **una volta sola** nel database della sessione e in `p1-edge-report.json`:
+  una seconda valutazione è rifiutata (codice di uscita 2) anche se il file viene cancellato o la cartella copiata.
 
 Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 

@@ -34,7 +34,9 @@
       "min_notional": 10,
       "allow_open": true
     },
-    "frozen": "Identical to E05 g10. No parameter, feature or rule may change during the session; a change ends this session and needs a new specification."
+    "frozen": "Identical to E05 g10. No parameter, feature or rule may change during the session; a change ends this session and needs a new specification.",
+    "config_sha256": "7775ccd417e3354c981248cf1469f6cab447844638b88301756fb59c099c5536",
+    "pin": "config_sha256 is the studio.config_digest of the normalized configuration built from strategy, initial_cash, hypothesis and risk of this block; the session must carry exactly this digest and these features, or the reports give INVALID. The tool refuses a spec whose digest does not match its own candidate block."
   },
   "data": {
     "symbol": "BTCUSDT",
@@ -44,7 +46,8 @@
     "forbidden": [
       "BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"
     ],
-    "why_not_testnet_prices": "Testnet prices are those of the test market and were not checked against the real market; a signal must be judged on real prices. The testnet is used for the execution check below, not for the evidence on the edge."
+    "why_not_testnet_prices": "Testnet prices are those of the test market and were not checked against the real market; a signal must be judged on real prices. The testnet is used for the execution check below, not for the evidence on the edge.",
+    "source_kind": "public_klines"
   },
   "execution": {
     "primary": "Paper execution simulated by the S06 engine with the cost model above (same engine as the backtest). This is the evidence for the criteria.",
@@ -69,11 +72,12 @@
   },
   "criteria": {
     "stop_rules_any_time": [
-      "max_drawdown_mtm_pct < -20 -> the session is closed, outcome FAILED (backtest worst drawdown was -17.2%)",
-      "a decision taken with a feature computed from a bar not yet closed, or a change to the frozen candidate -> outcome INVALID"
+      "max_drawdown_mtm_pct < -20 on the equity -> outcome FAILED, the session is closed (backtest worst drawdown was -17.2%). Both reports, week12 and edge, check it; it is the operator's duty to run them at least weekly",
+      "the session is not the frozen candidate -> outcome INVALID: its config_sha256 or feature parameters differ from candidate.config_sha256 / candidate.features, or (production only) it is not a live paper session on the public_klines source. Checked by both reports",
+      "a decision taken with a feature computed from a bar not yet closed -> detected by the fidelity check, which replays the engine on the session's own recorded bars (closed bars only): a mismatch is OPERATIONAL_FAIL at week 12 and INVALID at the edge checkpoint"
     ],
     "week12_operational": [
-      "timeliness: for each day, the 00:00 UTC event is committed (status_log.at, wall clock, of the row whose detail is 'last event <bar>') no later than 2 hours after the bar; at least 95% of the days since the start; a late poll that processes several bars at once is measured on each bar",
+      "timeliness: for each day, the 00:00 UTC event is committed (status_log.at, wall clock, of the row whose detail is 'last event <bar>') no later than 2 hours after the bar; at least 95% of the counted days since the start. Days whose 00:00 bar is missing because of an acknowledged market-data gap are not counted (they are checked by the next criterion); a day the runner never processed counts as not on time. A late poll that processes several bars at once is measured on each bar",
       "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
       "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored). It certifies the internal consistency of the session, not the authenticity of the bars",
       "max_drawdown_mtm_pct >= -20"
@@ -84,19 +88,22 @@
         "realized_net_return_pct": "net result of the CLOSED trades only, over the initial capital; an open position is excluded",
         "realized_gross_and_costs": "gross result and costs of the closed trades only (entry and exit costs of each closed trade)",
         "buy_and_hold": "the constant LONG strategy of the same engine, with the candidate's initial capital, risk limits (max_exposure 0.5), fee and slippage, one entry at the first event of the session and valued at the same last event as the candidate; computed on the session's recorded bars",
-        "report": "both equity and realized figures, the open position and its unrealized result are always reported side by side (E05 review R16)"
+        "report": "both equity and realized figures, the open position and its unrealized result are always reported side by side (E05 review R16)",
+        "as_of_the_trigger": "The edge is computed on the session up to the trigger Monday 00:00 UTC (included), whenever the tool is run: the trigger is the first Monday 00:00 UTC at or after the close of the 8th closed trade. Running the tool later does not change the figures, so waiting for a better figure is not possible. The report states the trigger, the date of the evaluation and the delay",
+        "fidelity": "the edge report also runs the fidelity check; a mismatch makes the outcome INVALID"
       },
       "criteria": [
         "realized_net_return_pct > 0",
         "max_drawdown_mtm_pct >= -20 (equity, including the open position)",
-        "realized costs <= 50% of the realized gross result of the closed trades",
+        "realized costs <= 50% of the realized gross result of the closed trades; when the realized gross result is not positive the share is undefined and the criterion FAILS",
         "equity_net_return_pct >= buy and hold net return - 10 percentage points over the same bars (the rule must not give up most of a rising market)"
       ]
     },
     "outcomes": {
       "week12": {
         "OPERATIONAL_PASS": "all week-12 criteria pass -> the session continues unchanged to P1.edge",
-        "OPERATIONAL_FAIL": "a week-12 criterion fails -> the runner is fixed (never the candidate) and a new session starts; see restarts"
+        "OPERATIONAL_FAIL": "a week-12 criterion fails -> the runner is fixed (never the candidate) and a new session starts; see restarts",
+        "reports": "one record per outcome (p1-week12-<OUTCOME>.json and a row in the session database): a later FAILED or INVALID is recorded next to an earlier OPERATIONAL_PASS, nothing is overwritten"
       },
       "restarts": {
         "rule": "at most 2 restarts, each approved by the coordinator and recorded; the candidate, the features and the criteria stay frozen",
@@ -106,7 +113,9 @@
       "edge": {
         "CONFIRMED": "all four edge criteria pass at P1.edge -> S08 criteria may be registered for a new release of this exact candidate",
         "NOT_CONFIRMED": "an edge criterion fails at P1.edge -> the candidate is closed as REJECTED on forward data",
-        "INCONCLUSIVE": "fewer than 8 closed trades after 52 full weeks, or the 78-week deadline of the restarts is reached"
+        "INCONCLUSIVE": "fewer than 8 closed trades after 52 full weeks, or the 78-week deadline of the restarts is reached",
+        "recorded": "the decision (CONFIRMED, NOT_CONFIRMED, INCONCLUSIVE, FAILED or INVALID) is recorded once in the session database and in p1-edge-report.json; a second evaluation is refused even if the file is deleted. --as-of makes any report a dry run that writes nothing",
+        "FAILED_INVALID": "FAILED or INVALID at an edge run closes the candidate on this session and counts as the edge decision"
       }
     }
   },
@@ -143,8 +152,8 @@
     },
     {
       "id": "PRE-7",
-      "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--as-of ...]. week12: timeliness from status_log, unexplained missing days, fidelity, drawdown, stop rule; outcome OPERATIONAL_PASS / OPERATIONAL_FAIL / FAILED / NOT_DUE. edge: realized net of the closed trades, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result; outcome CONFIRMED / NOT_CONFIRMED with at least 8 closed trades, INCONCLUSIVE after 52 weeks without them, NOT_DUE otherwise; the edge report is written once (p1-edge-report.json) and a second evaluation is refused (exit code 2). Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
-      "status": "implemented, pending review"
+      "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--spec ...] [--as-of ...]. week12: timeliness from status_log (days excused by an acknowledged gap are not counted), unexplained missing days, fidelity, drawdown. edge: realized net of the closed trades up to the trigger Monday, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result. Both: INVALID (not the frozen candidate: config_sha256, features, and in production a live public_klines session) and FAILED (drawdown). --as-of is a dry run that writes nothing; decisions are recorded in the session database (edge once, week12 once per outcome). Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
+      "status": "implemented, corrected after the review of 2026-11-15 (R27-R34), pending a new review"
     }
   ],
   "evidence_to_record": [
@@ -171,7 +180,7 @@
         "the engine, features and costs are exactly those of the backtest, so the fidelity check can compare the session with the engine"
       ],
       "what_is_kept": "frozen candidate, new data only, at least 12 weeks before any S08 step, own criteria",
-      "requires": "explicit approval by the coordinator recorded in approvals before preregistration; E05 itself stays unchanged (its text is part of the preregistered specification)",
+      "requires": "explicit approval by the coordinatore recorded in this file (deviations[0].approval) before preregistration; E05 itself stays unchanged (its text is part of the preregistered specification)",
       "approval": {
         "approved_by": "coordinatore (operatore)",
         "date": "2026-11-15",
