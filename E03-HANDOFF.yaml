@@ -1,0 +1,63 @@
+step_id: E03
+status: IN_REVIEW
+updated_at: "2026-11-15"
+agent_role: Ricerca quantitativa (strategia, runner ed esecuzione dell'esperimento preregistrato)
+agent_model: Claude Opus 5.5 (claude-opus-5-5)
+base_commit: f8f7490b0b2fd7d580ff43a0ac8c5290038c95ab
+head_commit: "4476553 (preregistrazione), afc21f4 (selezione bloccata prima della validazione), commit di questo handoff"
+review_ref: "branch main; revisore non Claude da assegnare"
+inputs:
+  - "config/experiments/E03-regime-momentum-v1.json, PREREGISTERED dal coordinatore il 2026-11-15, sha256 LF 41ddad98e6ee209a3b458bb4262c56910fb722b6f85838ea5ecec5be0af65b92 (uguale alla riga E03 del backlog)"
+  - "BTCUSDT-1h-raw-v1 tramite catalogo, source_manifest_sha256 75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+  - "S03 (VERIFIED): motore, engine_sha256 9175ff68f284... (include la registrazione di regime_momentum)"
+changed_paths:
+  - "src/crypto_decision_lab/regime_momentum.py - trend_features (trend_ratio causale) e RegimeMomentumStrategy (isteresi e filtro di regime)"
+  - "src/crypto_decision_lab/regime_experiment.py - runner a due fasi con i criteri di E01"
+  - "src/crypto_decision_lab/simulation.py - registrazione lazy di regime_momentum (cambia engine_sha256)"
+  - "tests/test_regime_momentum.py (9 test su dati sintetici)"
+  - "config/experiments/E03-regime-momentum-v1.json, docs/E03-regime-momentum.md, reports/e03/{preregistration,selection,report,manifest}.json, Crypto_Decision_Lab_PRD.md (riga E03), E03-HANDOFF.yaml"
+checkpoints:
+  - id: CP-E03.0
+    result: PASS
+    verification: "python -m pytest tests/test_regime_momentum.py -q -p no:cacheprovider"
+    expected: "trend_ratio da barre chiuse prima dell'evento, indefinita dopo un gap, regole di isteresi e regime, fail closed"
+    observed: "9 passed sul commit di esecuzione; suite completa 566 passed su f8f7490"
+    evidence: "tests/test_regime_momentum.py"
+  - id: CP-E03.1
+    result: PASS
+    verification: |
+      python -m crypto_decision_lab.regime_experiment develop --spec config/experiments/E03-regime-momentum-v1.json
+      (commit afc21f4 di reports/e03/selection.json)
+      python -m crypto_decision_lab.regime_experiment evaluate --spec config/experiments/E03-regime-momentum-v1.json
+      python -m crypto_decision_lab.regime_experiment all --spec config/experiments/E03-regime-momentum-v1.json --output-dir var/e03-run-b
+    expected: "12 configurazioni riproducibili (stessi digest in due esecuzioni); selezione dal solo sviluppo, committata prima della validazione"
+    observed: "23 ledger_sha256 identici tra run A (due fasi) e run B (una fase): 12 configurazioni + 3 baseline sullo sviluppo, selezionata + 3 baseline su validazione e conferma. Selezione g09 in entrambe. selection.json (sha256 57110913...) committato in afc21f4 prima della fase evaluate; specifica preregistrata in 4476553 prima di leggere i dati."
+    evidence: "reports/e03/selection.json, reports/e03/report.json (selection_sha256), git log 4476553 -> afc21f4 -> handoff"
+  - id: CP-E03.2
+    result: PASS
+    verification: "lettura di reports/e03/report.json"
+    expected: "Report per finestra di selezionata e baseline con le metriche dichiarate; esito motivato sui criteri"
+    observed: "Esito REJECTED: in validazione falliscono net_return_pct > 0 (-4,65%) e costi <= 50% del lordo (costi 30,4 contro un tetto di 3,6). Dettagli nella sezione decisions."
+    evidence: "reports/e03/report.json"
+  - id: CP-E03.3
+    result: PASS
+    verification: "riga E03 del backlog"
+    expected: "Se non CANDIDATE, evidenza di chiusura nel backlog"
+    observed: "Nessuna specifica di sessione paper ne criteri S08; esito e numeri nella riga E03"
+    evidence: "Crypto_Decision_Lab_PRD.md, riga E03"
+decisions:
+  - "Sviluppo (2021-02 / 2023-07): 1 configurazione positiva su 12. Selezionata g09 (ingresso 0,05, uscita 0, SMA 720 h): +4,09%, drawdown -15,36%, 56 trade (23,2/anno), lordo +63,2, costi 42,8, tempo in mercato 6,1%. Le configurazioni con SMA 168 h perdono tutte (da -21,2% a -45,4%, lordo negativo); con SMA 720 h vanno da -8,9% a +4,1%. Baseline: momentum_v1 -95,4%, E01 g11 -29,6%, buy and hold -4,0%."
+  - "Validazione (2023-07 / 2025-01): g09 -4,65%, drawdown -10,24%, 41 trade (27,2/anno = 2,9% della baseline), lordo +7,1, costi 30,4, tempo in mercato 8,0%. Passano drawdown, numero di trade e turnover; falliscono rendimento netto > 0 e costi <= 50% del lordo. Baseline: momentum_v1 -85,40%, E01 g11 -20,28%, buy and hold +103,17%."
+  - "Conferma (2025-01 / 2026-10, valutata una volta): g09 +0,61%, drawdown -5,68%, 18 trade, lordo +16,4; passa entrambi i criteri, ma l'esito e deciso dalla validazione. Baseline: momentum_v1 -91,09%, E01 g11 -28,21%, buy and hold -5,35%."
+  - "Esito REJECTED secondo i criteri registrati. Isteresi e filtro di regime funzionano sul piano del rischio (drawdown da -24% a -10% rispetto a E01, turnover ridotto di 34 volte rispetto a momentum_v1, perdita molto piu contenuta), ma la strategia resta in mercato solo il 3-8% del tempo e cattura poco: in validazione, con BTC +103% in buy and hold, il lordo e +7,1 su 500. Il vantaggio lordo di momentum_24h orario resta troppo piccolo per i costi."
+  - "Lettura complessiva E01-E03 (non preregistrata): tre varianti di momentum orario su BTCUSDT bocciate dagli stessi criteri. Continuare a variare soglie e filtri sullo stesso snapshot aumenterebbe il rischio di overfitting (le finestre sono gia state viste tre volte); un passo successivo sensato cambia famiglia di segnale o orizzonte (per esempio barre giornaliere), con una specifica nuova."
+interpretations:
+  - "Specifica muta, regole del runner riprese da E01: spareggio per ordine di griglia (non usato); meno di 15 trade in validazione -> INCONCLUSIVE prima di REJECTED (non e successo)."
+  - "Il file versionato della selezione e reports/e03/selection.json, copia identica di quello scritto dal runner."
+anomalies:
+  - "exit_reasons classifica le uscite delle baseline momentum come 'other' o 'horizon': la classificazione e pensata per regime_momentum; solo descrittiva, non entra nei criteri."
+  - "7 gap riconosciuti nello sviluppo (come in E01); nessuno in validazione e conferma."
+  - "Strategia, runner ed esecuzione sono dello stesso autore (Claude Opus 5.5): serve un revisore non Claude."
+blockers:
+  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E03.0-2 da clone pulito."
+next_action: "Un revisore non Claude ripete CP-E03.0-2 e conferma i 23 ledger_sha256. Nessuna nuova variante di momentum orario sullo stesso snapshot senza una ipotesi diversa e una specifica nuova preregistrata."
