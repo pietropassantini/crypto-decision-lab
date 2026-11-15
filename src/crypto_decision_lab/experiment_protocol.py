@@ -51,6 +51,9 @@ class Adapter:
     exit_cause: Callable[[str], str]             # decision reason of a closing order -> cause label
     turnover_baseline: str = "momentum_v1"
     validate: Callable[[dict], None] | None = None
+    # Minimum closed trades; None keeps the E01 values (30 for selection, 15 for acceptance).
+    selection_min_trades: int | None = None
+    acceptance_min_trades: int | None = None
 
 
 def load_spec(adapter: Adapter, spec_path: str | Path) -> tuple[dict, str]:
@@ -75,6 +78,42 @@ def load_spec(adapter: Adapter, spec_path: str | Path) -> tuple[dict, str]:
     if adapter.validate is not None:
         adapter.validate(spec)
     return spec, _file_sha256(path)
+
+
+def _select(adapter: Adapter, development: dict[str, dict], order: list[str]) -> tuple[str | None, str]:
+    if adapter.selection_min_trades is None:
+        return select(development, order)
+    minimum = int(adapter.selection_min_trades)
+    eligible = [c for c in order if development[c]["closed_trades"] >= minimum]
+    if not eligible:
+        return None, f"no configuration with closed_trades >= {minimum} on development"
+    best = min(eligible, key=lambda c: (-development[c]["net_return_pct"], development[c]["closed_trades"],
+                                        order.index(c)))
+    return best, (f"highest net_return_pct among {len(eligible)} configurations with closed_trades >= {minimum}; "
+                  "ties -> fewer closed trades -> grid order")
+
+
+def _validation_criteria(adapter: Adapter, selected: dict, baseline: dict) -> list[dict]:
+    criteria = validation_criteria(selected, baseline)
+    if adapter.acceptance_min_trades is not None:
+        minimum = int(adapter.acceptance_min_trades)
+        index = next(i for i, c in enumerate(criteria) if c["criterion"].startswith("closed_trades >="))
+        criteria[index] = {"criterion": f"closed_trades >= {minimum}", "observed": selected["closed_trades"],
+                           "threshold": minimum, "passed": selected["closed_trades"] >= minimum}
+    return criteria
+
+
+def _decide(adapter: Adapter, validation: dict, confirmation: dict) -> tuple[str, str]:
+    if adapter.acceptance_min_trades is None:
+        return decide(validation, confirmation)
+    minimum = int(adapter.acceptance_min_trades)
+    if validation["selected"]["closed_trades"] < minimum:
+        return "INCONCLUSIVE", f"validation closed_trades < {minimum}"
+    if not all(c["passed"] for c in validation["criteria"]):
+        return "REJECTED", "at least one validation criterion failed"
+    if not all(c["passed"] for c in confirmation["criteria"]):
+        return "INCONCLUSIVE", "validation passed, at least one confirmation criterion failed"
+    return "CANDIDATE", "all validation and confirmation criteria passed"
 
 
 def baseline_configurations(spec: dict) -> dict[str, dict]:
@@ -180,7 +219,7 @@ def develop(adapter: Adapter, spec_path: str | Path, *, repo_root: str | Path = 
     for name, run_config in baseline_configurations(spec).items():
         baselines[name], ledger = session.run(run_config, window)
         _write_json(out / "ledgers" / f"development-baseline-{name}.json", ledger)
-    selected, rule = select(development, [c["config_id"] for c in configurations])
+    selected, rule = _select(adapter, development, [c["config_id"] for c in configurations])
     selection = {
         "experiment_id": spec["experiment_id"], "spec_sha256": spec_sha, "engine_sha256": engine_digests()[0],
         "selected": selected, "selected_grid": next((c["grid"] for c in configurations
@@ -232,12 +271,13 @@ def evaluate(adapter: Adapter, spec_path: str | Path, *, repo_root: str | Path =
                 baselines[baseline_name], ledger = session.run(run_config, window)
                 _write_json(out / "ledgers" / f"{name}-baseline-{baseline_name}.json", ledger)
             reference = baselines[adapter.turnover_baseline]
-            criteria = validation_criteria(result, reference) if name == "validation" else confirmation_criteria(result)
+            criteria = (_validation_criteria(adapter, result, reference) if name == "validation"
+                        else confirmation_criteria(result))
             report[name] = {"selected": result, "baselines": baselines, "criteria": criteria,
                             "turnover_ratio_vs_baseline": (result["closed_trades_per_year"]
                                                            / reference["closed_trades_per_year"]
                                                            if reference["closed_trades_per_year"] else None)}
-        outcome, reason = decide(report["validation"], report["confirmation"])
+        outcome, reason = _decide(adapter, report["validation"], report["confirmation"])
         report.update(outcome=outcome, outcome_reason=reason)
     report["evaluated_utc"] = _now()
     _write_json(out / "report.json", report)

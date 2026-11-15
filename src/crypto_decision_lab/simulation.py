@@ -132,6 +132,12 @@ def _mean_reversion(**parameters) -> Strategy:
     return MeanReversionStrategy(**parameters)
 
 
+def _daily_trend(**parameters) -> Strategy:
+    from .daily_trend import DailyTrendStrategy
+
+    return DailyTrendStrategy(**parameters)
+
+
 STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "constant": ConstantStrategy, "momentum": MomentumStrategy,
     # S05: decide only at decision points (S02 cutoffs); lazy to avoid import cycles.
@@ -143,6 +149,8 @@ STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "regime_momentum": _regime_momentum,
     # E04: long-only mean reversion in an uptrend; features from mean_reversion.reversion_features.
     "mean_reversion": _mean_reversion,
+    # E05: one decision per UTC day on daily-close features from daily_trend.daily_features.
+    "daily_trend": _daily_trend,
 }
 
 

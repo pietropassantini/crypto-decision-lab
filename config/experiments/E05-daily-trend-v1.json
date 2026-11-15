@@ -1,0 +1,91 @@
+{
+  "schema_version": "cdl.e05.experiment.v1",
+  "experiment_id": "E05-daily-trend-v1",
+  "status": "DRAFT",
+  "registered": null,
+  "origin": {
+    "deviation": "E01-E04 (momentum, breakout patterns, mean reversion on hourly decisions) were all rejected by the cost criterion: the gross result per trade stayed between 0.2 and 0.9 on a 250 position against a round-trip cost of about 0.75 and an acceptance level of about 1.5. E05 keeps the cost model and lengthens the decision horizon to one day, so each trade targets a multi-day move.",
+    "evidence": [
+      "reports/e01/report.json, reports/e03/report.json, reports/e04/report.json: REJECTED",
+      "E02-HANDOFF.yaml: REJECTED",
+      "E04-HANDOFF.yaml decisions: overall reading E01-E04"
+    ],
+    "data_seen_before_registration": "All three windows of BTCUSDT-1h-raw-v1 were already evaluated for four hourly strategies (S08, E01-E04) and for buy and hold (development -4.0%, validation +103.2%, confirmation -5.4%). E03 development results favoured the longer regime average (720h = 30 days over 168h). No daily feature and no daily_trend configuration were evaluated on real data before registration."
+  },
+  "hypothesis": "On daily closes, BTCUSDT trends persist long enough that a long-only rule (enter when the n-day return is above a threshold while the close is above its m-day average; exit when the n-day return turns negative or the close falls under the average) earns per trade well above the round-trip cost (fee 0.10% + slippage 0.05% per side), so the net return is positive out of sample.",
+  "inputs": {
+    "dataset_id": "BTCUSDT-1h-raw-v1",
+    "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+    "strategy": "crypto_decision_lab.daily_trend.DailyTrendStrategy, registered as daily_trend in simulation.STRATEGIES. One decision per UTC day on the 00:00 event; daily close of day D-1 = close of its 23:00 bar; d_momentum = close(D-1)/close(D-1-n) - 1; d_trend = close(D-1)/SMA_m - 1; between decisions the exposure is kept; missing feature on a decision bar -> FLAT. Features computed over the whole admitted frame (days before a window only warm up).",
+    "engine": "crypto_decision_lab.simulation (S03), hourly steps; gaps acknowledged as in crypto_decision_lab.release.evaluate_backtest",
+    "protocol": "crypto_decision_lab.experiment_protocol (two phases, E01 criteria) with the minimum closed trades of this spec",
+    "fixed": {
+      "initial_cash": 500,
+      "hypothesis": {"latency_hours": 0, "horizon_hours": 1000000, "fee_rate": 0.001, "slippage": 0.0005},
+      "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true},
+      "strategy": {"exit_threshold": 0.0, "regime_min": 0.0}
+    },
+    "grid": {
+      "momentum_days": [7, 14, 28],
+      "sma_days": [50, 100],
+      "entry_threshold": [0.0, 0.05]
+    },
+    "windows": {
+      "development": {"start": "2021-02-01 00:00", "end": "2023-07-01 00:00", "use": "selection only"},
+      "validation": {"start": "2023-07-01 00:00", "end": "2025-01-01 00:00", "use": "one evaluation of the selected configuration"},
+      "confirmation": {"start": "2025-01-01 00:00", "end": "2026-10-01 00:00", "use": "one evaluation"}
+    },
+    "forbidden": ["BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"]
+  },
+  "baselines": {
+    "momentum_v1": {
+      "description": "btcusdt-momentum-v1: threshold 0.0, horizon 6 (reference for the turnover criterion, as in E01-E04)",
+      "strategy": {"name": "momentum", "parameters": {"threshold": 0.0}},
+      "hypothesis_override": {"horizon_hours": 6}
+    },
+    "buy_and_hold": {
+      "description": "constant LONG at max_exposure for the whole window (context only, not a criterion)",
+      "strategy": {"name": "constant", "parameters": {"exposure": "LONG"}}
+    }
+  },
+  "metrics": {
+    "primary": "net_return_pct after costs",
+    "secondary": ["closed_trades", "gross result per trade", "costs / gross result", "max_drawdown_mtm_pct",
+                  "time_in_market_pct", "exit_reasons (exit_threshold, regime_off, missing_feature, window)",
+                  "net return versus buy_and_hold (context)"]
+  },
+  "selection": {
+    "min_closed_trades": 12,
+    "rule": "On development only: among configurations with closed_trades >= 12, the highest net_return_pct; ties -> fewer closed trades -> grid order. If none qualifies the outcome is INCONCLUSIVE and validation is not run. selection.json is committed to the repository before validation and confirmation are evaluated."
+  },
+  "acceptance": {
+    "min_closed_trades": 8,
+    "validation": [
+      "net_return_pct > 0",
+      "max_drawdown_mtm_pct >= -25",
+      "closed_trades >= 8",
+      "closed_trades_per_year <= 30% of the momentum_v1 baseline on the same window",
+      "costs <= 50% of the gross result (net + costs)"
+    ],
+    "confirmation": ["net_return_pct > 0", "max_drawdown_mtm_pct >= -25"],
+    "outcomes": {
+      "CANDIDATE": "all validation and confirmation criteria pass -> NOT a release: first a preregistered paper session on new data (Binance Spot testnet klines, at least 12 weeks after registration, S06/S07 runner with the operator's keys) with its own criteria; only then S08 criteria for a new release",
+      "INCONCLUSIVE": "fewer than 8 closed trades on validation, no configuration eligible on development, or validation passes and confirmation fails",
+      "REJECTED": "a validation criterion fails"
+    }
+  },
+  "checkpoints": [
+    {"id": "CP-E05.0", "check": "Feature and strategy causality: tests/test_daily_trend.py green on the run commit (daily close = last bar closed before the 00:00 decision, undefined across missing days, exposure kept between decisions, hysteresis and regime rules, fail closed)."},
+    {"id": "CP-E05.1", "check": "Grid of 12 configurations reproducible (same ledger digests on two runs in separate output directories); selection.json from development only, committed before validation is run."},
+    {"id": "CP-E05.2", "check": "report.json per window for the selected configuration and the baselines with the declared metrics; outcome justified on the criteria."},
+    {"id": "CP-E05.3", "check": "If CANDIDATE: preregistered testnet paper session specification before any S08 step; else closing evidence in the backlog."}
+  ],
+  "threats": [
+    "Few trades: daily decisions give roughly 5-20 closed trades per year, so the minimum numbers are lowered to 12 (selection) and 8 (validation) from the 30 and 15 of E01-E04. Statistical evidence is weaker and one or two large trades can decide the outcome; the report shows the gross result per trade and the comparison with buy and hold for that reason.",
+    "Fifth experiment on the same snapshot: every window was already seen, and it is known that buy and hold gained +103% on the validation window. A long-only trend rule benefits from that by construction; passing validation is weak evidence and the confirmation window (buy and hold -5.4%) is the harder test. The guard is the forward paper session required by the CANDIDATE outcome.",
+    "Grid of 12 on one asset: multiple-comparison bias on development; validation and confirmation are evaluated once.",
+    "No holding horizon and no price stop: the exit is the daily rule only, checked once per day; an intraday crash is absorbed until the next 00:00 decision. max_exposure 0.5 caps the size and the drawdown criterion is the registered guard."
+  ],
+  "command": "python -m crypto_decision_lab.daily_experiment develop --spec config/experiments/E05-daily-trend-v1.json; commit selection.json; python -m crypto_decision_lab.daily_experiment evaluate --spec config/experiments/E05-daily-trend-v1.json",
+  "prompt": "Lavora esclusivamente sull'esperimento E05 del repository Crypto Decision Lab. Leggi Crypto_Decision_Lab_PRD.md e questa specifica; verifica che il suo sha256 (fine riga LF) coincida con quello registrato nella riga E05 del backlog e che status sia PREREGISTERED. Esegui CP-E05.0 (pytest tests/test_daily_trend.py), poi la fase develop, committa selection.json, poi la fase evaluate; ripeti con la fase all in una cartella di output diversa e confronta i ledger_sha256 (CP-E05.1). Non modificare specifica, strategia o runner dopo aver visto un risultato: ogni modifica richiede una nuova versione preregistrata. Riporta per CP-E05.0-3 comando, atteso, osservato ed evidenza nel formato di handoff del PRD e aggiorna la riga E05 del backlog con l'esito."
+}
