@@ -143,8 +143,8 @@
     },
     {
       "id": "PRE-7",
-      "what": "Report tool for the checkpoints: week-12 timeliness from status_log and the edge figures (equity and realized net, realized gross and costs, drawdown, open position, buy and hold on the session's recorded bars) with the outcome from the criteria above. Not written yet: the criteria are prose until the tool exists and has tests.",
-      "status": "missing"
+      "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--as-of ...]. week12: timeliness from status_log, unexplained missing days, fidelity, drawdown, stop rule; outcome OPERATIONAL_PASS / OPERATIONAL_FAIL / FAILED / NOT_DUE. edge: realized net of the closed trades, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result; outcome CONFIRMED / NOT_CONFIRMED with at least 8 closed trades, INCONCLUSIVE after 52 weeks without them, NOT_DUE otherwise; the edge report is written once (p1-edge-report.json) and a second evaluation is refused (exit code 2). Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
+      "status": "implemented, pending review"
     }
   ],
   "evidence_to_record": [
@@ -172,7 +172,11 @@
       ],
       "what_is_kept": "frozen candidate, new data only, at least 12 weeks before any S08 step, own criteria",
       "requires": "explicit approval by the coordinator recorded in approvals before preregistration; E05 itself stays unchanged (its text is part of the preregistered specification)",
-      "approval": null
+      "approval": {
+        "approved_by": "coordinatore (operatore)",
+        "date": "2026-11-15",
+        "note": "DEV-1 approved in chat: forward evidence on real-market public klines with simulated execution; testnet only as an optional order mirror outside the criteria. The specification itself is still DRAFT: it is preregistered separately, after the report tool (PRE-7) and the non-Claude review."
+      }
     }
   ]
 }

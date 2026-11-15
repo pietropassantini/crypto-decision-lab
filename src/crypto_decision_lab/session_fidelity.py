@@ -60,19 +60,25 @@ def recorded_frame(session: PaperSession) -> pd.DataFrame:
     return frame
 
 
-def replay(session: PaperSession) -> tuple[list[dict], int]:
-    """Ledger of the frozen candidate over the session's recorded bars, and the number of events."""
-    config = build_run_config(session.meta["config"])
+def run_engine(session: PaperSession, config: dict | None = None, *, with_features: bool = True
+               ) -> tuple[list[dict], int]:
+    """Ledger of ``config`` (default: the session's frozen candidate) over the session's recorded bars.
+
+    The same bars, gap rule and finishing as the session: the ledger ends with the engine's finish
+    records only if the session itself is COMPLETED.  ``with_features=False`` runs strategies that need
+    nothing beyond ``momentum_24h`` (the buy and hold of the P1 report).
+    """
+    run_config = build_run_config(config or session.meta["config"])
     frame = recorded_frame(session)
     processed = sorted(pd.Timestamp(ts) for (ts,) in session.connection.execute("SELECT timestamp FROM events"))
     if not processed:
         return [], 0
-    spec = session.meta.get("features")
+    spec = session.meta.get("features") if with_features else None
     features = daily_features(frame, spec["momentum_days"], spec["sma_days"]) if spec else None
-    engine = Engine(config)
+    engine = Engine(run_config)
     ledger: list[dict] = []
-    events = market_events(frame, processed[0], processed[-1] + HOUR)
-    events = [e for e in events if pd.Timestamp(e.timestamp) in set(processed)]
+    wanted = set(processed)
+    events = [e for e in market_events(frame, processed[0], processed[-1] + HOUR) if pd.Timestamp(e.timestamp) in wanted]
     for event in events:
         if features is not None:
             event = MarketEvent(event.timestamp, event.open, {**event.features, **features[pd.Timestamp(event.timestamp)]})
@@ -85,6 +91,11 @@ def replay(session: PaperSession) -> tuple[list[dict], int]:
     if session.snapshot()["status"] == "COMPLETED":
         ledger.extend(engine.finish())
     return ledger, len(events)
+
+
+def replay(session: PaperSession) -> tuple[list[dict], int]:
+    """Ledger of the frozen candidate over the session's recorded bars, and the number of events."""
+    return run_engine(session)
 
 
 def check(session_dir: str | Path, *, repo_root: str | Path = ".") -> dict[str, Any]:

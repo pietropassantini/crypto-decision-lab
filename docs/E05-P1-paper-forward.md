@@ -78,11 +78,11 @@ avvenuto, altrimenti INCONCLUSIVE.
 | PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
 | PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: tempestività da `status_log`, cifre di P1.edge (netto equity e realizzato, lordo e costi dei trade chiusi, drawdown, posizione aperta, buy and hold) con l'esito dai criteri | **da scrivere** (con test): finché non esiste, i criteri sono solo testo |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato**, da rivedere: tempestività da `status_log`, cifre di P1.edge (netto equity e realizzato, lordo e costi dei trade chiusi, drawdown, posizione aperta, buy and hold) e l'esito dai criteri |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
-La specifica va preregistrata solo dopo PRE-4 e PRE-7, con DEV-1 approvata, citando il commit del runner.
+La specifica va preregistrata solo dopo PRE-4 e PRE-7, con DEV-1 approvata (fatto il 2026-11-15), citando il commit del runner.
 
 ## Come si lancia (dopo la preregistrazione)
 
@@ -107,6 +107,18 @@ python -m crypto_decision_lab.session_fidelity --session-dir <cartella della ses
 Il controllo esce con codice 0 se il registro coincide con quello del motore sulle barre registrate dalla
 sessione; i valori delle feature si confrontano a 12 cifre significative, perché la somma delle chiusure
 giornaliere ha un ordine diverso e l'ultima cifra può cambiare.
+
+Rapporti dei checkpoint (da lanciare ogni lunedì alle 00:00 UTC; `--as-of` serve solo per provare):
+
+```powershell
+python -m crypto_decision_lab.session_report week12 --session-dir <cartella della sessione>
+python -m crypto_decision_lab.session_report edge --session-dir <cartella della sessione>
+```
+
+`week12` dà `NOT_DUE` prima delle 12 settimane, poi `OPERATIONAL_PASS` o `OPERATIONAL_FAIL` (e `FAILED` se il drawdown
+supera −20% in qualsiasi momento). `edge` dà `NOT_DUE` finché i trade chiusi sono meno di 8 (e non sono passate 52
+settimane), poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi dà `INCONCLUSIVE`. Quando
+decide scrive `p1-edge-report.json` **una volta sola**: una seconda valutazione è rifiutata (codice di uscita 2).
 
 Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 
