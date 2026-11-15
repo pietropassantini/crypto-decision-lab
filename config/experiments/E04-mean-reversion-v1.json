@@ -1,8 +1,8 @@
 {
   "schema_version": "cdl.e04.experiment.v1",
   "experiment_id": "E04-mean-reversion-v1",
-  "status": "DRAFT",
-  "registered": null,
+  "status": "PREREGISTERED",
+  "registered": "2026-11-15",
   "origin": {
     "deviation": "Three momentum variants on BTCUSDT 1h were rejected by the same criteria (S08 baseline, E01, E03): the gross edge of momentum_24h is too small for the costs. E02 (breakout patterns in formation) was rejected too, most exits by invalidation. A different signal family is tested instead of further tuning momentum.",
     "evidence": [
