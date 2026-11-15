@@ -1,0 +1,64 @@
+step_id: E04
+status: IN_REVIEW
+updated_at: "2026-11-15"
+agent_role: Ricerca quantitativa (strategia, protocollo condiviso, runner ed esecuzione dell'esperimento preregistrato)
+agent_model: Claude Fable 5.2 (claude-fable-5-2)
+base_commit: e318fc3c7179d4c88746970fb290c4d6523d25b6
+head_commit: "ecea601 (strategia, protocollo, specifica DRAFT), f11dfe3 (preregistrazione), b32db6a (selezione bloccata prima della validazione), commit di questo handoff"
+review_ref: "branch main; revisore non Claude da assegnare"
+inputs:
+  - "config/experiments/E04-mean-reversion-v1.json, PREREGISTERED dal coordinatore il 2026-11-15, sha256 LF 9aecd5c0a95c4cd358b970baeee759299712a783017646cb1ebcc6d7eb792ddc (uguale alla riga E04 del backlog)"
+  - "BTCUSDT-1h-raw-v1 tramite catalogo, source_manifest_sha256 75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+  - "S03 (VERIFIED): motore, engine_sha256 0da08814bcfd... (include la registrazione di mean_reversion)"
+changed_paths:
+  - "src/crypto_decision_lab/mean_reversion.py - zscore_features, reversion_features, MeanReversionStrategy"
+  - "src/crypto_decision_lab/experiment_protocol.py - protocollo a due fasi condiviso (criteri di E01), usato da E04 in poi"
+  - "src/crypto_decision_lab/reversion_experiment.py - adapter e CLI di E04"
+  - "src/crypto_decision_lab/simulation.py - registrazione lazy di mean_reversion (cambia engine_sha256)"
+  - "tests/test_mean_reversion.py (10 test su dati sintetici)"
+  - "config/experiments/E04-mean-reversion-v1.json, docs/E04-mean-reversion.md, reports/e04/{preregistration,selection,report,manifest}.json, Crypto_Decision_Lab_PRD.md (riga E04), E04-HANDOFF.yaml"
+checkpoints:
+  - id: CP-E04.0
+    result: PASS
+    verification: "python -m pytest tests/test_mean_reversion.py -q -p no:cacheprovider"
+    expected: "z-score da barre chiuse prima dell'evento, indefinito dopo un gap, ingresso sull'attraversamento, uscita alla media, fail closed"
+    observed: "10 passed sul commit di esecuzione; suite completa 576 passed su ecea601"
+    evidence: "tests/test_mean_reversion.py"
+  - id: CP-E04.1
+    result: PASS
+    verification: |
+      python -m crypto_decision_lab.reversion_experiment develop --spec config/experiments/E04-mean-reversion-v1.json
+      (commit b32db6a di reports/e04/selection.json)
+      python -m crypto_decision_lab.reversion_experiment evaluate --spec config/experiments/E04-mean-reversion-v1.json
+      python -m crypto_decision_lab.reversion_experiment all --spec config/experiments/E04-mean-reversion-v1.json --output-dir var/e04-run-b
+    expected: "12 configurazioni riproducibili (stessi digest in due esecuzioni); selezione dal solo sviluppo, committata prima della validazione"
+    observed: "20 ledger_sha256 identici tra run A (due fasi) e run B (una fase): 12 configurazioni + 2 baseline sullo sviluppo, selezionata + 2 baseline su validazione e conferma. Selezione g05 in entrambe. selection.json (sha256 40976376...) committato in b32db6a prima della fase evaluate; specifica preregistrata in f11dfe3 prima di leggere i dati."
+    evidence: "reports/e04/selection.json, reports/e04/report.json (selection_sha256), git log f11dfe3 -> b32db6a -> handoff"
+  - id: CP-E04.2
+    result: PASS
+    verification: "lettura di reports/e04/report.json"
+    expected: "Report per finestra di selezionata e baseline con le metriche dichiarate; esito motivato sui criteri"
+    observed: "Esito REJECTED: in validazione falliscono net_return_pct > 0 (-7,21%) e costi <= 50% del lordo (costi 97,5 contro un tetto di 30,7). Dettagli nella sezione decisions."
+    evidence: "reports/e04/report.json"
+  - id: CP-E04.3
+    result: PASS
+    verification: "riga E04 del backlog"
+    expected: "Se non CANDIDATE, evidenza di chiusura nel backlog"
+    observed: "Nessuna specifica di sessione paper ne criteri S08; esito e numeri nella riga E04"
+    evidence: "Crypto_Decision_Lab_PRD.md, riga E04"
+decisions:
+  - "Sviluppo (2021-02 / 2023-07): tutte le 12 configurazioni negative, da -6,3% a -29,0%; 10 con almeno 30 trade. Selezionata g05 (entry_z 2,0, finestra 24 h, orizzonte 120 h): -6,27%, drawdown -15,55%, 93 trade (38,6/anno), lordo +36,6 (0,39 per trade), costi 68,0, 59% di trade vincenti. Le configurazioni con finestra 72 h hanno lordo fortemente negativo (da -81 a -120) e molte uscite a orizzonte: il prezzo non torna alla media a 72 h in tempo. Baseline: momentum_v1 -95,4%, buy and hold -4,0%."
+  - "Validazione (2023-07 / 2025-01): g05 -7,21%, drawdown -13,40%, 136 trade (90,3/anno = 9,6% della baseline), lordo +61,4 (0,45 per trade), costi 97,5, 62% di trade vincenti, tutte le uscite per ritorno alla media. Passano drawdown, numero di trade e turnover; falliscono rendimento netto > 0 e costi <= 50% del lordo. Baseline: momentum_v1 -85,40%, buy and hold +103,17%."
+  - "Conferma (2025-01 / 2026-10, valutata una volta): g05 -19,63%, drawdown -20,08%, 111 trade, lordo -22,7; fallisce net_return_pct > 0. Baseline: momentum_v1 -91,09%, buy and hold -5,35%."
+  - "Esito REJECTED secondo i criteri registrati. Il segnale esiste ma e troppo piccolo: il prezzo torna davvero alla media (59-62% di trade vincenti, quasi tutte le uscite per reversione) e il lordo e positivo in sviluppo e validazione, ma vale 0,39-0,45 per trade contro un costo di circa 0,72 per trade (0,3% andata e ritorno su una posizione di 250). In conferma anche il lordo e negativo."
+  - "Lettura complessiva E01-E04 (non preregistrata): quattro strategie di tre famiglie diverse (momentum, pattern di breakout, mean reversion) sulle barre orarie di BTCUSDT sono bocciate dallo stesso criterio. Il lordo medio per trade resta tra 0,2 e 0,9 contro una soglia di pareggio di circa 0,75 e una soglia di accettazione di circa 1,5. Con costi di 0,3% a round trip l'orizzonte orario non lascia margine: i passi successivi sensati cambiano il rapporto tra movimento atteso e costo (barre giornaliere o di 4 ore, ordini limite per ridurre il costo, un altro mercato), non un altro segnale sullo stesso orizzonte."
+interpretations:
+  - "Regole del protocollo condiviso riprese da E01: spareggio per ordine di griglia (non usato: g05 batte g04 per rendimento); meno di 15 trade in validazione -> INCONCLUSIVE prima di REJECTED (non e successo)."
+  - "Il file versionato della selezione e reports/e04/selection.json, copia identica di quello scritto dal runner."
+anomalies:
+  - "exit_reasons classifica le uscite della baseline momentum come 'other' o 'horizon' (classificazione pensata per mean_reversion); solo descrittiva."
+  - "2 uscite 'missing_feature' per configurazione in sviluppo: posizioni chiuse dopo un gap, quando lo z-score non e definito (comportamento dichiarato, fail closed)."
+  - "Strategia, protocollo ed esecuzione sono dello stesso autore (Claude Fable 5.2); il protocollo condiviso e nuovo e va rivisto insieme all'esperimento da un revisore non Claude."
+blockers:
+  - "Nessuno per la chiusura; un revisore non Claude ripete CP-E04.0-2 da clone pulito."
+next_action: "Un revisore non Claude ripete CP-E04.0-2 e conferma i 20 ledger_sha256. Prima di un E05 il coordinatore decide la direzione: orizzonte piu lungo, costi piu bassi o altro mercato."
