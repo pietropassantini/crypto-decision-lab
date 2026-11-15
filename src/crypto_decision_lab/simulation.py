@@ -126,6 +126,12 @@ def _regime_momentum(**parameters) -> Strategy:
     return RegimeMomentumStrategy(**parameters)
 
 
+def _mean_reversion(**parameters) -> Strategy:
+    from .mean_reversion import MeanReversionStrategy
+
+    return MeanReversionStrategy(**parameters)
+
+
 STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "constant": ConstantStrategy, "momentum": MomentumStrategy,
     # S05: decide only at decision points (S02 cutoffs); lazy to avoid import cycles.
@@ -135,6 +141,8 @@ STRATEGIES: dict[str, Callable[..., Strategy]] = {
     "pattern": _pattern,
     # E03: momentum with hysteresis and trend-regime filter; trend_ratio from regime_momentum.trend_features.
     "regime_momentum": _regime_momentum,
+    # E04: long-only mean reversion in an uptrend; features from mean_reversion.reversion_features.
+    "mean_reversion": _mean_reversion,
 }
 
 
