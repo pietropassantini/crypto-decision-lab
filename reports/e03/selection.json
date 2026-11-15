@@ -1,0 +1,434 @@
+{
+  "baselines": {
+    "buy_and_hold": {
+      "closed_trades": 0,
+      "closed_trades_per_year": 0.0,
+      "costs": 0.3745629682661087,
+      "costs_share_of_gross": null,
+      "exit_causes": {},
+      "exit_reasons": {},
+      "gaps_acknowledged": 7,
+      "gross_pnl": -19.735083755001593,
+      "ledger_sha256": "747511fa6c40a93f6448b811acc15a7559c74cff6b8ccd4a0646fd7c1e0b505d",
+      "max_drawdown_mtm_pct": -52.06137105770341,
+      "missing_hours": 14,
+      "net_pnl": -20.1096467232677,
+      "net_return_pct": -4.021929344653541,
+      "position_open": true,
+      "time_in_market_pct": 100.0,
+      "win_rate_pct": null
+    },
+    "e01_selected": {
+      "closed_trades": 468,
+      "closed_trades_per_year": 194.2465909090909,
+      "costs": 294.5561068058833,
+      "costs_share_of_gross": 2.0128870518900057,
+      "exit_causes": {
+        "horizon": 1,
+        "strategy": 467
+      },
+      "exit_reasons": {
+        "horizon": 1,
+        "other": 467
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 146.33513913724522,
+      "ledger_sha256": "4e9b041b76a4d3dc8058805e4b535d9944b52e9ccbedce6d8b22d1c300d79842",
+      "max_drawdown_mtm_pct": -42.11891784350645,
+      "missing_hours": 14,
+      "net_pnl": -148.22096766863808,
+      "net_return_pct": -29.644193533727613,
+      "position_open": false,
+      "time_in_market_pct": 15.114185539656969,
+      "win_rate_pct": 26.923076923076923
+    },
+    "momentum_v1": {
+      "closed_trades": 2148,
+      "closed_trades_per_year": 891.5420454545455,
+      "costs": 532.6923144981572,
+      "costs_share_of_gross": 9.53589552769285,
+      "exit_causes": {
+        "horizon": 1216,
+        "strategy": 932
+      },
+      "exit_reasons": {
+        "horizon": 1216,
+        "other": 932
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 55.86180269605353,
+      "ledger_sha256": "2c361226174cfc533b8a69d9b188b23bcdb1911148aebc1e6912e02dcf627e36",
+      "max_drawdown_mtm_pct": -95.86048446646485,
+      "missing_hours": 14,
+      "net_pnl": -476.8305118021037,
+      "net_return_pct": -95.36610236042074,
+      "position_open": true,
+      "time_in_market_pct": 44.79294987207429,
+      "win_rate_pct": 28.864059590316575
+    }
+  },
+  "configurations": {
+    "g00": {
+      "entry_threshold": 0.02,
+      "exit_threshold": 0.0,
+      "sma_hours": 168
+    },
+    "g01": {
+      "entry_threshold": 0.02,
+      "exit_threshold": 0.0,
+      "sma_hours": 720
+    },
+    "g02": {
+      "entry_threshold": 0.02,
+      "exit_threshold": -0.02,
+      "sma_hours": 168
+    },
+    "g03": {
+      "entry_threshold": 0.02,
+      "exit_threshold": -0.02,
+      "sma_hours": 720
+    },
+    "g04": {
+      "entry_threshold": 0.03,
+      "exit_threshold": 0.0,
+      "sma_hours": 168
+    },
+    "g05": {
+      "entry_threshold": 0.03,
+      "exit_threshold": 0.0,
+      "sma_hours": 720
+    },
+    "g06": {
+      "entry_threshold": 0.03,
+      "exit_threshold": -0.02,
+      "sma_hours": 168
+    },
+    "g07": {
+      "entry_threshold": 0.03,
+      "exit_threshold": -0.02,
+      "sma_hours": 720
+    },
+    "g08": {
+      "entry_threshold": 0.05,
+      "exit_threshold": 0.0,
+      "sma_hours": 168
+    },
+    "g09": {
+      "entry_threshold": 0.05,
+      "exit_threshold": 0.0,
+      "sma_hours": 720
+    },
+    "g10": {
+      "entry_threshold": 0.05,
+      "exit_threshold": -0.02,
+      "sma_hours": 168
+    },
+    "g11": {
+      "entry_threshold": 0.05,
+      "exit_threshold": -0.02,
+      "sma_hours": 720
+    }
+  },
+  "development": {
+    "g00": {
+      "closed_trades": 261,
+      "closed_trades_per_year": 108.32982954545454,
+      "costs": 153.06058927979802,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 261
+      },
+      "exit_reasons": {
+        "exit_threshold": 149,
+        "missing_feature": 2,
+        "regime_off": 110
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -26.61522092191666,
+      "ledger_sha256": "eb0855fd213f01e66645995c8312565b7b9af53a9003fe7a92166d6cd3aa1bf2",
+      "max_drawdown_mtm_pct": -45.59398604207156,
+      "missing_hours": 14,
+      "net_pnl": -179.67581020171468,
+      "net_return_pct": -35.93516204034294,
+      "position_open": false,
+      "time_in_market_pct": 22.30171515208945,
+      "win_rate_pct": 25.28735632183908
+    },
+    "g01": {
+      "closed_trades": 127,
+      "closed_trades_per_year": 52.712215909090915,
+      "costs": 95.4448418144609,
+      "costs_share_of_gross": 1.2133874483750149,
+      "exit_causes": {
+        "strategy": 127
+      },
+      "exit_reasons": {
+        "exit_threshold": 90,
+        "missing_feature": 1,
+        "regime_off": 36
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 78.65982291335051,
+      "ledger_sha256": "c4e4fceafab1f004e68b9bef9196720fca03468b8068e17f90f386395dbf43b5",
+      "max_drawdown_mtm_pct": -20.214687943784714,
+      "missing_hours": 14,
+      "net_pnl": -16.78501890111039,
+      "net_return_pct": -3.3570037802220787,
+      "position_open": false,
+      "time_in_market_pct": 12.129252345304653,
+      "win_rate_pct": 27.559055118110237
+    },
+    "g02": {
+      "closed_trades": 221,
+      "closed_trades_per_year": 91.72755681818182,
+      "costs": 121.01686906990159,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 221
+      },
+      "exit_reasons": {
+        "exit_threshold": 75,
+        "missing_feature": 2,
+        "regime_off": 144
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -105.9307738859614,
+      "ledger_sha256": "ba566aefeb97c60c1c676f8ed271cdba8730ad225493f562b6d2c24a9c9908a1",
+      "max_drawdown_mtm_pct": -53.21198880086055,
+      "missing_hours": 14,
+      "net_pnl": -226.947642955863,
+      "net_return_pct": -45.3895285911726,
+      "position_open": false,
+      "time_in_market_pct": 31.450772292239176,
+      "win_rate_pct": 19.457013574660632
+    },
+    "g03": {
+      "closed_trades": 105,
+      "closed_trades_per_year": 43.580965909090914,
+      "costs": 79.34270444689466,
+      "costs_share_of_gross": 2.2860861944980946,
+      "exit_causes": {
+        "strategy": 105
+      },
+      "exit_reasons": {
+        "exit_threshold": 61,
+        "missing_feature": 1,
+        "regime_off": 43
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 34.70678605113321,
+      "ledger_sha256": "954633306bf31d0b8b0ff2710f2484521c8940bd36adbabfc57d7dbacc08b9d2",
+      "max_drawdown_mtm_pct": -25.8466475588779,
+      "missing_hours": 14,
+      "net_pnl": -44.63591839576145,
+      "net_return_pct": -8.927183679152295,
+      "position_open": true,
+      "time_in_market_pct": 18.345494172273288,
+      "win_rate_pct": 22.857142857142858
+    },
+    "g04": {
+      "closed_trades": 192,
+      "closed_trades_per_year": 79.69090909090909,
+      "costs": 118.23091925833472,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 192
+      },
+      "exit_reasons": {
+        "exit_threshold": 115,
+        "missing_feature": 2,
+        "regime_off": 75
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -34.97626484748724,
+      "ledger_sha256": "3ec50645c1f80db78f51bda4696a2023a559bd488e52b0862f33541b7efbbb8a",
+      "max_drawdown_mtm_pct": -42.944916858067586,
+      "missing_hours": 14,
+      "net_pnl": -153.20718410582197,
+      "net_return_pct": -30.64143682116439,
+      "position_open": false,
+      "time_in_market_pct": 18.118070690798824,
+      "win_rate_pct": 28.125
+    },
+    "g05": {
+      "closed_trades": 94,
+      "closed_trades_per_year": 39.01534090909091,
+      "costs": 71.61622592025088,
+      "costs_share_of_gross": 1.186589014146915,
+      "exit_causes": {
+        "strategy": 94
+      },
+      "exit_reasons": {
+        "exit_threshold": 67,
+        "missing_feature": 1,
+        "regime_off": 26
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 60.35470164177997,
+      "ledger_sha256": "b6691c66611c1835fab930ec785161cbc7da64f20c2f0bd792a500717dc9887c",
+      "max_drawdown_mtm_pct": -19.79200695774167,
+      "missing_hours": 14,
+      "net_pnl": -11.261524278470915,
+      "net_return_pct": -2.252304855694187,
+      "position_open": false,
+      "time_in_market_pct": 9.59916611390126,
+      "win_rate_pct": 30.851063829787233
+    },
+    "g06": {
+      "closed_trades": 171,
+      "closed_trades_per_year": 70.97471590909092,
+      "costs": 99.34657677944281,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 171
+      },
+      "exit_reasons": {
+        "exit_threshold": 70,
+        "missing_feature": 2,
+        "regime_off": 99
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -103.32197971819207,
+      "ledger_sha256": "ee396ea167b3ffdcb82971c811a8b8106dcce77478b7c1fb7c5be0ebfbf870c2",
+      "max_drawdown_mtm_pct": -53.11077812511652,
+      "missing_hours": 14,
+      "net_pnl": -202.66855649763488,
+      "net_return_pct": -40.53371129952698,
+      "position_open": false,
+      "time_in_market_pct": 26.461669667393156,
+      "win_rate_pct": 21.637426900584796
+    },
+    "g07": {
+      "closed_trades": 83,
+      "closed_trades_per_year": 34.44971590909091,
+      "costs": 62.86687133676445,
+      "costs_share_of_gross": 2.3777873793668163,
+      "exit_causes": {
+        "strategy": 83
+      },
+      "exit_reasons": {
+        "exit_threshold": 51,
+        "missing_feature": 1,
+        "regime_off": 31
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 26.439231649679854,
+      "ledger_sha256": "8f724a87671ddbfd5196190d3abaf09ef7ebe0001ec17ed2f64b5c7ae26a0968",
+      "max_drawdown_mtm_pct": -26.020395714817155,
+      "missing_hours": 14,
+      "net_pnl": -36.42763968708459,
+      "net_return_pct": -7.285527937416914,
+      "position_open": false,
+      "time_in_market_pct": 14.810954231024354,
+      "win_rate_pct": 25.301204819277107
+    },
+    "g08": {
+      "closed_trades": 106,
+      "closed_trades_per_year": 43.99602272727273,
+      "costs": 67.21638657933495,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 106
+      },
+      "exit_reasons": {
+        "exit_threshold": 71,
+        "missing_feature": 1,
+        "regime_off": 34
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -38.71069533313663,
+      "ledger_sha256": "5ab1ed1e70f31493cb4c15c9bf4662279a94d13db1f8449e30d5011d0380e32a",
+      "max_drawdown_mtm_pct": -36.134167739792545,
+      "missing_hours": 14,
+      "net_pnl": -105.92708191247158,
+      "net_return_pct": -21.185416382494317,
+      "position_open": false,
+      "time_in_market_pct": 11.238510376196341,
+      "win_rate_pct": 29.245283018867923
+    },
+    "g09": {
+      "closed_trades": 56,
+      "closed_trades_per_year": 23.24318181818182,
+      "costs": 42.799969151149824,
+      "costs_share_of_gross": 0.6767146847245683,
+      "exit_causes": {
+        "strategy": 56
+      },
+      "exit_reasons": {
+        "exit_threshold": 38,
+        "missing_feature": 1,
+        "regime_off": 17
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 63.246697784561846,
+      "ledger_sha256": "15c76769747af386f8c221f30917e644d28e53331c9031c6d3c73819978720dc",
+      "max_drawdown_mtm_pct": -15.363199119401072,
+      "missing_hours": 14,
+      "net_pnl": 20.44672863341202,
+      "net_return_pct": 4.089345726682403,
+      "position_open": false,
+      "time_in_market_pct": 6.050412205060172,
+      "win_rate_pct": 30.357142857142858
+    },
+    "g10": {
+      "closed_trades": 99,
+      "closed_trades_per_year": 41.090625,
+      "costs": 63.653644245548094,
+      "costs_share_of_gross": null,
+      "exit_causes": {
+        "strategy": 99
+      },
+      "exit_reasons": {
+        "exit_threshold": 51,
+        "missing_feature": 1,
+        "regime_off": 47
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": -72.25436114563814,
+      "ledger_sha256": "2dbfbcd02b46824d42cde0862ec1859760b02b71ea0c2d1847ba1487a0cd4902",
+      "max_drawdown_mtm_pct": -42.45855992395572,
+      "missing_hours": 14,
+      "net_pnl": -135.90800539118624,
+      "net_return_pct": -27.18160107823725,
+      "position_open": false,
+      "time_in_market_pct": 17.596891879086517,
+      "win_rate_pct": 25.252525252525253
+    },
+    "g11": {
+      "closed_trades": 53,
+      "closed_trades_per_year": 21.998011363636365,
+      "costs": 40.508436548413684,
+      "costs_share_of_gross": 1.1246022449537552,
+      "exit_causes": {
+        "strategy": 53
+      },
+      "exit_reasons": {
+        "exit_threshold": 33,
+        "missing_feature": 1,
+        "regime_off": 19
+      },
+      "gaps_acknowledged": 7,
+      "gross_pnl": 36.02023446972528,
+      "ledger_sha256": "49e781d8c6002d2597b7370ce92c06835f23d19ec2bb7516192f09befe109cd1",
+      "max_drawdown_mtm_pct": -21.74219188435459,
+      "missing_hours": 14,
+      "net_pnl": -4.488202078688403,
+      "net_return_pct": -0.8976404157376772,
+      "position_open": false,
+      "time_in_market_pct": 9.509144319150952,
+      "win_rate_pct": 28.30188679245283
+    }
+  },
+  "engine_sha256": "9175ff68f28490c203cacebd0897832d173e0a5f689fa4c7af831165fd6161fd",
+  "experiment_id": "E03-regime-momentum-v1",
+  "locked_utc": "2026-11-15T11:09:17Z",
+  "note": "written before validation and confirmation are evaluated",
+  "rule": "highest net_return_pct among 12 configurations with closed_trades >= 30; ties -> fewer closed trades -> grid order",
+  "selected": "g09",
+  "selected_grid": {
+    "entry_threshold": 0.05,
+    "exit_threshold": 0.0,
+    "sma_hours": 720
+  },
+  "spec_sha256": "41ddad98e6ee209a3b458bb4262c56910fb722b6f85838ea5ecec5be0af65b92"
+}

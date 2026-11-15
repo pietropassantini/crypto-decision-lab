@@ -1,0 +1,175 @@
+{
+  "experiment_id": "E03-regime-momentum-v1",
+  "locked_utc": "2026-11-15T11:07:19Z",
+  "note": "written before reading data",
+  "spec": {
+    "acceptance": {
+      "confirmation": [
+        "net_return_pct > 0",
+        "max_drawdown_mtm_pct >= -25"
+      ],
+      "outcomes": {
+        "CANDIDATE": "all validation and confirmation criteria pass -> NOT a release: first a preregistered paper session on new data (Binance Spot testnet klines, at least 8 weeks after registration, S06/S07 runner with the operator's keys) with its own criteria; only then S08 criteria for a new release",
+        "INCONCLUSIVE": "fewer than 15 closed trades on validation, no configuration eligible on development, or validation passes and confirmation fails",
+        "REJECTED": "a validation criterion fails"
+      },
+      "validation": [
+        "net_return_pct > 0",
+        "max_drawdown_mtm_pct >= -25",
+        "closed_trades >= 15",
+        "closed_trades_per_year <= 30% of the momentum_v1 baseline on the same window",
+        "costs <= 50% of the gross result (net + costs)"
+      ]
+    },
+    "baselines": {
+      "buy_and_hold": {
+        "description": "constant LONG at max_exposure for the whole window (context only)",
+        "hypothesis_override": {
+          "horizon_hours": 1000000
+        },
+        "strategy": {
+          "name": "constant",
+          "parameters": {
+            "exposure": "LONG"
+          }
+        }
+      },
+      "e01_selected": {
+        "description": "E01 selected configuration g11: threshold 0.03, horizon 48 (context: does E03 improve on E01?)",
+        "hypothesis_override": {
+          "horizon_hours": 48
+        },
+        "strategy": {
+          "name": "momentum",
+          "parameters": {
+            "threshold": 0.03
+          }
+        }
+      },
+      "momentum_v1": {
+        "description": "btcusdt-momentum-v1: threshold 0.0, horizon 6 (reference for the turnover criterion, as in E01)",
+        "hypothesis_override": {
+          "horizon_hours": 6
+        },
+        "strategy": {
+          "name": "momentum",
+          "parameters": {
+            "threshold": 0.0
+          }
+        }
+      }
+    },
+    "checkpoints": [
+      {
+        "check": "Feature and strategy causality: tests/test_regime_momentum.py green on the run commit (trend_ratio from closes strictly before the event, undefined across gaps, hysteresis and regime rules, fail closed).",
+        "id": "CP-E03.0"
+      },
+      {
+        "check": "Grid of 12 configurations reproducible (same ledger digests on two runs in separate output directories); selection.json from development only, committed before validation is run.",
+        "id": "CP-E03.1"
+      },
+      {
+        "check": "report.json per window for the selected configuration and the three baselines with the declared metrics; outcome justified on the criteria.",
+        "id": "CP-E03.2"
+      },
+      {
+        "check": "If CANDIDATE: preregistered testnet paper session specification before any S08 step; else closing evidence in the backlog.",
+        "id": "CP-E03.3"
+      }
+    ],
+    "command": "python -m crypto_decision_lab.regime_experiment develop --spec config/experiments/E03-regime-momentum-v1.json; commit selection.json; python -m crypto_decision_lab.regime_experiment evaluate --spec config/experiments/E03-regime-momentum-v1.json",
+    "experiment_id": "E03-regime-momentum-v1",
+    "hypothesis": "Hysteresis (enter when momentum_24h > entry_threshold, stay long while momentum_24h >= exit_threshold, exit_threshold <= entry_threshold) removes the round trips caused by the signal oscillating around a single threshold, and a trend-regime filter (no long position while close/SMA_n - 1 <= 0) avoids entries against the prevailing trend. Together they keep the net return after costs (fee 0.10% + slippage 0.05% per side) positive out of sample, with the same acceptance criteria as E01.",
+    "inputs": {
+      "dataset_id": "BTCUSDT-1h-raw-v1",
+      "engine": "crypto_decision_lab.simulation (S03); gaps acknowledged as in crypto_decision_lab.release.evaluate_backtest",
+      "fixed": {
+        "hypothesis": {
+          "fee_rate": 0.001,
+          "horizon_hours": 720,
+          "latency_hours": 0,
+          "slippage": 0.0005
+        },
+        "initial_cash": 500,
+        "risk": {
+          "allow_open": true,
+          "max_exposure": 0.5,
+          "min_notional": 10
+        },
+        "strategy": {
+          "feature": "momentum_24h",
+          "regime_feature": "trend_ratio",
+          "regime_min": 0.0
+        }
+      },
+      "forbidden": [
+        "BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"
+      ],
+      "grid": {
+        "entry_threshold": [
+          0.02,
+          0.03,
+          0.05
+        ],
+        "exit_threshold": [
+          0.0,
+          -0.02
+        ],
+        "sma_hours": [
+          168,
+          720
+        ]
+      },
+      "source_manifest_sha256": "75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8",
+      "strategy": "crypto_decision_lab.regime_momentum.RegimeMomentumStrategy, registered as regime_momentum in simulation.STRATEGIES; trend_ratio = close(t-1h)/SMA_n(t-1h) - 1 on the hourly calendar, computed over the whole admitted frame (bars before a window only warm up the SMA); any missing feature -> FLAT (fail closed)",
+      "windows": {
+        "confirmation": {
+          "end": "2026-10-01 00:00",
+          "start": "2025-01-01 00:00",
+          "use": "one evaluation"
+        },
+        "development": {
+          "end": "2023-07-01 00:00",
+          "start": "2021-02-01 00:00",
+          "use": "selection only"
+        },
+        "validation": {
+          "end": "2025-01-01 00:00",
+          "start": "2023-07-01 00:00",
+          "use": "one evaluation of the selected configuration"
+        }
+      }
+    },
+    "metrics": {
+      "primary": "net_return_pct after costs",
+      "secondary": [
+        "closed_trades_per_year (turnover)",
+        "costs / gross result",
+        "max_drawdown_mtm_pct",
+        "closed_trades",
+        "exit_reasons (exit_threshold, regime_off, missing_feature, horizon, window)",
+        "time_in_market_pct"
+      ]
+    },
+    "origin": {
+      "data_seen_before_registration": "All three windows of BTCUSDT-1h-raw-v1 were already evaluated for momentum variants by S08 (baseline), E01 (12 configurations on development, selected one on validation and confirmation) and E02 (pattern strategy). E01 development results informed this grid (entry thresholds from 0.02 up). No E03 configuration and no trend_ratio feature were evaluated on real data before registration.",
+      "deviation": "E01 REJECTED (reports/e01/report.json): the best turnover-reduced momentum (threshold 0.03, horizon 48h) still lost -20.3% on validation; almost every exit was the signal crossing back under the entry threshold, the holding horizon never bound (1 horizon exit per window).",
+      "evidence": [
+        "E01-HANDOFF.yaml decisions: turnover cut about 7x versus btcusdt-momentum-v1, gross edge too small for the costs; confirmation gross negative",
+        "S08 release card btcusdt-momentum-v1: -96% net versus +40.5% gross (diagnostic)"
+      ]
+    },
+    "prompt": "Lavora esclusivamente sull'esperimento E03 del repository Crypto Decision Lab. Leggi Crypto_Decision_Lab_PRD.md e questa specifica; verifica che il suo sha256 (fine riga LF) coincida con quello registrato nella riga E03 del backlog e che status sia PREREGISTERED. Esegui CP-E03.0 (pytest tests/test_regime_momentum.py), poi la fase develop, committa selection.json, poi la fase evaluate; ripeti con la fase all in una cartella di output diversa e confronta i ledger_sha256 (CP-E03.1). Non modificare specifica, strategia o runner dopo aver visto un risultato: ogni modifica richiede una nuova versione preregistrata. Riporta per CP-E03.0-3 comando, atteso, osservato ed evidenza nel formato di handoff del PRD e aggiorna la riga E03 del backlog con l'esito.",
+    "registered": "2026-11-15",
+    "schema_version": "cdl.e03.experiment.v1",
+    "selection_rule": "On development only: among configurations with closed_trades >= 30, the highest net_return_pct; ties -> fewer closed trades -> grid order. If none qualifies the outcome is INCONCLUSIVE and validation is not run. selection.json is committed to the repository before validation and confirmation are evaluated.",
+    "status": "PREREGISTERED",
+    "threats": [
+      "Heavy reuse of the same snapshot: all windows were already seen for momentum variants (S08, E01) and E01 development results shaped the grid. A CANDIDATE here is weak evidence; the guard is the forward paper session on new data required by the CANDIDATE outcome.",
+      "Grid of 12 configurations on one asset and one timeframe: multiple-comparison bias on development; validation and confirmation are evaluated once.",
+      "The regime filter is long-only: in bear regimes the strategy is flat, it does not profit from declines; buy_and_hold is reported for context.",
+      "trend_ratio is undefined for up to sma_hours after each gap: the strategy is flat during those hours."
+    ]
+  },
+  "spec_sha256": "41ddad98e6ee209a3b458bb4262c56910fb722b6f85838ea5ecec5be0af65b92"
+}
