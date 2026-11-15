@@ -1,0 +1,30 @@
+{
+  "created_utc": "2026-11-15T12:17:22Z",
+  "experiment_id": "E05-daily-trend-v1",
+  "files": {
+    "ledgers/confirmation-baseline-buy_and_hold.json": "e80f432ca2788365127e4b07ea9047b70782f7352fa4ac1e34da2dc6f601f267",
+    "ledgers/confirmation-baseline-momentum_v1.json": "17a02e8e14ef4359751f999e687f408d476fe76dc6580b1bd7a962c0a5b3768f",
+    "ledgers/confirmation-g10.json": "7389e453dac37ee30f082d7a3a4c01083b7d473a7afcfe013307fba502385195",
+    "ledgers/development-baseline-buy_and_hold.json": "a834ad077b1d8e56132b734195d7efd5c9eb4e4b4ac6c867b13129da4b6dad48",
+    "ledgers/development-baseline-momentum_v1.json": "38d64af4f341f66caab8a3e93a7a727be549203f6f9893791985d063dd2272a1",
+    "ledgers/development-g00.json": "b2d96e7656d7d9c6a95f8c4614895d88b6f432d94fe1a5308a583ac69abee171",
+    "ledgers/development-g01.json": "455fdefb584aaff66a7f477b642fa330910b236e56595ace4d1fa0f630a315b7",
+    "ledgers/development-g02.json": "9d5184fbe27ec2b9c106ce7afec8ef01a9e29da11a30108ceabc3e44140564ff",
+    "ledgers/development-g03.json": "5d0286184a37a4e0dc263ecb14d7044aa6881dfd3f72f5c8f3929982c68a5d38",
+    "ledgers/development-g04.json": "9e4ebfe6d432c7e728040e04154849cc1fe1313bb022968bdad34dd588d3bceb",
+    "ledgers/development-g05.json": "ee2ea4238de2f1436a159c69547bcad9f769f7a2fcf1f37e7af2f190be8629a6",
+    "ledgers/development-g06.json": "e04afc06c87aa77fed87cbd13e2e6bbc5955ac4a95a2a06ec0b1e0da17ea52f0",
+    "ledgers/development-g07.json": "c1e90fccac4dfb6b09ab9db7d5dea1ec5a4949090ba664efab62159567566c9d",
+    "ledgers/development-g08.json": "cf1efb9dc2f3ac01ac0ae6d7f92dcf74a6b58dfd3d469c8d0311198427246a8a",
+    "ledgers/development-g09.json": "0c1b48ae74564b28c61245c927af94ed1e32578c3e451cb7937b1e643fb0a8aa",
+    "ledgers/development-g10.json": "8d720f2b79ea4f24c3d8ce04881105e07a5a39d8dcf7144bca61a43df58edca5",
+    "ledgers/development-g11.json": "17a1d166368934057c4e87512826e5d9d552150925c054227e6d29daf7abb94a",
+    "ledgers/validation-baseline-buy_and_hold.json": "c97b569de0d1945239fe9bc5ecf301a994602e63a5d37fbaf2ed35c1ac899ecd",
+    "ledgers/validation-baseline-momentum_v1.json": "eaf3578e93e6b4a284c7221e975369b9057c42ea7d3fd76fcdcd38ddbb892977",
+    "ledgers/validation-g10.json": "e001fb3ce6b48d7f3f0a9233b3198c3025dbd1c8c36f363fa0f6655b9fc557a4",
+    "preregistration.json": "c4190f460e4fe9d03eca71c2c6b710b9e15f8cd2bfc015a4f7fe3e901c257b73",
+    "report.json": "3026dea1c0f0c5556835c9670a75163d8feedd07d992fe212f76c70af3ea15cb",
+    "selection.json": "e370899140f7ed2b46d91ce9a9c09ec40a51775c8b2930f10a704c9afdb446ae"
+  },
+  "spec_sha256": "7054becb66c96ea0bebd77d6815ef407834bcf8020a62680a5c514a0a9ffce83"
+}

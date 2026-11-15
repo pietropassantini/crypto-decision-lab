@@ -1,0 +1,71 @@
+step_id: E05
+status: IN_REVIEW
+updated_at: "2026-11-15"
+agent_role: Ricerca quantitativa (strategia, runner ed esecuzione dell'esperimento preregistrato)
+agent_model: Claude Fable 5.2 (claude-fable-5-2)
+base_commit: 69a39f57fa19aca6b8a48c1d3472bd31fed8811f
+head_commit: "8e1d2c9 (strategia, runner, specifica DRAFT), 3b7a42c (preregistrazione), 32d137b (selezione bloccata prima della validazione), commit di questo handoff"
+review_ref: "branch main; revisore non Claude da assegnare"
+inputs:
+  - "config/experiments/E05-daily-trend-v1.json, PREREGISTERED dal coordinatore il 2026-11-15 (minimi di trade 12 e 8 approvati), sha256 LF 7054becb66c96ea0bebd77d6815ef407834bcf8020a62680a5c514a0a9ffce83 (uguale alla riga E05 del backlog)"
+  - "BTCUSDT-1h-raw-v1 tramite catalogo, source_manifest_sha256 75663276f48df572ef79e4bda113438d6256c98c714eeb8245f8d6ef4f2fd4d8"
+  - "S03 (VERIFIED): motore, engine_sha256 2f02331f5c55... (include la registrazione di daily_trend)"
+changed_paths:
+  - "src/crypto_decision_lab/daily_trend.py - daily_closes, daily_features, DailyTrendStrategy"
+  - "src/crypto_decision_lab/daily_experiment.py - adapter e CLI di E05"
+  - "src/crypto_decision_lab/experiment_protocol.py - minimi di trade per esperimento (default invariati: E04 non cambia)"
+  - "src/crypto_decision_lab/simulation.py - registrazione lazy di daily_trend (cambia engine_sha256)"
+  - "tests/test_daily_trend.py (11 test su dati sintetici)"
+  - "config/experiments/E05-daily-trend-v1.json, docs/E05-daily-trend.md, reports/e05/{preregistration,selection,report,manifest}.json, Crypto_Decision_Lab_PRD.md (riga E05), E05-HANDOFF.yaml"
+checkpoints:
+  - id: CP-E05.0
+    result: PASS
+    verification: "python -m pytest tests/test_daily_trend.py -q -p no:cacheprovider"
+    expected: "chiusura giornaliera = ultima barra chiusa prima della decisione delle 00:00, indefinita con giorni mancanti, esposizione mantenuta tra le decisioni, isteresi e regime, fail closed"
+    observed: "11 passed sul commit di esecuzione; suite completa 587 passed su 8e1d2c9"
+    evidence: "tests/test_daily_trend.py"
+  - id: CP-E05.1
+    result: PASS
+    verification: |
+      python -m crypto_decision_lab.daily_experiment develop --spec config/experiments/E05-daily-trend-v1.json
+      (commit 32d137b di reports/e05/selection.json)
+      python -m crypto_decision_lab.daily_experiment evaluate --spec config/experiments/E05-daily-trend-v1.json
+      python -m crypto_decision_lab.daily_experiment all --spec config/experiments/E05-daily-trend-v1.json --output-dir var/e05-run-b
+    expected: "12 configurazioni riproducibili (stessi digest in due esecuzioni); selezione dal solo sviluppo, committata prima della validazione"
+    observed: "20 ledger_sha256 identici tra run A (due fasi) e run B (una fase): 12 configurazioni + 2 baseline sullo sviluppo, selezionata + 2 baseline su validazione e conferma. Selezione g10 in entrambe. selection.json (sha256 e3708991...) committato in 32d137b prima della fase evaluate; specifica preregistrata in 3b7a42c prima di leggere i dati."
+    evidence: "reports/e05/selection.json, reports/e05/report.json (selection_sha256), git log 3b7a42c -> 32d137b -> handoff"
+  - id: CP-E05.2
+    result: PASS
+    verification: "lettura di reports/e05/report.json"
+    expected: "Report per finestra di selezionata e baseline con le metriche dichiarate; esito motivato sui criteri"
+    observed: "Esito CANDIDATE: 5 criteri su 5 in validazione e 2 su 2 in conferma. Dettagli nella sezione decisions."
+    evidence: "reports/e05/report.json"
+  - id: CP-E05.3
+    result: OPEN
+    verification: "specifica della sessione paper su testnet"
+    expected: "Se CANDIDATE: specifica preregistrata della sessione paper su testnet prima di qualsiasi passo S08"
+    observed: "Non ancora scritta. Nessuna config live, nessun criterio S08 e nessuna scheda di rilascio sono stati creati: CANDIDATE non e un rilascio."
+    evidence: "config/experiments/E05-daily-trend-v1.json, acceptance.outcomes.CANDIDATE"
+decisions:
+  - "Sviluppo (2021-02 / 2023-07): 8 configurazioni positive su 12, 11 con almeno 12 trade. Selezionata g10 (rendimento a 28 giorni, media a 100 giorni, soglia 0): +28,19%, drawdown -17,19%, 16 trade chiusi (6,6/anno), lordo +153,8 (9,6 per trade), costi 12,8, tempo in mercato 26%. Baseline: momentum_v1 -95,4%, buy and hold -4,0% con drawdown -52,1%."
+  - "Validazione (2023-07 / 2025-01): g10 +70,87%, drawdown -13,08%, 17 trade (11,3/anno), lordo +371,9 (21,9 per trade), costi 17,6, tempo in mercato 55%, 35% di trade vincenti. Tutti i 5 criteri superati. Buy and hold +103,17% con drawdown -22,84%: la strategia rende meno del buy and hold ma con circa meta del drawdown."
+  - "Conferma (2025-01 / 2026-10, valutata una volta): g10 +4,98%, drawdown -9,33%, 17 trade, lordo +37,7 (2,2 per trade), costi 12,8, tempo in mercato 34%. Entrambi i criteri superati. Buy and hold -5,35% con drawdown -30,82%."
+  - "Esito CANDIDATE secondo i criteri registrati: e il primo esperimento in cui il lordo per trade supera con margine il costo (0,75) e la soglia di accettazione (1,5) su tutte e tre le finestre. Per la specifica CANDIDATE non e un rilascio: porta a una sessione paper preregistrata su dati nuovi (testnet, almeno 12 settimane) e solo dopo a criteri S08."
+diagnostics_not_preregistered:
+  - "Controllo indipendente dopo l'esito (non fa parte dei criteri): 102 ordini di g10 sulle tre finestre, tutti alle 00:00 UTC; d_momentum e d_trend ricalcolati con soli close precedenti alla decisione coincidono al sesto decimale con quelli nel registro; nessun ingresso con momentum o regime negativi."
+  - "Concentrazione dei risultati: in conferma il netto (+24,9) dipende da un solo trade (+48,8): senza il migliore sarebbe -23,9. In validazione il netto (+354) resta positivo senza i due migliori trade (+44,9), che valgono +186 e +123. In sviluppo +140,9, +28,6 senza i due migliori. E il profilo tipico del trend following (pochi grandi vincenti, 35-50% di trade vincenti), ma rende fragile il superamento della conferma."
+  - "Durata mediana dei trade: 3-5 giorni."
+threats_confirmed:
+  - "Pochi trade (16-17 per finestra): evidenza statistica debole, come dichiarato nella specifica."
+  - "La validazione era nota come favorevole al long (buy and hold +103%) prima della registrazione; la conferma, la prova piu dura, e superata di poco e grazie a un solo trade."
+  - "Quinto esperimento sullo stesso snapshot, con 12 configurazioni: rischio di selezione. La guardia e la sessione paper su dati nuovi."
+interpretations:
+  - "Regole del protocollo riprese da E01 con i minimi di trade della specifica (12 e 8); spareggio non usato."
+  - "Il file versionato della selezione e reports/e05/selection.json, copia identica di quello scritto dal runner."
+anomalies:
+  - "La conferma si chiude con una posizione aperta, valorizzata mark-to-market all'ultimo open (comportamento del motore, uguale per tutti gli esperimenti)."
+  - "Strategia, modifica del protocollo ed esecuzione sono dello stesso autore (Claude Fable 5.2): serve un revisore non Claude, a maggior ragione per un esito CANDIDATE."
+blockers:
+  - "Revisione indipendente non Claude di CP-E05.0-2 (compresa la modifica al protocollo condiviso) prima di qualsiasi uso dell'esito."
+  - "CP-E05.3: specifica preregistrata della sessione paper su testnet (richiede le chiavi testnet dell'operatore e il collaudo S07 ancora aperto)."
+next_action: "1) Un revisore non Claude ripete CP-E05.0-2 da clone pulito e conferma i 20 ledger_sha256. 2) Il coordinatore approva una specifica di sessione paper su testnet di almeno 12 settimane con criteri propri (CP-E05.3). Nessun passo S08 e nessuna modifica a strategia o parametri prima di allora."
