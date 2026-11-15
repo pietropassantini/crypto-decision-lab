@@ -1,8 +1,8 @@
 {
   "schema_version": "cdl.e05.experiment.v1",
   "experiment_id": "E05-daily-trend-v1",
-  "status": "DRAFT",
-  "registered": null,
+  "status": "PREREGISTERED",
+  "registered": "2026-11-15",
   "origin": {
     "deviation": "E01-E04 (momentum, breakout patterns, mean reversion on hourly decisions) were all rejected by the cost criterion: the gross result per trade stayed between 0.2 and 0.9 on a 250 position against a round-trip cost of about 0.75 and an acceptance level of about 1.5. E05 keeps the cost model and lengthens the decision horizon to one day, so each trade targets a multi-day move.",
     "evidence": [
