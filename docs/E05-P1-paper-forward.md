@@ -38,17 +38,46 @@ barra non chiusa o una modifica alla candidata rende la sessione INVALID.
 Esiti: `OPERATIONAL_PASS` / `OPERATIONAL_FAIL` alla settimana 12; `CONFIRMED` (si possono registrare
 criteri S08 per questa candidata), `NOT_CONFIRMED` o `INCONCLUSIVE` (meno di 5 trade dopo 52 settimane).
 
-## Prerequisiti (la sessione non può partire oggi)
+## Prerequisiti
 
-| Id | Cosa manca | Chi |
+| Id | Cosa serve | Stato |
 |---|---|---|
-| PRE-1 | Feature giornaliere nei runner: `paper.py` e `live.py` calcolano solo `momentum_24h` | sviluppo |
-| PRE-2 | Fonte di dati in tempo reale per il runner paper, con circa 2.450 barre di storia per il warmup | sviluppo |
-| PRE-3 | Runner pianificato su una macchina sempre accesa, con backup della cartella di sessione | operatore |
-| PRE-4 | Review non Claude di E05 e del codice di PRE-1 e PRE-2 | revisore |
+| PRE-1 | Feature giornaliere nel runner paper | **realizzato**, da rivedere: `PaperSession.create(features={momentum_days, sma_days})` e `daily_trend.daily_features_at`, che danno gli stessi valori di `daily_features` sull'intera serie |
+| PRE-2 | Fonte di dati in tempo reale | **realizzata**, da rivedere: sorgente `public_klines` (klines pubbliche in sola lettura, storia di 2.600 ore con paginazione, apertura della barra in corso, tollera ore mancanti, riprova sul throttling) |
+| PRE-3 | Runner pianificato su una macchina sempre accesa, con backup | operatore |
+| PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
+| PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
 
-La specifica va preregistrata solo dopo PRE-1, PRE-2 e PRE-4, citando il commit del runner.
+Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
+
+La specifica va preregistrata solo dopo PRE-4, citando il commit del runner.
+
+## Come si lancia (dopo la preregistrazione)
+
+Creazione, all'ora in cui parte la sessione (la partenza deve essere l'ora corrente o successiva):
+
+```powershell
+python -m crypto_decision_lab.paper session-create --name e05-p1 --config <config della candidata> --public-klines BTCUSDT --start "2026-12-01 00:00" --momentum-days 28 --sma-days 100
+```
+
+Poll orario (da pianificare, una volta all'ora, o in ciclo):
+
+```powershell
+python -m crypto_decision_lab.paper session-run --session-dir <cartella della sessione>
+```
+
+Controllo di fedeltà (settimana 12 e ogni volta che serve):
+
+```powershell
+python -m crypto_decision_lab.session_fidelity --session-dir <cartella della sessione>
+```
+
+Il controllo esce con codice 0 se il registro coincide con quello del motore sulle barre registrate dalla
+sessione; i valori delle feature si confrontano a 12 cifre significative, perché la somma delle chiusure
+giornaliere ha un ordine diverso e l'ultima cifra può cambiare.
+
+Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 
 ## Limiti dichiarati
 

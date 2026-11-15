@@ -74,6 +74,40 @@ def daily_features(frame: pd.DataFrame, momentum_days: int, sma_days: int) -> di
     return out
 
 
+def daily_features_at(timestamp, prev_close: float | None, lookup, momentum_days: int,
+                      sma_days: int) -> dict[str, float]:
+    """Features of one event from a stored history, for session runners (paper, live).
+
+    ``prev_close`` is the close of the bar before ``timestamp`` (not yet in the history);
+    ``lookup(ts)`` returns the stored ``prev_close`` of the event at ``ts`` or ``None``.
+    Same values as :func:`daily_features` computed over the whole frame: the daily close of day
+    D-1 is the ``prev_close`` of the 00:00 event of day D, and a window with any missing day is
+    undefined.  Any event that is not at 00:00 UTC carries no feature.
+    """
+    momentum_days, sma_days = int(momentum_days), int(sma_days)
+    if momentum_days < 1 or sma_days < 2:
+        raise ValueError("momentum_days must be >= 1 and sma_days >= 2")
+    stamp = utc(timestamp)
+    if stamp.hour != 0 or stamp.minute != 0:
+        return {}
+    features: dict[str, float] = {DECISION: 1.0}
+    if prev_close is None:
+        return features
+    day = pd.Timedelta(days=1)
+    past = lookup(stamp - momentum_days * day)
+    if past is not None:
+        features[MOMENTUM] = float(prev_close) / float(past) - 1.0
+    closes = [float(prev_close)]
+    for k in range(1, sma_days):
+        value = lookup(stamp - k * day)
+        if value is None:
+            break
+        closes.append(float(value))
+    if len(closes) == sma_days:
+        features[TREND] = float(prev_close) / (sum(closes) / sma_days) - 1.0
+    return features
+
+
 @dataclass(frozen=True)
 class DailyTrendStrategy:
     entry_threshold: float = 0.0

@@ -9,11 +9,30 @@
     "reason": "E05 passed on windows already seen by five experiments; the confirmation result depends on one trade. Only data produced after registration can confirm or refute the candidate."
   },
   "candidate": {
-    "strategy": {"name": "daily_trend", "parameters": {"entry_threshold": 0.0, "exit_threshold": 0.0, "regime_min": 0.0}},
-    "features": {"momentum_days": 28, "sma_days": 100},
+    "strategy": {
+      "name": "daily_trend",
+      "parameters": {
+        "entry_threshold": 0.0,
+        "exit_threshold": 0.0,
+        "regime_min": 0.0
+      }
+    },
+    "features": {
+      "momentum_days": 28,
+      "sma_days": 100
+    },
     "initial_cash": 500,
-    "hypothesis": {"latency_hours": 0, "horizon_hours": 1000000, "fee_rate": 0.001, "slippage": 0.0005},
-    "risk": {"max_exposure": 0.5, "min_notional": 10, "allow_open": true},
+    "hypothesis": {
+      "latency_hours": 0,
+      "horizon_hours": 1000000,
+      "fee_rate": 0.001,
+      "slippage": 0.0005
+    },
+    "risk": {
+      "max_exposure": 0.5,
+      "min_notional": 10,
+      "allow_open": true
+    },
     "frozen": "Identical to E05 g10. No parameter, feature or rule may change during the session; a change ends this session and needs a new specification."
   },
   "data": {
@@ -21,7 +40,9 @@
     "bars": "hourly klines of the real market (Binance Spot public market data, read-only, no account and no keys)",
     "new_data_only": "Decisions are evaluated only on bars that open after the session start, which follows the registration date.",
     "warmup": "The 101 daily closes before the start are needed for the features. They come from the same public klines and are used only as feature input; no trade is evaluated on them. Their source and digest are recorded at session creation.",
-    "forbidden": ["BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"],
+    "forbidden": [
+      "BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"
+    ],
     "why_not_testnet_prices": "Testnet prices are those of the test market and were not checked against the real market; a signal must be judged on real prices. The testnet is used for the execution check below, not for the evidence on the edge."
   },
   "execution": {
@@ -32,8 +53,16 @@
     "minimum_weeks": 12,
     "note": "The candidate closed 16-17 trades per 1.5-2.4 years in the backtest (about 7-11 per year): 12 weeks give roughly 2-3 trades. Twelve weeks can show that the runner behaves as the backtest and that risk stays bounded; they cannot show that the edge exists.",
     "checkpoints": [
-      {"id": "P1.week12", "when": "12 full weeks after start", "decides": "operational and fidelity criteria; stop rules"},
-      {"id": "P1.edge", "when": "first of: 8 closed trades, or 52 full weeks after start", "decides": "edge criteria"}
+      {
+        "id": "P1.week12",
+        "when": "12 full weeks after start",
+        "decides": "operational and fidelity criteria; stop rules"
+      },
+      {
+        "id": "P1.edge",
+        "when": "first of: 8 closed trades, or 52 full weeks after start",
+        "decides": "edge criteria"
+      }
     ]
   },
   "criteria": {
@@ -44,7 +73,7 @@
     "week12_operational": [
       "daily decisions processed within 2 hours of 00:00 UTC on at least 95% of the days",
       "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
-      "fidelity: a backtest of the frozen candidate over the session's own recorded bars reproduces the session ledger (same decisions, orders and fills)",
+      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored)",
       "max_drawdown_mtm_pct >= -20"
     ],
     "edge": [
@@ -66,11 +95,36 @@
     }
   },
   "prerequisites": [
-    {"id": "PRE-1", "what": "Daily features in the session runners: paper.py and live.py compute only momentum_24h; daily_trend needs daily_decision, d_momentum and d_trend from daily_trend.daily_features, with at least 101 daily closes of history.", "status": "missing"},
-    {"id": "PRE-2", "what": "A live market-data source for the paper runner: today it accepts only a snapshot or a lab feed; it needs read-only public klines of the real market with enough history for the warmup (about 2450 hourly bars; the current kline feed reads 30).", "status": "missing"},
-    {"id": "PRE-3", "what": "A scheduled runner on a machine that stays on (one poll per hour is enough), with the session directory backed up.", "status": "operator"},
-    {"id": "PRE-4", "what": "Independent non-Claude review of E05 (CP-E05.0-2) and of the code added for PRE-1 and PRE-2.", "status": "open"},
-    {"id": "PRE-5", "what": "Only for the optional testnet mirror: S07 testnet smoke with the operator's keys.", "status": "open"}
+    {
+      "id": "PRE-1",
+      "what": "Daily features in the session runners: paper.py and live.py compute only momentum_24h; daily_trend needs daily_decision, d_momentum and d_trend from daily_trend.daily_features, with at least 101 daily closes of history. Implemented: paper.PaperSession.create(features={momentum_days, sma_days}) and daily_trend.daily_features_at, which compute the same values as daily_features over the whole frame (tests/test_paper_daily.py). The optional live (S07) mirror still calculates only momentum_24h and is not covered.",
+      "status": "implemented, pending review"
+    },
+    {
+      "id": "PRE-2",
+      "what": "A live market-data source for the paper runner: today it accepts only a snapshot or a lab feed; it needs read-only public klines of the real market with enough history for the warmup (about 2450 hourly bars; the current kline feed reads 30). Implemented: public_klines.PublicKlineSource (source kind public_klines): read-only public market data host, paginated 2600-hour history plus the open of the current bar, tolerant to missing hours, retries on throttling, a source outage sets DATA_ERROR and the next poll retries; a session on the live market must start at the current hour or later.",
+      "status": "implemented, pending review"
+    },
+    {
+      "id": "PRE-3",
+      "what": "A scheduled runner on a machine that stays on (one poll per hour is enough), with the session directory backed up.",
+      "status": "operator"
+    },
+    {
+      "id": "PRE-4",
+      "what": "Independent non-Claude review of E05 (CP-E05.0-2) and of the code added for PRE-1 and PRE-2.",
+      "status": "open"
+    },
+    {
+      "id": "PRE-5",
+      "what": "Only for the optional testnet mirror: S07 testnet smoke with the operator's keys.",
+      "status": "open"
+    },
+    {
+      "id": "PRE-6",
+      "what": "Fidelity tool for the week-12 criterion: session_fidelity (python -m crypto_decision_lab.session_fidelity --session-dir ...) rebuilds the bars the session saw from its own history and events, replays the frozen candidate with the experiment-side features and compares the ledgers.",
+      "status": "implemented, pending review"
+    }
   ],
   "evidence_to_record": [
     "session meta: candidate digest, engine_sha256, feed identity, start, warmup digest",

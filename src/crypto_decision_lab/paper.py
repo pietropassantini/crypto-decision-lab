@@ -42,13 +42,17 @@ import pandas as pd
 from . import studio_analytics as analytics
 from .execution_contract import HOUR
 from .forward_isolation import guard_research_output
-from .lab_feed import FeedView, LabFeed, SnapshotSource
+from .daily_trend import daily_features_at
+from .lab_feed import FeedError, FeedView, LabFeed, SnapshotSource
+from .public_klines import PublicKlineSource
 from .simulation import Engine, MarketEvent, engine_digests
 from .studio import build_run_config, config_digest, normalize_config
 
 SESSION_SCHEMA = "cdl.s06.session.v1"
 DEFAULT_ROOT = Path("var/paper")
 BLOCKING = ("SUSPENDED", "COMPLETED", "MODEL_ERROR", "ENGINE_MISMATCH")
+# Strategies whose features need parameters beyond momentum_24h: name -> required feature parameters.
+FEATURE_PARAMETERS = {"daily_trend": ("momentum_days", "sma_days")}
 CRASH_HOOK: Callable[[str, pd.Timestamp], None] | None = None
 _ENV_CRASH = "CDL_PAPER_CRASH"  # "<stage>:<n>" -> os._exit(97) at the n-th step of this process
 _steps_in_process = 0
@@ -142,10 +146,11 @@ class PaperSession:
     @classmethod
     def create(cls, name: str, raw_config: dict, source: dict, *, start_at, end_at=None,
                stale_after_hours: int = 2, root: str | Path = DEFAULT_ROOT, repo_root: str | Path = ".",
-               config_id: str | None = None) -> "PaperSession":
+               config_id: str | None = None, features: dict | None = None) -> "PaperSession":
         repo = Path(repo_root).resolve()
         normalized = normalize_config(raw_config)
         build_run_config(normalized)  # strategy and model must load now: they are pinned at start
+        features = cls._check_features(normalized["strategy"]["name"], features)
         digest = config_digest(normalized)
         start = _utc(start_at)
         end = _utc(end_at) if end_at is not None else None
@@ -154,9 +159,17 @@ class PaperSession:
         resolved = cls._open_source(source, repo)
         if resolved.kind == "snapshot" and end is None:
             raise SessionError("a replay session over a snapshot requires end_at")
+        if resolved.kind == "public_klines":
+            try:
+                current_hour = resolved.now().floor("h")
+            except FeedError as exc:
+                raise SessionError(f"market data source unavailable: {exc}") from exc
+            if start < current_hour:
+                raise SessionError(f"a session on the live market starts at the current hour {current_hour} or "
+                                   "later: it never replays bars that were already published")
         identity = resolved.identity()
-        session_id = f"{_slug(name)}-" + hashlib.sha256(
-            _dump([digest, identity, str(start), str(end)]).encode()).hexdigest()[:10]
+        identity_parts = [digest, identity, str(start), str(end)] + ([features] if features else [])
+        session_id = f"{_slug(name)}-" + hashlib.sha256(_dump(identity_parts).encode()).hexdigest()[:10]
         base = Path(root) if Path(root).is_absolute() else repo / root
         directory = guard_research_output(base / "sessions" / session_id, purpose="paper session")
         if directory.exists():
@@ -171,6 +184,8 @@ class PaperSession:
             "start_at": str(start), "end_at": str(end) if end is not None else None,
             "stale_after_hours": int(stale_after_hours), "engine_sha256": engine_sha, "created_utc": _now(),
         }
+        if features:
+            meta["features"] = features
         connection = sqlite3.connect(directory / "session.sqlite", isolation_level=None)
         connection.executescript(SCHEMA_SQL)
         connection.execute("BEGIN IMMEDIATE")
@@ -191,7 +206,32 @@ class PaperSession:
         if source.get("kind") == "lab_feed":
             path = Path(source["path"])
             return LabFeed(path if path.is_absolute() else repo_root / path)
+        if source.get("kind") == "public_klines":
+            try:
+                return PublicKlineSource(source.get("symbol", "BTCUSDT"),
+                                         int(source.get("history_hours", 2600)))
+            except FeedError as exc:
+                raise SessionError(str(exc)) from exc
         raise SessionError(f"unknown source kind: {source.get('kind')}")
+
+    @staticmethod
+    def _check_features(strategy: str, features: dict | None) -> dict | None:
+        required = FEATURE_PARAMETERS.get(strategy)
+        if required is None:
+            if features:
+                raise SessionError(f"strategy {strategy} takes no feature parameters")
+            return None
+        if not features or set(features) != set(required):
+            raise SessionError(f"strategy {strategy} requires feature parameters {list(required)}")
+        checked = {}
+        for key in required:
+            value = features[key]
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise SessionError(f"feature parameter {key} must be a positive integer")
+            checked[key] = value
+        if checked.get("sma_days", 2) < 2:
+            raise SessionError("sma_days must be at least 2")
+        return checked
 
     def _load_pins(self) -> None:
         """Strategy, model, engine and source are those pinned at creation."""
@@ -279,6 +319,29 @@ class PaperSession:
             return {}
         return {"momentum_24h": float(prev_close) / float(row[0]) - 1.0}
 
+    def _feed_clock(self) -> pd.Timestamp | None:
+        """Feed clock, or ``None`` when there is no source or a live source is unreachable."""
+        if self.source is None:
+            return None
+        try:
+            return self.source.now()
+        except FeedError:
+            return None
+
+    def _history_close(self, timestamp: pd.Timestamp) -> float | None:
+        row = self.connection.execute("SELECT prev_close FROM history WHERE timestamp = ?",
+                                      (str(timestamp),)).fetchone()
+        return float(row[0]) if row is not None and row[0] is not None else None
+
+    def _features(self, timestamp: pd.Timestamp, prev_close: float | None) -> dict:
+        """momentum_24h plus the daily features of strategies that declare feature parameters."""
+        features = self._momentum(timestamp, prev_close)
+        spec = self.meta.get("features")
+        if spec:
+            features.update(daily_features_at(timestamp, prev_close, self._history_close,
+                                              spec["momentum_days"], spec["sma_days"]))
+        return features
+
     def _warmup(self, view: FeedView, start: pd.Timestamp) -> None:
         rows = [(str(ts), record.prev_close) for ts, record in view.records.items()
                 if ts < start and record.valid]
@@ -304,8 +367,12 @@ class PaperSession:
         status, _ = self._status()
         if status in BLOCKING or self.config is None or self.source is None:
             return self.snapshot()
-        clock = _utc(now) if now is not None else self.source.now()
-        view = self.source.records()
+        try:
+            clock = _utc(now) if now is not None else self.source.now()
+            view = self.source.records()
+        except FeedError as exc:  # live source unreachable: the next poll retries, the state is untouched
+            self._set_status("DATA_ERROR", f"source unavailable: {exc}", _utc(now) if now is not None else None)
+            return self.snapshot()
         start = _utc(self.meta["start_at"])
         end = _utc(self.meta["end_at"]) if self.meta["end_at"] else None
         if view.conflicts:
@@ -341,7 +408,7 @@ class PaperSession:
                 self._set_status("DATA_ERROR", record.problem or "invalid bar", clock)
                 break
             engine.seen.pending_raw = record.raw()
-            event = MarketEvent(next_ts, float(record.open), self._momentum(next_ts, record.prev_close))
+            event = MarketEvent(next_ts, float(record.open), self._features(next_ts, record.prev_close))
             self.connection.execute("BEGIN IMMEDIATE")
             try:
                 records = engine.step(event)
@@ -373,7 +440,7 @@ class PaperSession:
                 raise SessionError("the first bar is missing: change start_at instead")
             records = engine.acknowledge_gap(later[0], note=note or "operator acknowledged the gap")
             self._commit_step(version, engine, records, later[0] - HOUR, "RUNNING",
-                              f"gap acknowledged; resume at {later[0]}", None, self.source.now(), later[0])
+                              f"gap acknowledged; resume at {later[0]}", None, self._feed_clock(), later[0])
         except BaseException:
             if self.connection.in_transaction:
                 self.connection.execute("ROLLBACK")
@@ -384,14 +451,14 @@ class PaperSession:
         status, _ = self._status()
         if status == "COMPLETED":
             raise SessionError("session is COMPLETED: it cannot be suspended or resumed")
-        self._set_status("SUSPENDED", reason, self.source.now() if self.source else None)
+        self._set_status("SUSPENDED", reason, self._feed_clock())
         return self.snapshot()
 
     def resume(self) -> dict:
         status, _ = self._status()
         if status != "SUSPENDED":
             raise SessionError("session is not suspended")
-        self._set_status("RUNNING", "resumed by operator", self.source.now() if self.source else None)
+        self._set_status("RUNNING", "resumed by operator", self._feed_clock())
         # Resuming never bypasses the pins: model, engine and source are checked again.
         self._load_pins()
         return self.snapshot()
@@ -448,7 +515,7 @@ class PaperSession:
             "session_id": self.meta["session_id"], "name": self.meta["name"], "mode": self.meta["mode"],
             "status": status, "detail": detail, "version": version,
             "cursor": cursor, "last_event": state.get("previous"),
-            "feed_clock": str(self.source.now()) if self.source is not None and self.source.now() is not None else None,
+            "feed_clock": str(clock) if (clock := self._feed_clock()) is not None else None,
             "cash": cash, "quantity": quantity, "last_price": last_price, "equity": equity,
             "pnl": equity - initial, "pending_order": state.get("pending"),
             "events": self.connection.execute("SELECT COUNT(*) FROM events").fetchone()[0],
@@ -490,6 +557,11 @@ def main(argv=None) -> int:
     create.add_argument("--config", required=True, help="RunConfig JSON file")
     create.add_argument("--snapshot", help="catalog dataset_id for a replay session")
     create.add_argument("--feed-dir", help="lab feed directory")
+    create.add_argument("--public-klines", metavar="SYMBOL",
+                        help="live market: read-only public hourly klines (no keys); start must be the current hour or later")
+    create.add_argument("--history-hours", type=int, default=2600, help="hours of history read for the warmup")
+    create.add_argument("--momentum-days", type=int, help="daily_trend feature: n-day return")
+    create.add_argument("--sma-days", type=int, help="daily_trend feature: m-day average")
     create.add_argument("--start", required=True)
     create.add_argument("--end")
     create.add_argument("--stale-after-hours", type=int, default=2)
@@ -516,13 +588,20 @@ def main(argv=None) -> int:
         print(json.dumps({"now": str(feed.now()), "published": published}))
         return 0
     if args.command == "session-create":
-        if bool(args.snapshot) == bool(args.feed_dir):
-            parser.error("choose exactly one of --snapshot or --feed-dir")
-        source = {"kind": "snapshot", "dataset_id": args.snapshot} if args.snapshot else \
-            {"kind": "lab_feed", "path": args.feed_dir}
+        if sum(bool(x) for x in (args.snapshot, args.feed_dir, args.public_klines)) != 1:
+            parser.error("choose exactly one of --snapshot, --feed-dir or --public-klines")
+        if args.snapshot:
+            source = {"kind": "snapshot", "dataset_id": args.snapshot}
+        elif args.feed_dir:
+            source = {"kind": "lab_feed", "path": args.feed_dir}
+        else:
+            source = {"kind": "public_klines", "symbol": args.public_klines, "history_hours": args.history_hours}
+        features = {k: v for k, v in (("momentum_days", args.momentum_days), ("sma_days", args.sma_days))
+                    if v is not None} or None
         raw = json.loads(Path(args.config).read_text(encoding="utf-8-sig"))
         session = PaperSession.create(args.name, raw, source, start_at=args.start, end_at=args.end,
-                                      stale_after_hours=args.stale_after_hours, root=args.root, repo_root=repo)
+                                      stale_after_hours=args.stale_after_hours, root=args.root, repo_root=repo,
+                                      features=features)
         print(json.dumps({"session_dir": str(session.directory), **session.snapshot()}, indent=2, default=str))
         return 0
     session = PaperSession(Path(args.session_dir), repo_root=repo)
