@@ -191,7 +191,7 @@ def test_replay_session_with_daily_features_matches_the_backtest_ledger(repo):
     result, backtest = protocol.run_window(frame, CONFIG, window, daily_features(frame, **{
         "momentum_days": MOMENTUM_DAYS, "sma_days": SMA_DAYS}))
     ledger = session.ledger()
-    assert session_fidelity.normalized(ledger) == session_fidelity.normalized(backtest)  # as the experiment runner
+    assert session_fidelity.same(ledger, backtest)  # as the experiment runner
     assert session_fidelity.check(session.directory, repo_root=repo)["match"]
     orders = [r for r in ledger if r["kind"] == "order"]
     assert len(orders) >= 4 and all(pd.Timestamp(r["timestamp"]).hour == 0 for r in orders)
@@ -274,7 +274,7 @@ def test_live_session_hour_by_hour_reproduces_the_backtest(repo, market, market_
     _, backtest = protocol.run_window(market_frame, CONFIG, window,
                                       daily_features(market_frame, MOMENTUM_DAYS, SMA_DAYS))
     ledger = session.ledger()
-    assert session_fidelity.normalized(ledger) == session_fidelity.normalized(backtest)
+    assert session_fidelity.same(ledger, backtest)
     assert session_fidelity.check(session.directory, repo_root=repo)["match"]  # and after
     assert session_fidelity.main(["--session-dir", str(session.directory), "--repo-root", str(repo)]) == 0
     session.connection.execute("UPDATE ledger SET record = replace(record, '\"side\":\"BUY\"', '\"side\":\"SELL\"') "

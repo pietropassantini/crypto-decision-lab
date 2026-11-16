@@ -67,11 +67,14 @@ def _connect_read_only(database: Path) -> sqlite3.Connection:
         connection = sqlite3.connect(uri, uri=True, timeout=30, isolation_level=None)
         connection.execute("SELECT 1 FROM meta LIMIT 1")
         return connection
-    except sqlite3.OperationalError:
+    except sqlite3.OperationalError as error:
         # A read-only folder: SQLite cannot create the -shm file it needs for a WAL database.  Without a
         # -wal file every committed page is in the main file, so reading it as immutable loses nothing.
         if Path(f"{database}-wal").exists():
-            raise
+            raise sqlite3.OperationalError(
+                f"{error}: cannot read {database}, which has a -wal file next to it. If the folder is read-only, "
+                "copy the whole session folder (database, -wal and -shm) to a writable folder and read the copy"
+            ) from error
         connection = sqlite3.connect(f"{uri}&immutable=1", uri=True, timeout=30, isolation_level=None)
         connection.execute("SELECT 1 FROM meta LIMIT 1")
         return connection

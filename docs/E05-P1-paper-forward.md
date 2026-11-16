@@ -100,11 +100,22 @@ avvenuto, altrimenti INCONCLUSIVE.
 | PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
 | PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15 e 16-11 (R27-R50)**, da rivedere di nuovo: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione sui valori effettivi, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica e file esportati dal database |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15 e 16-11 (R27-R55)**: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione sui valori effettivi, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica e file esportati dal database |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
 La specifica va preregistrata solo dopo PRE-4 e PRE-7, con DEV-1 approvata (fatto il 2026-11-15), citando il commit del runner.
+
+Il registro ufficiale (riga E05-P1 del backlog e `reports/e05-p1/`) contiene almeno: l'identificativo della sessione
+attiva, lo sha256 della specifica preregistrata, la data di preregistrazione, il commit del runner, l'ora di inizio,
+la scadenza a 78 settimane, ogni ripartenza con approvazione e motivo e, in corsa, le decisioni con la loro evidenza.
+Lo sha256 della specifica si calcola così (stesso valore che stampano i rapporti):
+
+```powershell
+python -c "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path(r'config/experiments/E05-P1-paper-forward-v1.json').read_bytes().replace(b'
+', b'
+')).hexdigest())"
+```
 
 ## Come si lancia (dopo la preregistrazione)
 
@@ -127,8 +138,10 @@ python -m crypto_decision_lab.session_fidelity --session-dir <cartella della ses
 ```
 
 Il controllo esce con codice 0 se il registro coincide con quello del motore sulle barre registrate dalla
-sessione; i valori delle feature si confrontano a 12 cifre significative, perché la somma delle chiusure
-giornaliere ha un ordine diverso e l'ultima cifra può cambiare.
+sessione; i valori delle feature si confrontano con una tolleranza (1e-9 relativa, 1e-12 assoluta), perché il runner
+e l'esperimento sommano le chiusure giornaliere in ordine diverso e l'ultima cifra può cambiare: con un numero fisso
+di cifre, una feature vicina a zero darebbe una falsa differenza. Decisioni, ordini, fill e saldi si confrontano
+esattamente.
 
 Rapporti dei checkpoint (da lanciare ogni lunedì alle 00:00 UTC):
 
@@ -154,7 +167,9 @@ sugli stessi byte letti per il calcolo, da confrontare con quello del registro u
   di trigger; poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi `INCONCLUSIVE`; `FAILED` o `INVALID`
   per le regole di stop. La decisione si registra **una volta sola** nel database della sessione e in `p1-edge-report.json`:
   una seconda valutazione è rifiutata (codice di uscita 2), anche con due valutazioni contemporanee. Il file si scrive
-  in modo atomico ed è sempre ricostruito dalla decisione memorizzata se manca, è troncato o è diverso.
+  in modo atomico ed è sempre ricostruito dalla decisione memorizzata se manca, è troncato o è diverso. Conta solo la
+  riga del database: un file senza riga non è una decisione e viene sovrascritto quando la decisione si registra. Un
+  crash tra il file temporaneo e la rinomina può lasciare un file nascosto `.tmp`: è innocuo e si cancella a mano.
 
 Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 

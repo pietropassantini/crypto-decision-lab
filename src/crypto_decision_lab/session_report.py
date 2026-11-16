@@ -223,8 +223,12 @@ def export_decision(directory: Path, checkpoint: str, outcome: str | None, file:
 
 
 def edge_decided(directory: Path) -> bool:
-    """Whether the edge was already decided here; its file is re-created from the database when needed."""
-    return export_decision(directory, "edge", None, _edge_file(directory)) or _edge_file(directory).exists()
+    """Whether the edge was already decided here (a row in the session database, the only record that counts).
+
+    Its file is re-created from that row when needed; a file without a row is not a decision and is
+    overwritten when the decision is recorded (review R52).
+    """
+    return export_decision(directory, "edge", None, _edge_file(directory))
 
 
 def record_decision(directory: Path, checkpoint: str, report: dict, file: Path) -> bool:

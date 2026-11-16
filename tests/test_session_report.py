@@ -626,3 +626,59 @@ def test_a_cut_is_the_session_in_market_time(repo, monkeypatch):
                for row in cut.status_log)
     assert read_snapshot(directory, as_of=instant) == cut
 
+
+# ---------------------------------------------------------------- review of 2026-11-16, GLM-5.3 (R51-R55)
+def test_features_near_zero_are_compared_within_a_tolerance(repo, monkeypatch):
+    # R51: the values the reviewer observed, a few units in the last place apart, straddle 12 significant digits
+    stored, replayed = -3.17369617132e-05, -3.1736961713e-05
+    assert f"{stored:.12g}" != f"{replayed:.12g}"
+    record = {"kind": "market", "seq": 1, "features": {"d_trend": stored, "d_momentum": 0.01, "flag": None}}
+    assert session_fidelity.same_record(record, {**record, "features": {**record["features"], "d_trend": replayed}})
+    assert not session_fidelity.same_record(record, {**record, "features": {**record["features"], "d_trend": stored + 1e-6}})
+    assert not session_fidelity.same_record(record, {**record, "seq": 2})  # everything else stays exact
+    assert not session_fidelity.same_record(record, {**record, "features": {"d_trend": stored}})
+    _clock(monkeypatch)
+    snapshot = read_snapshot(_session(repo, 30, "near-zero"))
+    index = next(i for i, r in enumerate(snapshot.ledger)
+                 if r["kind"] == "market" and isinstance(r.get("features", {}).get("d_trend"), float))
+
+    def with_trend(value):
+        ledger = [dict(r) for r in snapshot.ledger]
+        ledger[index] = {**ledger[index], "features": {**ledger[index]["features"], "d_trend": value}}
+        return dataclasses.replace(snapshot, ledger=ledger)
+
+    trend = snapshot.ledger[index]["features"]["d_trend"]
+    assert session_fidelity.check(snapshot=with_trend(trend * (1 + 1e-11)))["match"]
+    tampered = session_fidelity.check(snapshot=with_trend(trend + 1e-6))
+    assert not tampered["match"] and tampered["first_difference"] == index
+
+
+def test_a_report_file_without_a_stored_decision_is_not_a_decision(repo, monkeypatch, tmp_path, capsys):
+    _clock(monkeypatch)
+    directory = _session(repo, 90, "stray")
+    spec = _spec_file(tmp_path)
+    edge_file = directory / "p1-edge-report.json"
+    edge_file.write_text('{"outcome": "CONFIRMED"}', encoding="utf-8")  # R52: a stray or forged file
+    assert not session_report.edge_decided(directory)
+    _production(monkeypatch, T0 + 90 * DAY)
+    monkeypatch.setattr(session_report, "DRAWDOWN_MIN_PCT", -0.5)
+    assert session_report.main(["edge", "--session-dir", str(directory), "--repo-root", str(repo),
+                                "--spec", str(spec)]) == 1  # evaluated, not refused
+    assert json.loads(capsys.readouterr().out)["outcome"] == "FAILED"
+    assert json.loads(edge_file.read_text(encoding="utf-8"))["outcome"] == "FAILED"  # overwritten from the database
+    assert session_report.edge_decided(directory)
+
+
+def test_a_read_only_archive_with_a_write_ahead_log_says_what_to_do(repo, monkeypatch):
+    _clock(monkeypatch)
+    directory = _session(repo, 20, "ro-wal")
+    import crypto_decision_lab.session_snapshot as snapshot_module
+
+    def connect(target, *args, **kwargs):
+        raise snapshot_module.sqlite3.OperationalError("unable to open database file")
+
+    (directory / "session.sqlite-wal").write_bytes(b"")
+    monkeypatch.setattr(snapshot_module.sqlite3, "connect", connect)
+    with pytest.raises(snapshot_module.sqlite3.OperationalError, match="copy the whole session folder"):
+        read_snapshot(directory)  # R54
+

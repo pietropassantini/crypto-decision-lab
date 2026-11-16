@@ -16,10 +16,13 @@ gap before stepping the first bar after it (no intermediate ``gap`` record).  An
 stored but not yet followed by a bar (the runner has not resumed, or the session was finished right after
 it) is replayed from the resume instant the acknowledgement records.
 
-Compared after normalisation: feature values rounded to 12 significant digits (the runner and
-the whole-frame computation sum the daily closes in a different order, so the last digit can
-differ) and the free-text ``note`` of acknowledged gaps (operator text versus replay text).
-Everything else, including decisions, orders, fills, balances and sequence numbers, must be equal.
+Compared record by record: feature values within a tolerance (relative 1e-9, absolute 1e-12) and
+the free-text ``note`` of acknowledged gaps ignored (operator text versus replay text).  The runner and
+the whole-frame computation sum the daily closes in a different order, so a feature can differ by a few
+units in the last place; ``close / SMA - 1`` amplifies that difference when the feature is close to zero,
+so a fixed number of significant digits would report a false difference (review R51).  Everything else,
+including decisions, orders, fills, balances and sequence numbers, must be exactly equal: a feature
+difference that changed a decision is still reported through the decision.
 
 What the check does NOT prove: it certifies the internal consistency of the session (ledger against the
 bars the session itself recorded).  It cannot prove *when* a recorded close became available, nor that the
@@ -28,6 +31,7 @@ recorded bars are the market's.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -40,21 +44,59 @@ from .simulation import Engine, MarketEvent, market_events
 from .studio import build_run_config
 
 
-def _round_features(features: dict) -> dict:
-    return {k: float(f"{v:.12g}") if isinstance(v, float) else v for k, v in features.items()}
+FEATURE_REL_TOL = 1e-9
+FEATURE_ABS_TOL = 1e-12
 
 
 def normalized(ledger: list[dict]) -> list[dict]:
-    """Ledger without the two differences that are not decisions (see module docstring)."""
+    """Ledger without the free-text note of acknowledged gaps (see module docstring)."""
     out = []
     for record in ledger:
         record = dict(record)
-        if record.get("kind") == "market" and "features" in record:
-            record["features"] = _round_features(record["features"])
         if record.get("kind") == "gap_acknowledged":
             record.pop("note", None)
         out.append(record)
     return out
+
+
+def _number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _same_value(left, right) -> bool:
+    if _number(left) and _number(right):
+        if math.isnan(left) or math.isnan(right):
+            return math.isnan(left) and math.isnan(right)
+        return math.isclose(left, right, rel_tol=FEATURE_REL_TOL, abs_tol=FEATURE_ABS_TOL)
+    return left == right
+
+
+def same_record(left: dict, right: dict) -> bool:
+    """Equal records; the features of a market record are compared within the tolerance."""
+    if left.keys() != right.keys():
+        return False
+    for key in left:
+        if key == "features" and left.get("kind") == "market" and isinstance(left[key], dict)                 and isinstance(right[key], dict):
+            a, b = left[key], right[key]
+            if a.keys() != b.keys() or not all(_same_value(a[k], b[k]) for k in a):
+                return False
+        elif left[key] != right[key]:
+            return False
+    return True
+
+
+def first_difference(left: list[dict], right: list[dict]) -> int | None:
+    """Index of the first record that differs after normalisation, or None when the ledgers agree."""
+    left, right = normalized(left), normalized(right)
+    first = next((i for i, (a, b) in enumerate(zip(left, right)) if not same_record(a, b)), None)
+    if first is None and len(left) != len(right):
+        first = min(len(left), len(right))
+    return first
+
+
+def same(left: list[dict], right: list[dict]) -> bool:
+    """Whether two ledgers agree under the fidelity comparison."""
+    return first_difference(left, right) is None
 
 
 def recorded_frame(snapshot: SessionSnapshot) -> pd.DataFrame:
@@ -120,9 +162,7 @@ def check(session_dir: str | Path | None = None, *, repo_root: str | Path = ".",
     snapshot = snapshot if snapshot is not None else read_snapshot(session_dir)
     expected, events = replay(snapshot)
     left, right = normalized(snapshot.ledger), normalized(expected)
-    first = next((i for i, (a, b) in enumerate(zip(left, right)) if a != b), None)
-    if first is None and len(left) != len(right):
-        first = min(len(left), len(right))
+    first = first_difference(left, right)
     return {"match": first is None, "events": events, "session_records": len(left), "replay_records": len(right),
             "first_difference": first,
             "session_record": left[first] if first is not None and first < len(left) else None,
