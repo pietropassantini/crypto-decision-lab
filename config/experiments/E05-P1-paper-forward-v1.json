@@ -1,8 +1,13 @@
 {
   "schema_version": "cdl.e05.paper-session.v1",
   "session_id": "E05-P1-paper-forward-v1",
-  "status": "DRAFT",
-  "registered": null,
+  "status": "PREREGISTERED",
+  "registered": "2026-11-16",
+  "registration": {
+    "approved_by": "coordinator, in chat, 2026-11-16",
+    "runner_commit": "77ae4223ca0dc911ebea2c1e51268d1f9e45519b",
+    "note": "The session runs the code of runner_commit (paper, public_klines, daily_trend, session_snapshot, session_fidelity, session_report). The spec sha256 (LF) and the official register are in reports/e05-p1/REGISTER.md and in the E05-P1 backlog row; no forward session was started before this registration."
+  },
   "origin": {
     "experiment": "E05-daily-trend-v1, outcome CANDIDATE (reports/e05/report.json, E05-HANDOFF.yaml)",
     "checkpoint": "CP-E05.3: preregistered paper session on new data before any S08 step",
@@ -128,12 +133,12 @@
     {
       "id": "PRE-1",
       "what": "Daily features in the session runners: paper.py and live.py compute only momentum_24h; daily_trend needs daily_decision, d_momentum and d_trend from daily_trend.daily_features, with at least 101 daily closes of history. Implemented: paper.PaperSession.create(features={momentum_days, sma_days}) and daily_trend.daily_features_at, which compute the same values as daily_features over the whole frame (tests/test_paper_daily.py). The optional live (S07) mirror still calculates only momentum_24h and is not covered.",
-      "status": "implemented, pending review"
+      "status": "implemented, reviewed in REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, E05, paper runner, public_klines, session_fidelity)"
     },
     {
       "id": "PRE-2",
       "what": "A live market-data source for the paper runner: today it accepts only a snapshot or a lab feed; it needs read-only public klines of the real market with enough history for the warmup (about 2450 hourly bars; the current kline feed reads 30). Implemented: public_klines.PublicKlineSource (source kind public_klines): read-only public market data host, paginated 2600-hour history plus the open of the current bar, tolerant to missing hours, retries on throttling, a source outage sets DATA_ERROR and the next poll retries; a session on the live market must start at the current hour or later.",
-      "status": "implemented, pending review"
+      "status": "implemented, reviewed in REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, E05, paper runner, public_klines, session_fidelity)"
     },
     {
       "id": "PRE-3",
@@ -143,7 +148,7 @@
     {
       "id": "PRE-4",
       "what": "Independent non-Claude review of E05 (CP-E05.0-2) and of the code added for PRE-1 and PRE-2.",
-      "status": "open"
+      "status": "done: REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, E05, paper runner, public_klines, session_fidelity); E05 VERIFIED by the coordinator on 2026-11-15"
     },
     {
       "id": "PRE-5",
@@ -153,12 +158,12 @@
     {
       "id": "PRE-6",
       "what": "Fidelity tool for the week-12 criterion: session_fidelity (python -m crypto_decision_lab.session_fidelity --session-dir ...) rebuilds the bars the session saw from its own history and events, replays the frozen candidate with the experiment-side features and compares the ledgers.",
-      "status": "implemented, pending review"
+      "status": "implemented, reviewed in REVIEW-INDEP-2026-11-15-glm3.md (GLM-5.3, E05, paper runner, public_klines, session_fidelity) and with PRE-7"
     },
     {
       "id": "PRE-7",
       "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--spec ...] [--as-of ...]. Both reports read the session through a read-only, consistent snapshot (no PaperSession, no data source, no clock, no writes except to record a production decision). week12: timeliness from status_log (days excused by an acknowledged gap are not counted), unexplained missing days, fidelity (a gap is replayed the way the runner handles it), drawdown. edge: realized net of the closed trades up to the trigger Monday and only once that bar is committed, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result; the 52-week deadline applies to the trigger. Both: INVALID (production admission: preregistered spec, start after it, live public_klines session, mode, symbol, host, warmup, effective configuration digest, features; at the edge also the fidelity up to the cutoff) and FAILED (drawdown over everything seen). --as-of is a dry run that writes nothing and cuts the session at that instant; decisions are recorded atomically in the session database (one edge row by a unique index, week12 once per outcome), a missing file is re-created. Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
-      "status": "implemented, corrected after the reviews of 2026-11-15 and 2026-11-16 (R27-R55)"
+      "status": "implemented, reviewed in REVIEW-INDEP-2026-11-15-deepseek.md, REVIEW-INDEP-2026-11-15-codex.md, REVIEW-INDEP-2026-11-16-gpt-6-astra.md, REVIEW-INDEP-2026-11-16-glm-5.3.md; findings R27-R55 corrected (last: 77ae422)"
     }
   ],
   "evidence_to_record": [

@@ -1,6 +1,7 @@
-# E05-P1 - Sessione paper su dati nuovi (bozza)
+# E05-P1 - Sessione paper su dati nuovi
 
-Specifica: [config/experiments/E05-P1-paper-forward-v1.json](../config/experiments/E05-P1-paper-forward-v1.json), stato `DRAFT`.
+Specifica: [config/experiments/E05-P1-paper-forward-v1.json](../config/experiments/E05-P1-paper-forward-v1.json), stato `PREREGISTERED` il 2026-11-16, commit del runner `77ae422`.
+Registro ufficiale: [reports/e05-p1/REGISTER.md](../reports/e05-p1/REGISTER.md).
 È il checkpoint CP-E05.3: dopo l'esito CANDIDATE di E05 serve una prova su dati prodotti dopo la
 registrazione, prima di qualsiasi passo S08.
 
@@ -18,7 +19,7 @@ La candidata è congelata: `daily_trend` con rendimento a 28 giorni, media a 100
 | Testnet | Specchio facoltativo degli ordini tramite S07 | Serve a osservare fill, fee e guasti reali; non entra nei criteri sul vantaggio |
 | Durata | 12 settimane per i criteri operativi; fino a 8 trade chiusi o 52 settimane per i criteri sul vantaggio | La candidata fa circa 7–11 trade l'anno: in 12 settimane sono 2–3 |
 
-## Deviazione da E05 (DEV-1, da approvare prima della preregistrazione)
+## Deviazione da E05 (DEV-1, approvata il 2026-11-15)
 
 E05 prevede, per un esito CANDIDATE, una sessione paper su dati nuovi con le klines del **testnet**, con il runner
 S06/S07 e le chiavi dell'operatore. La bozza usa invece le klines pubbliche del **mercato reale**, senza chiavi, con
@@ -94,17 +95,18 @@ avvenuto, altrimenti INCONCLUSIVE.
 
 | Id | Cosa serve | Stato |
 |---|---|---|
-| PRE-1 | Feature giornaliere nel runner paper | **realizzato**, da rivedere: `PaperSession.create(features={momentum_days, sma_days})` e `daily_trend.daily_features_at`, che danno gli stessi valori di `daily_features` sull'intera serie |
-| PRE-2 | Fonte di dati in tempo reale | **realizzata**, da rivedere: sorgente `public_klines` (klines pubbliche in sola lettura, storia di 2.600 ore con paginazione, apertura della barra in corso, tollera ore mancanti, riprova sul throttling) |
+| PRE-1 | Feature giornaliere nel runner paper | **realizzato e rivisto** (GLM-5.3, 15-11): `PaperSession.create(features={momentum_days, sma_days})` e `daily_trend.daily_features_at`, che danno gli stessi valori di `daily_features` sull'intera serie |
+| PRE-2 | Fonte di dati in tempo reale | **realizzata e rivista** (GLM-5.3, 15-11): sorgente `public_klines` (klines pubbliche in sola lettura, storia di 2.600 ore con paginazione, apertura della barra in corso, tollera ore mancanti, riprova sul throttling) |
 | PRE-3 | Runner pianificato su una macchina sempre accesa, con backup | operatore |
-| PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
+| PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | **fatta**: [REVIEW-INDEP-2026-11-15-glm3.md](../REVIEW-INDEP-2026-11-15-glm3.md), E05 VERIFIED il 2026-11-15 |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
-| PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15 e 16-11 (R27-R55)**: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione sui valori effettivi, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica e file esportati dal database |
+| PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato e rivisto**: `session_fidelity` |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e rivisto quattro volte** (DeepSeek, Codex, gpt-6-astra, GLM-5.3), rilievi R27-R55 corretti: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione sui valori effettivi, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica e file esportati dal database |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
-La specifica va preregistrata solo dopo PRE-4 e PRE-7, con DEV-1 approvata (fatto il 2026-11-15), citando il commit del runner.
+La specifica è preregistrata il 2026-11-16 con il commit del runner `77ae422` (PRE-4 e PRE-7 rivisti, DEV-1 approvata
+il 2026-11-15). Prima dell'avvio resta PRE-3: la macchina sempre accesa con il backup della cartella della sessione.
 
 Il registro ufficiale (riga E05-P1 del backlog e `reports/e05-p1/`) contiene almeno: l'identificativo della sessione
 attiva, lo sha256 della specifica preregistrata, la data di preregistrazione, il commit del runner, l'ora di inizio,
