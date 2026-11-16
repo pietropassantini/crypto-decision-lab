@@ -141,7 +141,9 @@ def test_production_admission_checks_the_whole_perimeter(repo, monkeypatch):
     other_host = dataclasses.replace(live, meta={**live.meta, "source": {**live.meta["source"], "identity": {
         **live.meta["source"]["identity"], "base_url": "https://example.test"}}})
     assert any("data host" in r for r in reasons(other_host))
-    shallow = dataclasses.replace(live, meta={**live.meta, "source": {**live.meta["source"], "history_hours": 600}})
+    shallow = dataclasses.replace(live, meta={**live.meta, "source": {**live.meta["source"], "history_hours": 600,
+                                                                      "identity": {**live.meta["source"]["identity"],
+                                                                                   "history_hours": 600}}})
     assert any("warmup of 600 hours" in r for r in reasons(shallow))
     replay_mode = dataclasses.replace(live, meta={**live.meta, "mode": "paper-replay"})
     assert any("not a live paper session" in r for r in reasons(replay_mode))
@@ -156,6 +158,18 @@ def test_production_admission_checks_the_whole_perimeter(repo, monkeypatch):
     assert any("effective configuration" in r for r in reasons(swapped))  # also when the stored digest is made to agree
     # outside production only the candidate itself is checked
     assert session_report.invalid_reasons(other_symbol, real, production=False) == []
+    # R49: values left to the defaults are read from the data source in effect; written values must agree with it
+    defaults = dataclasses.replace(live, meta={**live.meta, "source": {
+        "kind": "public_klines", "identity": live.meta["source"]["identity"]}})
+    assert reasons(defaults) == []
+    disagree = dataclasses.replace(live, meta={**live.meta, "source": {**live.meta["source"], "identity": {
+        **live.meta["source"]["identity"], "history_hours": 600}}})
+    assert any("disagrees with the data source in effect" in r for r in reasons(disagree))
+    other_identity = dataclasses.replace(live, meta={**live.meta, "source": {**live.meta["source"], "identity": {
+        **live.meta["source"]["identity"], "kind": "snapshot"}}})
+    assert any("not a live paper session" in r for r in reasons(other_identity))
+    assert any("valid date" in r for r in reasons(live, {**real, "registered": "NaT"}))
+    assert any("valid date" in r for r in reasons(live, {**real, "registered": "not a date"}))
 
 
 # ---------------------------------------------------------------- the report reads, it does not touch (R38, R42)
@@ -211,8 +225,9 @@ def test_a_market_data_gap_excuses_its_day_and_the_fidelity_replays_it(tmp_path,
     # R41: a session with acknowledged gaps (one of 1 hour, one of 2) is faithful to the engine
     check = session_fidelity.check(snapshot=snapshot)
     assert check["match"] and check["first_difference"] is None, check
-    cut = snapshot.until(lost)  # a cut inside the first gap drops the records of the resumption it cannot replay
-    assert cut.ledger[-1]["kind"] != "gap_acknowledged" and session_fidelity.check(snapshot=cut)["match"]
+    cut = snapshot.until(lost)  # a cut inside the first gap keeps the acknowledgement and the replay reproduces it
+    assert cut.ledger[-1]["kind"] == "gap_acknowledged" and session_fidelity.check(snapshot=cut)["match"]
+    assert cut.status is None and cut.cursor == str(lost - pd.Timedelta(hours=1))  # R50: the cut's own cursor
 
 
 def test_week12_pass_late_days_missing_days_and_not_due(repo, monkeypatch):
@@ -438,7 +453,8 @@ def test_two_different_edge_decisions_cannot_both_be_recorded(repo, long_session
     failed = {"outcome": "FAILED", "checkpoint": "P1.edge"}
     assert session_report.record_decision(directory, "edge", confirmed, directory / "p1-edge-report.json") is True
     assert session_report.record_decision(directory, "edge", failed, directory / "other.json") is False  # whatever the outcome
-    assert not (directory / "other.json").exists()
+    # the loser only re-exports the decision already stored, never its own
+    assert json.loads((directory / "other.json").read_text(encoding="utf-8"))["outcome"] == "CONFIRMED"
     connection = sqlite3.connect(directory / "session.sqlite")
     assert list(connection.execute("SELECT outcome FROM p1_decisions WHERE checkpoint = 'edge'")) == [("CONFIRMED",)]
     with pytest.raises(sqlite3.IntegrityError):  # the database itself refuses a second edge row
@@ -484,3 +500,129 @@ def test_week12_outcomes_are_recorded_one_each(repo, monkeypatch, tmp_path, caps
     assert json.loads(capsys.readouterr().out)["outcome"] == "NOT_DUE"
     assert sorted(p.name for p in directory.glob("p1-week12-*.json")) == [
         "p1-week12-FAILED.json", "p1-week12-OPERATIONAL_PASS.json"]
+
+
+# ---------------------------------------------------------------- review of 2026-11-16 (R44-R50)
+def _gap_session(tmp_path, market_frame, monkeypatch, name, *, finish=False):
+    root = tmp_path / f"{name}-repo"
+    if not root.exists():
+        root.mkdir()
+        _write_catalog(root, market_frame.drop(index=[T0 + 10 * DAY]))
+    _clock(monkeypatch)
+    session = PaperSession.create(name, CONFIG, {"kind": "snapshot", "dataset_id": RESEARCH_ID},
+                                  start_at=str(T0.tz_localize(None)), end_at=str((T0 + 30 * DAY).tz_localize(None)),
+                                  root="var/paper", repo_root=root, features=FEATURES)
+    assert session.poll()["status"] == "PAUSED_GAP"
+    session.acknowledge_gap("bar lost by the exchange")  # the runner has not resumed yet
+    if finish:
+        session.finish("stopped right after the acknowledgement")
+    directory = session.directory
+    session.close()
+    return root, directory
+
+
+def test_an_acknowledged_gap_before_the_runner_resumes_is_not_a_false_stop(tmp_path, market_frame, monkeypatch, capsys):
+    root, directory = _gap_session(tmp_path, market_frame, monkeypatch, "ack")
+    snapshot = read_snapshot(directory)
+    assert snapshot.ledger[-1]["kind"] == "gap_acknowledged"
+    assert session_fidelity.check(snapshot=snapshot)["match"]  # R44: the stored acknowledgement is replayed
+    _production(monkeypatch, T0 + 11 * DAY)
+    spec = _spec_file(tmp_path)
+    code = session_report.main(["edge", "--session-dir", str(directory), "--repo-root", str(root), "--spec", str(spec)])
+    out = json.loads(capsys.readouterr().out)
+    assert code == 0 and out["outcome"] == "NOT_DUE" and out["invalid_reasons"] == []
+    assert not (directory / "p1-edge-report.json").exists()  # nothing consumed by a regular transition
+    week = session_report.main(["week12", "--session-dir", str(directory), "--repo-root", str(root), "--spec", str(spec)])
+    assert week == 0 and json.loads(capsys.readouterr().out)["fidelity"]["match"] is True
+    _, finished = _gap_session(tmp_path, market_frame, monkeypatch, "fin", finish=True)
+    assert [r["kind"] for r in read_snapshot(finished).ledger[-2:]] == ["gap_acknowledged", "end"]
+    assert session_fidelity.check(finished)["match"]  # acknowledgement followed by finish
+
+
+def test_the_reported_spec_digest_is_of_the_bytes_actually_used(repo, monkeypatch, tmp_path, capsys):
+    _clock(monkeypatch)
+    directory = _session(repo, 90, "sha")
+    spec_a = _spec_file(tmp_path)
+    used = session_report.read_spec(spec_a)[1]
+    other = _spec(features={"momentum_days": 7, "sma_days": 22})
+    original = session_report.week12
+
+    def swapping(*args, **kwargs):  # the file is replaced while the report is computed
+        spec_a.write_text(json.dumps(other), encoding="utf-8")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(session_report, "week12", swapping)
+    _production(monkeypatch, T0 + 84 * DAY + pd.Timedelta(hours=1))
+    assert session_report.main(["week12", "--session-dir", str(directory), "--repo-root", str(repo),
+                                "--spec", str(spec_a)]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["outcome"] == "OPERATIONAL_PASS" and out["spec_sha256"] == used  # not the hash of the new content
+    assert session_report.read_spec(spec_a)[1] != used
+    stored = json.loads((directory / "p1-week12-OPERATIONAL_PASS.json").read_text(encoding="utf-8"))
+    assert stored["spec_sha256"] == used
+
+
+def test_report_files_are_exported_from_the_stored_decision(repo, monkeypatch, tmp_path, capsys):
+    _clock(monkeypatch)
+    directory = _session(repo, 90, "exp")
+    spec = _spec_file(tmp_path)
+    _production(monkeypatch, T0 + 90 * DAY)
+    edge_args = ["edge", "--session-dir", str(directory), "--repo-root", str(repo), "--spec", str(spec)]
+    week_args = ["week12", "--session-dir", str(directory), "--repo-root", str(repo), "--spec", str(spec)]
+    monkeypatch.setattr(session_report, "DRAWDOWN_MIN_PCT", -0.5)  # a decision now: FAILED
+    assert session_report.main(edge_args) == 1
+    capsys.readouterr()
+    edge_file = directory / "p1-edge-report.json"
+    complete = edge_file.read_text(encoding="utf-8")
+    edge_file.write_text('{"checkpoint":', encoding="utf-8")  # a crash in the middle of the write
+    assert session_report.main(edge_args) == 2
+    capsys.readouterr()
+    assert edge_file.read_text(encoding="utf-8") == complete  # repaired from the database
+    edge_file.write_text(complete.replace("FAILED", "CONFIRMED"), encoding="utf-8")  # or edited by hand
+    assert session_report.main(edge_args) == 2 and edge_file.read_text(encoding="utf-8") == complete
+    capsys.readouterr()
+    assert session_report.main(week_args) == 1  # week12 FAILED
+    capsys.readouterr()
+    week_file = directory / "p1-week12-FAILED.json"
+    week_file.unlink()
+    assert session_report.main(week_args) == 1 and week_file.exists()  # re-created at the next run
+    capsys.readouterr()
+    assert session_report.export_decision(directory, "edge", None, edge_file)  # idempotent
+    assert not list(directory.glob(".*.tmp"))  # no temporary file left behind
+
+
+def test_a_read_only_archive_without_a_write_ahead_log_is_read_immutably(repo, monkeypatch):
+    _clock(monkeypatch)
+    directory = _session(repo, 20, "ro-archive")
+    import crypto_decision_lab.session_snapshot as snapshot_module
+    real_connect = snapshot_module.sqlite3.connect
+    uris = []
+
+    def connect(target, *args, **kwargs):  # what SQLite does in a read-only folder that has no -shm file
+        uris.append(str(target))
+        if "immutable=1" not in str(target):
+            raise snapshot_module.sqlite3.OperationalError("attempt to write a readonly database")
+        return real_connect(target, *args, **kwargs)
+
+    monkeypatch.setattr(snapshot_module.sqlite3, "connect", connect)
+    assert not (directory / "session.sqlite-wal").exists()
+    snapshot = read_snapshot(directory)
+    assert snapshot.events and uris[-1].endswith("mode=ro&immutable=1")
+    (directory / "session.sqlite-wal").write_bytes(b"")  # with a write-ahead log, immutable would be unsafe
+    with pytest.raises(snapshot_module.sqlite3.OperationalError):
+        read_snapshot(directory)
+
+
+def test_a_cut_is_the_session_in_market_time(repo, monkeypatch):
+    _clock(monkeypatch)
+    directory = _session(repo, 20, "cut")
+    snapshot = read_snapshot(directory)
+    assert snapshot.status == "COMPLETED"
+    instant = T0 + 5 * DAY + pd.Timedelta(hours=7)
+    cut = snapshot.until(instant)
+    assert cut.status is None and cut.cursor == str(instant) and cut.as_of == instant
+    assert all(pd.Timestamp(r["timestamp"]) <= instant for r in cut.ledger)
+    assert all(pd.Timestamp(row["at"]) <= instant and (row["clock"] is None or pd.Timestamp(row["clock"]) <= instant)
+               for row in cut.status_log)
+    assert read_snapshot(directory, as_of=instant) == cut
+

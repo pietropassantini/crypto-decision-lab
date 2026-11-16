@@ -50,7 +50,7 @@
     "source_kind": "public_klines",
     "base_url": "https://data-api.binance.vision",
     "min_history_hours": 2400,
-    "admission": "A production report (no --as-of) requires: the spec PREREGISTERED with a registration date; a session that starts at or after that date; source kind public_klines (the tool's constant, not the spec's), mode paper, symbol and host as declared here, warmup of at least min_history_hours; the effective configuration digest (recomputed from the stored configuration) and the features of the frozen candidate. Otherwise the outcome is INVALID."
+    "admission": "A production report (no --as-of) requires: the spec PREREGISTERED with a valid registration date; a session that starts at or after that date; source kind public_klines (the tool's constant, not the spec's) in the session and in the identity of its data source, mode paper; the symbol, host and warmup depth IN EFFECT (the identity the data source reported, with any value written in the session source agreeing with it) as declared here, warmup of at least min_history_hours; the effective configuration digest (recomputed from the stored configuration) and the features of the frozen candidate. Otherwise the outcome is INVALID."
   },
   "execution": {
     "primary": "Paper execution simulated by the S06 engine with the cost model above (same engine as the backtest). This is the evidence for the criteria.",
@@ -77,12 +77,12 @@
     "stop_rules_any_time": [
       "max_drawdown_mtm_pct < -20 on the equity, over everything seen up to the instant of the report (also after the edge trigger) -> outcome FAILED, the session is closed (backtest worst drawdown was -17.2%). Both reports check it; it is the operator's duty to run them at least weekly",
       "the session is not the frozen candidate on the declared source (see data.admission) -> outcome INVALID. Checked by both reports",
-      "a decision taken with a feature computed from a bar not yet closed -> detected by the fidelity check, which replays the engine on the session's own recorded bars (closed bars only): a mismatch is OPERATIONAL_FAIL at week 12 and INVALID at the edge checkpoint (checked up to the cutoff; the later state is reported as fidelity_to_date)"
+      "the session ledger is not what the engine produces on the session's own recorded bars -> the fidelity check fails: OPERATIONAL_FAIL at week 12 and INVALID at the edge checkpoint (checked up to the cutoff; the later state is reported as fidelity_to_date). The check compares stored values only: it cannot show WHEN a recorded close became available, so the causality of the inputs (every feature computed from closed bars) is a property required of the feed and the runner and verified by their tests. A violation established from outside the session (for example evidence that a close was used before it was published) is handled by the coordinator, who declares the session INVALID in the official register"
     ],
     "week12_operational": [
       "timeliness: for each day, the 00:00 UTC event is committed (status_log.at, wall clock, of the row whose detail is 'last event <bar>') no later than 2 hours after the bar; at least 95% of the counted days since the start. Days whose 00:00 bar is missing because of an acknowledged market-data gap are not counted (they are checked by the next criterion); a day the runner never processed counts as not on time. A late poll that processes several bars at once is measured on each bar",
       "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
-      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored; a gap is replayed the way the runner handles it). It certifies the internal consistency of the session, NOT the authenticity of the bars and NOT the instant at which a recorded close became available",
+      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored; a gap is replayed the way the runner handles it, also when it is acknowledged and the runner has not resumed yet). It certifies the internal consistency of the session, NOT the authenticity of the bars and NOT the instant at which a recorded close became available",
       "max_drawdown_mtm_pct >= -20"
     ],
     "edge": {
@@ -108,7 +108,7 @@
       "week12": {
         "OPERATIONAL_PASS": "all week-12 criteria pass -> the session continues unchanged to P1.edge",
         "OPERATIONAL_FAIL": "a week-12 criterion fails -> the runner is fixed (never the candidate) and a new session starts; see restarts",
-        "reports": "one record per outcome (p1-week12-<OUTCOME>.json and a row in the session database): a later FAILED or INVALID is recorded next to an earlier OPERATIONAL_PASS, nothing is overwritten"
+        "reports": "one record per outcome in the session database; p1-week12-<OUTCOME>.json is exported from it, atomically, and re-created when missing or damaged at the next run; a later FAILED or INVALID is recorded next to an earlier OPERATIONAL_PASS, nothing is overwritten"
       },
       "restarts": {
         "rule": "at most 2 restarts, each approved by the coordinator and recorded; the candidate, the features and the criteria stay frozen",
@@ -119,7 +119,7 @@
         "CONFIRMED": "all four edge criteria pass at P1.edge -> S08 criteria may be registered for a new release of this exact candidate",
         "NOT_CONFIRMED": "an edge criterion fails at P1.edge -> the candidate is closed as REJECTED on forward data",
         "INCONCLUSIVE": "fewer than 8 closed trades after 52 full weeks, or the 78-week deadline of the restarts is reached",
-        "recorded": "the decision (CONFIRMED, NOT_CONFIRMED, INCONCLUSIVE, FAILED or INVALID) is recorded once in the session database, atomically (a unique index allows one edge row), and in p1-edge-report.json; a second evaluation is refused (exit 2) even if the file is deleted (it is re-created from the database) or two evaluations run at the same time. --as-of makes any report a dry run that writes nothing and cuts the session at that instant",
+        "recorded": "the decision (CONFIRMED, NOT_CONFIRMED, INCONCLUSIVE, FAILED or INVALID) is recorded once in the session database, atomically (a unique index allows one edge row); p1-edge-report.json is always exported from that stored decision, written atomically (temporary file and rename) and re-created when missing, truncated or different; a second evaluation is refused (exit 2). Once the edge is decided the edge command no longer recomputes anything: the stop rules after that point are watched by the weekly week12 report. --as-of makes any report a dry run that writes nothing and gives the session in market time as of that instant",
         "FAILED_INVALID": "FAILED or INVALID at an edge run closes the candidate on this session and counts as the edge decision"
       }
     }
@@ -158,7 +158,7 @@
     {
       "id": "PRE-7",
       "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--spec ...] [--as-of ...]. Both reports read the session through a read-only, consistent snapshot (no PaperSession, no data source, no clock, no writes except to record a production decision). week12: timeliness from status_log (days excused by an acknowledged gap are not counted), unexplained missing days, fidelity (a gap is replayed the way the runner handles it), drawdown. edge: realized net of the closed trades up to the trigger Monday and only once that bar is committed, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result; the 52-week deadline applies to the trigger. Both: INVALID (production admission: preregistered spec, start after it, live public_klines session, mode, symbol, host, warmup, effective configuration digest, features; at the edge also the fidelity up to the cutoff) and FAILED (drawdown over everything seen). --as-of is a dry run that writes nothing and cuts the session at that instant; decisions are recorded atomically in the session database (one edge row by a unique index, week12 once per outcome), a missing file is re-created. Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
-      "status": "implemented, corrected after the reviews of 2026-11-15 (R27-R43), pending a new review"
+      "status": "implemented, corrected after the reviews of 2026-11-15 and 2026-11-16 (R27-R50), pending a new review"
     }
   ],
   "evidence_to_record": [
@@ -198,6 +198,6 @@
   "procedure": {
     "official_register": "The coordinator keeps the official register in the backlog row of E05-P1 and in reports/e05-p1/: the id of the active session, the spec sha256 (every report prints spec_sha256 and it must equal the registered one), the start time, each restart with its approval and reason, and the 78-week deadline counted from the first session. The tool cannot know which session is the official one, or how many restarts happened: copies of a session folder made before a decision are outside its reach, and the register is what makes them void.",
     "weekly_run": "every Monday 00:00 UTC: session_report week12 and session_report edge on the official session, without --as-of",
-    "reading": "the reports read the session through a read-only snapshot; they write only to record a production decision"
+    "reading": "the reports read the session through a read-only snapshot and write only to record a production decision. They never change a table or the main database file; SQLite may create the -wal/-shm files next to the database when they are absent and the folder is writable. An archived copy in a read-only folder is read in immutable mode when it has no -wal file; a read-only copy that still has a -wal file must be copied to a writable folder first. A report for a past instant (--as-of) is a replay in market time: events, ledger and history cut on the bar timestamp, the status log on the wall clock"
   }
 }

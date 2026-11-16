@@ -38,9 +38,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
+import time
 from typing import Any
+import uuid
 
 import pandas as pd
 
@@ -83,15 +86,21 @@ def _criterion(text: str, observed: Any, threshold: Any, passed: bool) -> dict:
 
 
 # ---------------------------------------------------------------- spec and candidate pin
+def read_spec(path: str | Path) -> tuple[dict, str]:
+    """The spec and its sha256 from ONE read of the file (line endings normalised to LF)."""
+    raw = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    spec = json.loads(raw.decode("utf-8-sig"))
+    candidate_pin(spec)  # a spec that contradicts its own candidate block is refused
+    return spec, hashlib.sha256(raw).hexdigest()
+
+
 def spec_sha256(path: str | Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    return read_spec(path)[1]
 
 
 def load_spec(path: str | Path | None = None, *, repo_root: str | Path = ".") -> dict:
     target = Path(path) if path is not None else Path(repo_root) / DEFAULT_SPEC
-    spec = json.loads(target.read_text(encoding="utf-8-sig"))
-    candidate_pin(spec)  # a spec that contradicts its own candidate block is refused
-    return spec
+    return read_spec(target)[0]
 
 
 def candidate_pin(spec: dict) -> tuple[str, dict]:
@@ -120,24 +129,33 @@ def invalid_reasons(snapshot: SessionSnapshot, spec: dict, *, production: bool) 
     if not production:
         return reasons
     data = spec.get("data", {})
-    if spec.get("status") != "PREREGISTERED" or not spec.get("registered"):
-        reasons.append(f"the spec is not preregistered (status {spec.get('status')}, registered {spec.get('registered')})")
-    elif _utc(meta["start_at"]) < _utc(spec["registered"]):
+    registered = pd.to_datetime(spec.get("registered"), utc=True, errors="coerce") if spec.get("registered") else pd.NaT
+    if spec.get("status") != "PREREGISTERED" or pd.isna(registered):
+        reasons.append(f"the spec is not preregistered with a valid date (status {spec.get('status')}, "
+                       f"registered {spec.get('registered')})")
+    elif _utc(meta["start_at"]) < registered:
         reasons.append(f"the session starts {meta['start_at']}, before the preregistration of the spec "
                        f"({spec['registered']})")
     if data.get("source_kind") != LIVE_SOURCE_KIND:
         reasons.append(f"the spec declares source kind {data.get('source_kind')}, not {LIVE_SOURCE_KIND}")
     source = meta["source"]
-    if source.get("kind") != LIVE_SOURCE_KIND or meta["mode"] != LIVE_MODE:
-        reasons.append(f"not a live paper session on {LIVE_SOURCE_KIND} (source {source.get('kind')}, mode {meta['mode']})")
-    elif source["kind"] == "public_klines":
-        identity = source.get("identity", {})
-        if source.get("symbol") != data.get("symbol") or identity.get("symbol") != data.get("symbol"):
-            reasons.append(f"symbol {source.get('symbol')} is not {data.get('symbol')}")
+    identity = source.get("identity", {})  # what the data source object reported: the values in effect
+    kind = source.get("kind")
+    if kind != LIVE_SOURCE_KIND or identity.get("kind", kind) != kind or meta["mode"] != LIVE_MODE:
+        reasons.append(f"not a live paper session on {LIVE_SOURCE_KIND} (source {kind}, identity "
+                       f"{identity.get('kind')}, mode {meta['mode']})")
+    elif kind == "public_klines":
+        for field in ("symbol", "history_hours"):  # a value written in the source must agree with the one in effect
+            if field in source and source[field] != identity.get(field):
+                reasons.append(f"source {field} {source[field]} disagrees with the data source in effect "
+                               f"({identity.get(field)})")
+        if identity.get("symbol") != data.get("symbol"):
+            reasons.append(f"symbol {identity.get('symbol')} is not {data.get('symbol')}")
         if data.get("base_url") and identity.get("base_url") != data["base_url"]:
             reasons.append(f"data host {identity.get('base_url')} is not {data['base_url']}")
-        if int(source.get("history_hours", 0)) < int(data.get("min_history_hours", 0)):
-            reasons.append(f"warmup of {source.get('history_hours')} hours, fewer than {data['min_history_hours']}")
+        hours = identity.get("history_hours")
+        if hours is None or int(hours) < int(data.get("min_history_hours", 0)):
+            reasons.append(f"warmup of {hours} hours, fewer than {data.get('min_history_hours')}")
     return reasons
 
 
@@ -158,23 +176,59 @@ def _edge_file(directory: Path) -> Path:
     return directory / "p1-edge-report.json"
 
 
-def edge_decided(directory: Path) -> bool:
-    """Whether the edge was already decided here; a decision missing its file is re-exported from the database."""
-    connection = sqlite3.connect(directory / "session.sqlite", timeout=30, isolation_level=None)
+def _same(file: Path, text: str) -> bool:
     try:
-        has_table = connection.execute("SELECT 1 FROM sqlite_master WHERE name = 'p1_decisions'").fetchone()
-        row = connection.execute("SELECT report FROM p1_decisions WHERE checkpoint = 'edge'").fetchone() \
-            if has_table else None
+        return file.read_text(encoding="utf-8") == text
+    except OSError:
+        return False
+
+
+def _publish(file: Path, text: str) -> None:
+    """Write ``file`` atomically: a complete temporary file, then a rename; concurrent exporters are harmless."""
+    if _same(file, text):
+        return
+    temporary = file.with_name(f".{file.name}.{uuid.uuid4().hex}.tmp")
+    with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    for _ in range(40):
+        try:
+            os.replace(temporary, file)
+            return
+        except PermissionError:  # Windows: another exporter is replacing the same file right now
+            if _same(file, text):
+                temporary.unlink(missing_ok=True)
+                return
+            time.sleep(0.05)
+    temporary.unlink(missing_ok=True)
+    raise ReportError(f"could not publish {file}")
+
+
+def export_decision(directory: Path, checkpoint: str, outcome: str | None, file: Path) -> bool:
+    """Re-create ``file`` from the decision stored in the session database (missing, truncated or different)."""
+    database = directory / "session.sqlite"
+    connection = sqlite3.connect(f"{database.resolve().as_uri()}?mode=ro", uri=True, timeout=30)
+    try:
+        if connection.execute("SELECT 1 FROM sqlite_master WHERE name = 'p1_decisions'").fetchone() is None:
+            return False
+        query = "SELECT report FROM p1_decisions WHERE checkpoint = ?" + (" AND outcome = ?" if outcome else "")
+        row = connection.execute(query, (checkpoint, outcome) if outcome else (checkpoint,)).fetchone()
     finally:
         connection.close()
-    if row is not None and not _edge_file(directory).exists():
-        with _edge_file(directory).open("x", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps(json.loads(row[0]), indent=2, default=str) + "\n")
-    return row is not None or _edge_file(directory).exists()
+    if row is None:
+        return False
+    _publish(file, json.dumps(json.loads(row[0]), indent=2, default=str) + "\n")
+    return True
+
+
+def edge_decided(directory: Path) -> bool:
+    """Whether the edge was already decided here; its file is re-created from the database when needed."""
+    return export_decision(directory, "edge", None, _edge_file(directory)) or _edge_file(directory).exists()
 
 
 def record_decision(directory: Path, checkpoint: str, report: dict, file: Path) -> bool:
-    """Record a decision atomically in the session database and in ``file``; False if it already exists."""
+    """Record a decision atomically in the session database, then export ``file`` from it; False if it existed."""
     connection = _connect(directory)
     try:
         try:
@@ -182,15 +236,15 @@ def record_decision(directory: Path, checkpoint: str, report: dict, file: Path) 
             connection.execute("INSERT INTO p1_decisions(checkpoint, outcome, written_at, report) VALUES (?, ?, ?, ?)",
                                (checkpoint, report["outcome"], str(_now()), json.dumps(report, default=str)))
             connection.execute("COMMIT")
+            inserted = True
         except sqlite3.IntegrityError:
             connection.execute("ROLLBACK")
-            return False
+            inserted = False
     finally:
         connection.close()
-    if not file.exists():
-        with file.open("x", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps(report, indent=2, default=str) + "\n")
-    return True
+    # the file always mirrors the stored decision (also when this call lost a race or the file was damaged)
+    export_decision(directory, checkpoint, None if checkpoint == "edge" else report["outcome"], file)
+    return inserted
 
 
 # ---------------------------------------------------------------- shared helpers
@@ -408,7 +462,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     directory = Path(args.session_dir)
     spec_path = Path(args.spec) if args.spec else Path(args.repo_root) / DEFAULT_SPEC
-    spec = load_spec(spec_path)
+    spec, spec_digest = read_spec(spec_path)  # the hash is of the very bytes the report uses
     dry = args.as_of is not None
     already = {"error": "the edge was already evaluated for this session"}
     if args.checkpoint == "edge" and not dry and edge_decided(directory):
@@ -416,7 +470,7 @@ def main(argv=None) -> int:
         return 2  # evaluated exactly once, recorded in the session as well as in the file
     run = week12 if args.checkpoint == "week12" else edge
     report = run(directory, repo_root=args.repo_root, as_of=args.as_of, spec=spec)
-    report["spec_sha256"] = spec_sha256(spec_path)  # to be compared with the official register
+    report["spec_sha256"] = spec_digest  # to be compared with the official register
     if not dry and report["outcome"] != "NOT_DUE":
         name = "p1-edge-report.json" if args.checkpoint == "edge" else f"p1-week12-{report['outcome']}.json"
         if not record_decision(directory, args.checkpoint, report, directory / name):

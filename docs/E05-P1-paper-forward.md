@@ -37,10 +37,15 @@ l'approvazione esplicita del coordinatore, registrata nella specifica (`deviatio
   preregistrata (con data di registrazione), l'avvio della sessione dopo di essa, la fonte `public_klines`, la modalità
   `paper`, il simbolo, l'host e la profondità del warmup, il digest della configurazione **ricalcolato** da quella
   memorizzata e i parametri delle feature;
-- una decisione presa su una barra non chiusa: la rileva il controllo di fedeltà (il motore rigioca solo barre chiuse);
-  un mancato accordo è `OPERATIONAL_FAIL` alla settimana 12 e `INVALID` nel rapporto sul vantaggio.
+- il registro della sessione non coincide con quello che il motore produce sulle barre registrate dalla sessione:
+  lo rileva il controllo di fedeltà, `OPERATIONAL_FAIL` alla settimana 12 e `INVALID` nel rapporto sul vantaggio. Il
+  controllo confronta valori memorizzati: **non può dire quando un prezzo è diventato disponibile**. Che ogni feature
+  usi solo barre chiuse è una proprietà richiesta alla fonte e al runner, verificata dai loro test; una violazione
+  accertata dall'esterno la gestisce il coordinatore, dichiarando la sessione `INVALID` nel registro ufficiale.
 
 Spetta all'operatore lanciare i rapporti almeno una volta a settimana: il runner non chiude da solo la sessione.
+Dopo la decisione sul vantaggio il comando `edge` non ricalcola più niente: gli stop da quel momento li segue il
+rapporto settimanale `week12`.
 
 **Settimana 12 (operativo e fedeltà):**
 - **tempestività:** per ogni giorno, l'evento delle 00:00 UTC risulta registrato entro 2 ore dalla barra, in almeno il
@@ -95,7 +100,7 @@ avvenuto, altrimenti INCONCLUSIVE.
 | PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
 | PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15-11 (R27-R43)**, da rivedere di nuovo: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione completa in produzione, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica nella sessione |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15 e 16-11 (R27-R50)**, da rivedere di nuovo: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione sui valori effettivi, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica e file esportati dal database |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
@@ -132,20 +137,24 @@ python -m crypto_decision_lab.session_report week12 --session-dir <cartella dell
 python -m crypto_decision_lab.session_report edge --session-dir <cartella della sessione>
 ```
 
-Con `--as-of "<istante UTC>"` il rapporto è una **prova**: non scrive niente (né file né registrazione nella sessione) e
-taglia la sessione a quell'istante, quindi non mostra dati successivi. I rapporti leggono la sessione da un'**istantanea in sola
-lettura** (una lettura coerente, senza aprire la fonte dati e senza chiedere l'orologio); scrivono solo per registrare una
-decisione in produzione. In produzione non si usa mai `--as-of`. `--spec` indica la specifica (di default quella di E05-P1);
-ogni rapporto stampa `spec_sha256`, da confrontare con quello del registro ufficiale.
+Con `--as-of "<istante UTC>"` il rapporto è una **prova**: non scrive niente e ricostruisce la sessione **in tempo di
+mercato** a quell'istante (eventi, registro e storia tagliati sull'orario della barra, il registro degli stati sull'ora
+reale). I rapporti leggono la sessione da un'**istantanea in sola lettura** (una lettura coerente, senza aprire la fonte
+dati e senza chiedere l'orologio): non modificano tabelle né il file del database; SQLite può creare i file `-wal` e
+`-shm` accanto al database se mancano e la cartella è scrivibile. Una copia d'archivio in una cartella in sola lettura
+si legge se non ha un file `-wal`; altrimenti va copiata in una cartella scrivibile. In produzione non si usa mai
+`--as-of`. `--spec` indica la specifica (di default quella di E05-P1); ogni rapporto stampa `spec_sha256`, calcolato
+sugli stessi byte letti per il calcolo, da confrontare con quello del registro ufficiale.
 
 - `week12`: `NOT_DUE` prima delle 12 settimane, poi `OPERATIONAL_PASS` o `OPERATIONAL_FAIL`; `FAILED` o `INVALID` in qualsiasi
-  momento. Ogni esito si registra una volta (`p1-week12-<ESITO>.json` e una riga nel database della sessione): un
+  momento. Ogni esito si registra una volta nel database della sessione e se ne esporta `p1-week12-<ESITO>.json`
+  (ricreato se manca o è danneggiato): un
   `FAILED` successivo si affianca a un `OPERATIONAL_PASS` precedente, senza sovrascriverlo.
 - `edge`: `NOT_DUE` finché i trade chiusi sono meno di 8 (e non sono passate 52 settimane) o finché non è arrivato il lunedì
   di trigger; poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi `INCONCLUSIVE`; `FAILED` o `INVALID`
   per le regole di stop. La decisione si registra **una volta sola** nel database della sessione e in `p1-edge-report.json`:
-  una seconda valutazione è rifiutata (codice di uscita 2) anche se il file viene cancellato (si ricrea dal database), la
-  cartella copiata dopo la decisione o due valutazioni partono insieme (la registrazione è atomica).
+  una seconda valutazione è rifiutata (codice di uscita 2), anche con due valutazioni contemporanee. Il file si scrive
+  in modo atomico ed è sempre ricostruito dalla decisione memorizzata se manca, è troncato o è diverso.
 
 Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 

@@ -12,7 +12,9 @@ the session): it never writes, never contacts a data source and never asks for a
 
 A gap is replayed the way the runner handles it: the session stops before the missing bar and, when
 the operator acknowledges, logs ``gap_acknowledged`` and resumes; the replay therefore acknowledges the
-gap before stepping the first bar after it (no intermediate ``gap`` record).
+gap before stepping the first bar after it (no intermediate ``gap`` record).  An acknowledgement already
+stored but not yet followed by a bar (the runner has not resumed, or the session was finished right after
+it) is replayed from the resume instant the acknowledgement records.
 
 Compared after normalisation: feature values rounded to 12 significant digits (the runner and
 the whole-frame computation sum the daily closes in a different order, so the last digit can
@@ -95,6 +97,14 @@ def run_engine(snapshot: SessionSnapshot, config: dict | None = None, *, with_fe
         if features is not None:
             event = MarketEvent(event.timestamp, event.open, {**event.features, **features[stamp]})
         ledger.extend(engine.step(event))
+    # A gap acknowledged after the last processed bar, before the runner resumed (or before the session was
+    # finished): the session already holds the acknowledgement; replay it from the resume instant it records.
+    last_market = max((i for i, r in enumerate(snapshot.ledger) if r["kind"] == "market"), default=-1)
+    pending_ack = [r for r in snapshot.ledger[last_market + 1:] if r["kind"] == "gap_acknowledged"]
+    if pending_ack and engine.previous is not None:
+        resume = pd.Timestamp(pending_ack[-1]["resumed_at"])
+        if resume > engine.previous + HOUR:
+            ledger.extend(engine.acknowledge_gap(resume, note="fidelity replay"))
     if any(r["kind"] == "end" for r in snapshot.ledger):
         ledger.extend(engine.finish())
     return ledger, len(events)
