@@ -8,34 +8,46 @@ outcome, so the decision is computed rather than read from prose:
 * ``edge``: the edge criteria on the net result of the CLOSED trades (the open position and its
   unrealised result are reported next to it), the equity drawdown, costs against gross on closed
   trades and the comparison with buy and hold on the session's recorded bars; outcome ``CONFIRMED`` /
-  ``NOT_CONFIRMED`` once the session has at least 8 closed trades, ``INCONCLUSIVE`` after 52 weeks
-  without them, ``NOT_DUE`` otherwise.
+  ``NOT_CONFIRMED`` once the trigger is reached, ``INCONCLUSIVE`` when the 52-week deadline passes
+  without a trigger, ``NOT_DUE`` otherwise.
 
-Both reports also apply the stop rules at any time: ``INVALID`` when the session is not the frozen
-candidate of the spec (digest, features and, in production, a live ``public_klines`` session) and
-``FAILED`` when the equity drawdown goes under the limit.
+Reading.  Both reports read the session through a read-only, consistent snapshot
+(:mod:`session_snapshot`): they never write to the session database (except to record a production
+decision), never open the data source and never ask it for the clock.  ``--as-of`` cuts every piece of
+the session at that instant, so a past instant never shows later data.
 
-Guarantees against waiting for a better figure and against a second look:
+Stop rules, checked by both reports at any time: ``INVALID`` when the session is not the frozen
+candidate of a preregistered spec on the live source (effective configuration digest, features, source
+kind, symbol, host, warmup depth, mode, start after the preregistration) or when, at the edge, the
+fidelity check fails up to the cutoff; ``FAILED`` when the equity drawdown over everything seen so far
+goes under the limit.
 
-* the edge is computed on the session **up to the trigger Monday 00:00 UTC** (the first Monday at or
-  after the close of the 8th closed trade), whenever the tool is run;
-* ``--as-of`` is a dry run: it never writes anything;
-* a production decision is recorded in the session database and in a file; a second edge decision
-  is refused (exit code 2) even if the file is deleted; the week-12 outcomes are recorded once each.
+Trigger.  The edge triggers on the first Monday 00:00 UTC at or after the close of the 8th closed trade
+and is computed on the session up to that Monday (included), whenever the tool is run.  It is not
+decided until the bar of that Monday is committed (or a gap covering it is acknowledged).  The trigger
+must fall within 52 weeks of the session start: a later trigger, or no trigger by the deadline, is
+``INCONCLUSIVE``.
+
+Once.  ``--as-of`` is a dry run that writes nothing.  A production edge decision is recorded atomically in
+the session database (one edge row, enforced by a unique index) and in a file; a second evaluation is
+refused (exit code 2), a missing file is re-created from the database.  Week-12 outcomes are recorded once
+each.
 """
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
+import sqlite3
 from typing import Any
 
 import pandas as pd
 
 from . import studio_analytics as analytics
 from .execution_contract import HOUR
-from .paper import PaperSession
 from .session_fidelity import check, run_engine
+from .session_snapshot import SessionSnapshot, read_snapshot
 from .studio import config_digest, normalize_config
 
 DAY = pd.Timedelta(days=1)
@@ -48,6 +60,8 @@ TIMELY_HOURS = 2
 TIMELY_SHARE_MIN = 0.95
 COSTS_SHARE_MAX = 0.5
 BUY_AND_HOLD_MARGIN_PP = 10.0
+LIVE_SOURCE_KIND = "public_klines"   # the only source a production session may use (tests replace it)
+LIVE_MODE = "paper"                  # and the only session mode
 DEFAULT_SPEC = Path("config/experiments/E05-P1-paper-forward-v1.json")
 
 
@@ -69,6 +83,10 @@ def _criterion(text: str, observed: Any, threshold: Any, passed: bool) -> dict:
 
 
 # ---------------------------------------------------------------- spec and candidate pin
+def spec_sha256(path: str | Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def load_spec(path: str | Path | None = None, *, repo_root: str | Path = ".") -> dict:
     target = Path(path) if path is not None else Path(repo_root) / DEFAULT_SPEC
     spec = json.loads(target.read_text(encoding="utf-8-sig"))
@@ -88,68 +106,125 @@ def candidate_pin(spec: dict) -> tuple[str, dict]:
     return digest, dict(block["features"])
 
 
-def invalid_reasons(session: PaperSession, spec: dict, *, production: bool) -> list[str]:
-    """Why this session is not the frozen candidate of the spec (stop rule INVALID)."""
+def invalid_reasons(snapshot: SessionSnapshot, spec: dict, *, production: bool) -> list[str]:
+    """Why this session is not the frozen candidate of the spec on the declared source (stop rule INVALID)."""
     digest, features = candidate_pin(spec)
-    reasons = []
-    if session.meta["config_sha256"] != digest:
-        reasons.append(f"configuration {session.meta['config_sha256'][:12]} differs from the frozen candidate {digest[:12]}")
-    if session.meta.get("features") != features:
-        reasons.append(f"feature parameters {session.meta.get('features')} differ from the frozen {features}")
-    if production:
-        kind = session.meta["source"].get("kind")
-        wanted = spec.get("data", {}).get("source_kind", "public_klines")
-        if kind != wanted:
-            reasons.append(f"not a live paper session on {wanted} (source {kind}, mode {session.meta['mode']})")
+    meta, reasons = snapshot.meta, []
+    effective = config_digest(meta["config"])  # recomputed from the stored configuration, not trusted
+    if effective != digest:
+        reasons.append(f"effective configuration {effective[:12]} differs from the frozen candidate {digest[:12]}")
+    elif meta["config_sha256"] != effective:
+        reasons.append(f"stored digest {meta['config_sha256'][:12]} does not match the stored configuration")
+    if meta.get("features") != features:
+        reasons.append(f"feature parameters {meta.get('features')} differ from the frozen {features}")
+    if not production:
+        return reasons
+    data = spec.get("data", {})
+    if spec.get("status") != "PREREGISTERED" or not spec.get("registered"):
+        reasons.append(f"the spec is not preregistered (status {spec.get('status')}, registered {spec.get('registered')})")
+    elif _utc(meta["start_at"]) < _utc(spec["registered"]):
+        reasons.append(f"the session starts {meta['start_at']}, before the preregistration of the spec "
+                       f"({spec['registered']})")
+    if data.get("source_kind") != LIVE_SOURCE_KIND:
+        reasons.append(f"the spec declares source kind {data.get('source_kind')}, not {LIVE_SOURCE_KIND}")
+    source = meta["source"]
+    if source.get("kind") != LIVE_SOURCE_KIND or meta["mode"] != LIVE_MODE:
+        reasons.append(f"not a live paper session on {LIVE_SOURCE_KIND} (source {source.get('kind')}, mode {meta['mode']})")
+    elif source["kind"] == "public_klines":
+        identity = source.get("identity", {})
+        if source.get("symbol") != data.get("symbol") or identity.get("symbol") != data.get("symbol"):
+            reasons.append(f"symbol {source.get('symbol')} is not {data.get('symbol')}")
+        if data.get("base_url") and identity.get("base_url") != data["base_url"]:
+            reasons.append(f"data host {identity.get('base_url')} is not {data['base_url']}")
+        if int(source.get("history_hours", 0)) < int(data.get("min_history_hours", 0)):
+            reasons.append(f"warmup of {source.get('history_hours')} hours, fewer than {data['min_history_hours']}")
     return reasons
 
 
 # ---------------------------------------------------------------- decisions recorded in the session
 _TABLE = ("CREATE TABLE IF NOT EXISTS p1_decisions(checkpoint TEXT NOT NULL, outcome TEXT NOT NULL, "
           "written_at TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY (checkpoint, outcome))")
+_EDGE_ONCE = "CREATE UNIQUE INDEX IF NOT EXISTS p1_edge_once ON p1_decisions(checkpoint) WHERE checkpoint = 'edge'"
 
 
-def _decided(directory: Path, checkpoint: str, repo_root) -> bool:
-    session = PaperSession(directory, repo_root=repo_root)
+def _connect(directory: Path) -> sqlite3.Connection:
+    connection = sqlite3.connect(directory / "session.sqlite", timeout=30, isolation_level=None)
+    connection.execute(_TABLE)
+    connection.execute(_EDGE_ONCE)
+    return connection
+
+
+def _edge_file(directory: Path) -> Path:
+    return directory / "p1-edge-report.json"
+
+
+def edge_decided(directory: Path) -> bool:
+    """Whether the edge was already decided here; a decision missing its file is re-exported from the database."""
+    connection = sqlite3.connect(directory / "session.sqlite", timeout=30, isolation_level=None)
     try:
-        session.connection.execute(_TABLE)
-        return session.connection.execute("SELECT 1 FROM p1_decisions WHERE checkpoint = ?",
-                                          (checkpoint,)).fetchone() is not None
+        has_table = connection.execute("SELECT 1 FROM sqlite_master WHERE name = 'p1_decisions'").fetchone()
+        row = connection.execute("SELECT report FROM p1_decisions WHERE checkpoint = 'edge'").fetchone() \
+            if has_table else None
     finally:
-        session.close()
+        connection.close()
+    if row is not None and not _edge_file(directory).exists():
+        with _edge_file(directory).open("x", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(json.loads(row[0]), indent=2, default=str) + "\n")
+    return row is not None or _edge_file(directory).exists()
 
 
-def _record(directory: Path, checkpoint: str, report: dict, file: Path, repo_root) -> bool:
-    """Record a decision in the session database and in ``file``; False if this outcome is already recorded."""
-    session = PaperSession(directory, repo_root=repo_root)
+def record_decision(directory: Path, checkpoint: str, report: dict, file: Path) -> bool:
+    """Record a decision atomically in the session database and in ``file``; False if it already exists."""
+    connection = _connect(directory)
     try:
-        session.connection.execute(_TABLE)
-        inserted = session.connection.execute(
-            "INSERT OR IGNORE INTO p1_decisions(checkpoint, outcome, written_at, report) VALUES (?, ?, ?, ?)",
-            (checkpoint, report["outcome"], str(_now()), json.dumps(report, default=str))).rowcount == 1
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute("INSERT INTO p1_decisions(checkpoint, outcome, written_at, report) VALUES (?, ?, ?, ?)",
+                               (checkpoint, report["outcome"], str(_now()), json.dumps(report, default=str)))
+            connection.execute("COMMIT")
+        except sqlite3.IntegrityError:
+            connection.execute("ROLLBACK")
+            return False
     finally:
-        session.close()
-    if inserted and not file.exists():
+        connection.close()
+    if not file.exists():
         with file.open("x", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(report, indent=2, default=str) + "\n")
-    return inserted
+    return True
+
+
+# ---------------------------------------------------------------- shared helpers
+def _gaps(snapshot: SessionSnapshot) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    return [(_utc(r["timestamp"]), _utc(r["resumed_at"])) for r in snapshot.ledger if r["kind"] == "gap_acknowledged"]
+
+
+def _initial(snapshot: SessionSnapshot) -> float:
+    return float(snapshot.meta["config"]["initial_cash"])
+
+
+def _stop_outcome(invalid: list[str], drawdown: float) -> str | None:
+    if invalid:
+        return "INVALID"
+    if drawdown < DRAWDOWN_MIN_PCT:
+        return "FAILED"
+    return None
 
 
 # ---------------------------------------------------------------- week 12
-def timeliness(session: PaperSession, as_of: pd.Timestamp) -> dict:
+def timeliness(snapshot: SessionSnapshot, as_of: pd.Timestamp) -> dict:
     """Daily 00:00 UTC decisions committed within :data:`TIMELY_HOURS` hours, from ``status_log``.
 
     A day whose 00:00 bar is missing because of an acknowledged market-data gap is excused: it is not
     in the count (the runner did nothing wrong).  A day the runner never processed counts as not on time.
     """
-    start = _utc(session.meta["start_at"])
+    start = _utc(snapshot.meta["start_at"])
     committed: dict[pd.Timestamp, pd.Timestamp] = {}
-    for row in session.status_log():
+    for row in snapshot.status_log:
         detail = row["detail"] or ""
         if detail.startswith("last event "):
             committed.setdefault(_utc(detail[len("last event "):]), _utc(row["at"]))  # wall clock of the commit
-    processed = {_utc(ts) for (ts,) in session.connection.execute("SELECT timestamp FROM events")}
-    gaps = [(_utc(r["timestamp"]), _utc(r["resumed_at"])) for r in session.ledger() if r["kind"] == "gap_acknowledged"]
+    processed = {_utc(ts) for ts, _ in snapshot.events}
+    gaps = _gaps(snapshot)
     limit = pd.Timedelta(hours=TIMELY_HOURS)
     due = [ts for ts in pd.date_range(start.ceil("D"), as_of.floor("D"), freq="1D") if ts + limit <= as_of]
     late, missing, unexplained, excused, delays = [], [], [], [], []
@@ -171,29 +246,17 @@ def timeliness(session: PaperSession, as_of: pd.Timestamp) -> dict:
             "excused_days": excused, "max_delay_hours": max((d for d in delays if d is not None), default=None)}
 
 
-def _stop_outcome(invalid: list[str], drawdown: float) -> str | None:
-    if invalid:
-        return "INVALID"
-    if drawdown < DRAWDOWN_MIN_PCT:
-        return "FAILED"
-    return None
-
-
 def week12(session_dir: str | Path, *, repo_root: str | Path = ".", as_of=None, spec: dict | None = None) -> dict:
     production = as_of is None
     clock = _now() if production else _utc(as_of)
     spec = spec or load_spec(repo_root=repo_root)
-    session = PaperSession(Path(session_dir), repo_root=repo_root)
-    try:
-        weeks = float((clock - _utc(session.meta["start_at"])) / WEEK)
-        punctuality = timeliness(session, clock)
-        summary = analytics.summarize(session.ledger(), float(session.meta["config"]["initial_cash"]))
-        invalid = invalid_reasons(session, spec, production=production)
-        session_id, mode = session.meta["session_id"], session.meta["mode"]
-    finally:
-        session.close()
-    fidelity = check(session_dir, repo_root=repo_root)
-    share, drawdown = punctuality["on_time_share"], summary["max_drawdown_mtm_pct"]
+    snapshot = read_snapshot(session_dir, as_of=None if production else clock)
+    weeks = float((clock - _utc(snapshot.meta["start_at"])) / WEEK)
+    punctuality = timeliness(snapshot, clock)
+    drawdown = analytics.summarize(snapshot.ledger, _initial(snapshot))["max_drawdown_mtm_pct"]
+    invalid = invalid_reasons(snapshot, spec, production=production)
+    fidelity = check(snapshot=snapshot)
+    share = punctuality["on_time_share"]
     criteria = [
         _criterion(f"daily decisions committed within {TIMELY_HOURS} h on at least {TIMELY_SHARE_MIN:.0%} of the "
                    "counted days", share, TIMELY_SHARE_MIN, share is not None and share >= TIMELY_SHARE_MIN),
@@ -209,19 +272,13 @@ def week12(session_dir: str | Path, *, repo_root: str | Path = ".", as_of=None, 
             outcome = "NOT_DUE"
         else:
             outcome = "OPERATIONAL_PASS" if all(c["passed"] for c in criteria) else "OPERATIONAL_FAIL"
-    return {"checkpoint": "P1.week12", "session_id": session_id, "mode": mode, "as_of": str(clock),
-            "dry_run": not production, "elapsed_weeks": round(weeks, 2), "outcome": outcome,
+    return {"checkpoint": "P1.week12", "session_id": snapshot.meta["session_id"], "mode": snapshot.meta["mode"],
+            "as_of": str(clock), "dry_run": not production, "elapsed_weeks": round(weeks, 2), "outcome": outcome,
             "invalid_reasons": invalid, "criteria": criteria, "timeliness": punctuality,
             "fidelity": {k: fidelity[k] for k in ("match", "events", "first_difference")}}
 
 
 # ---------------------------------------------------------------- edge
-def _until(ledger: list[dict], instant: pd.Timestamp | None) -> list[dict]:
-    if instant is None:
-        return ledger
-    return [r for r in ledger if _utc(r["timestamp"]) <= instant]
-
-
 def first_monday_at_or_after(moment: pd.Timestamp) -> pd.Timestamp:
     """First Monday 00:00 UTC at or after ``moment``."""
     day = moment.normalize()
@@ -239,20 +296,19 @@ def trigger(ledger: list[dict]) -> dict | None:
     return {"eighth_trade_closed_at": str(exit_at), "due_at": first_monday_at_or_after(exit_at)}
 
 
-def edge_figures(session: PaperSession, until: pd.Timestamp | None = None) -> dict:
-    """Equity and realised figures side by side, the open position, and the buy and hold (up to ``until``)."""
-    initial = float(session.meta["config"]["initial_cash"])
-    ledger = _until(session.ledger(), until)
-    summary = analytics.summarize(ledger, initial)
-    trades = analytics.trades(ledger)
+def edge_figures(snapshot: SessionSnapshot) -> dict:
+    """Equity and realised figures side by side, the open position, and the buy and hold, on ``snapshot``."""
+    initial = _initial(snapshot)
+    summary = analytics.summarize(snapshot.ledger, initial)
+    trades = analytics.trades(snapshot.ledger)
     closed = trades[trades["status"] == "CLOSED"] if not trades.empty else trades
     opened = trades[trades["status"] == "OPEN"] if not trades.empty else trades
     realized = float(closed["pnl"].sum()) if not closed.empty else 0.0
     costs = float(closed["costs"].sum()) if not closed.empty else 0.0
     gross = realized + costs
-    hold = copy.deepcopy(session.meta["config"])
+    hold = copy.deepcopy(snapshot.meta["config"])
     hold["strategy"] = {"name": "constant", "parameters": {"exposure": "LONG"}}
-    hold_ledger, _ = run_engine(session, hold, with_features=False, until=until)
+    hold_ledger, _ = run_engine(snapshot, hold, with_features=False)
     hold_summary = analytics.summarize(hold_ledger, initial)
     return {
         "closed_trades": int(len(closed)),
@@ -272,31 +328,44 @@ def edge(session_dir: str | Path, *, repo_root: str | Path = ".", as_of=None, sp
     production = as_of is None
     clock = _now() if production else _utc(as_of)
     spec = spec or load_spec(repo_root=repo_root)
-    session = PaperSession(Path(session_dir), repo_root=repo_root)
-    try:
-        weeks = float((clock - _utc(session.meta["start_at"])) / WEEK)
-        invalid = invalid_reasons(session, spec, production=production)
-        fired = trigger(session.ledger())
-        until = fired["due_at"] if fired is not None and fired["due_at"] <= clock else None
-        figures = edge_figures(session, until)
-        session_id, mode = session.meta["session_id"], session.meta["mode"]
-    finally:
-        session.close()
-    fidelity = check(session_dir, repo_root=repo_root)
+    snapshot = read_snapshot(session_dir, as_of=None if production else clock)
+    start = _utc(snapshot.meta["start_at"])
+    weeks = float((clock - start) / WEEK)
+    deadline = start + EDGE_DEADLINE_WEEKS * WEEK
+    invalid = invalid_reasons(snapshot, spec, production=production)
+    fired = trigger(snapshot.ledger)
+    due = fired["due_at"] if fired is not None else None
+    late_trigger = due is not None and due > deadline
+    processed = {_utc(ts) for ts, _ in snapshot.events}
+    ready = (due is not None and not late_trigger and due <= clock
+             and (due in processed or any(a <= due < b for a, b in _gaps(snapshot))))
+    cut = snapshot.until(due) if ready else snapshot  # the evaluation is the session as of the trigger Monday
+    figures = edge_figures(cut)
+    whole_drawdown = analytics.summarize(snapshot.ledger, _initial(snapshot))["max_drawdown_mtm_pct"]
+    fidelity = check(snapshot=cut)
     if not fidelity["match"]:
         invalid.append("the session ledger is not what the engine produces on the session's own recorded bars "
-                       f"(first difference at record {fidelity['first_difference']})")
-    report: dict[str, Any] = {"checkpoint": "P1.edge", "session_id": session_id, "mode": mode, "as_of": str(clock),
-                              "dry_run": not production, "elapsed_weeks": round(weeks, 2), "figures": figures,
-                              "invalid_reasons": invalid, "criteria": []}
+                       f"up to the cutoff (first difference at record {fidelity['first_difference']})")
+    to_date = check(snapshot=snapshot) if ready else fidelity
+    report: dict[str, Any] = {
+        "checkpoint": "P1.edge", "session_id": snapshot.meta["session_id"], "mode": snapshot.meta["mode"],
+        "as_of": str(clock), "dry_run": not production, "elapsed_weeks": round(weeks, 2),
+        "deadline": str(deadline), "figures": figures, "stop_drawdown_pct": whole_drawdown,
+        "fidelity_to_the_cutoff": fidelity["match"], "fidelity_to_date": to_date["match"],
+        "invalid_reasons": invalid, "criteria": []}
     if fired is not None:
-        report["trigger"] = {"eighth_trade_closed_at": fired["eighth_trade_closed_at"], "due_at": str(fired["due_at"]),
-                             "evaluated_as_of": str(until) if until is not None else None,
-                             "delay_days": round(float((clock - fired["due_at"]) / DAY), 2)}
-    stop = _stop_outcome(invalid, figures["max_drawdown_mtm_pct"])
+        report["trigger"] = {"eighth_trade_closed_at": fired["eighth_trade_closed_at"], "due_at": str(due),
+                             "evaluated_as_of": str(due) if ready else None,
+                             "delay_days": round(float((clock - due) / DAY), 2), "within_deadline": not late_trigger}
+    stop = _stop_outcome(invalid, whole_drawdown)
     if stop is not None:
         report.update(outcome=stop, reason="stop rule")
-    elif fired is not None and until is not None:
+    elif (fired is None or late_trigger) and clock >= deadline:
+        report.update(outcome="INCONCLUSIVE",
+                      reason=(f"the trigger Monday {due} is after the {EDGE_DEADLINE_WEEKS}-week deadline {deadline}"
+                              if late_trigger else
+                              f"fewer than {EDGE_MIN_CLOSED_TRADES} closed trades after {EDGE_DEADLINE_WEEKS} weeks"))
+    elif ready:
         share = figures["realized_costs_share_of_gross"]
         floor = figures["buy_and_hold_net_return_pct"] - BUY_AND_HOLD_MARGIN_PP
         criteria = [
@@ -311,12 +380,15 @@ def edge(session_dir: str | Path, *, repo_root: str | Path = ".", as_of=None, sp
         ]
         report.update(criteria=criteria,
                       outcome="CONFIRMED" if all(c["passed"] for c in criteria) else "NOT_CONFIRMED")
-    elif fired is not None:
-        report.update(outcome="NOT_DUE", reason=f"8 closed trades reached at {fired['eighth_trade_closed_at']}; "
-                                                f"the evaluation is due at the Monday {fired['due_at']}")
-    elif weeks >= EDGE_DEADLINE_WEEKS:
-        report.update(outcome="INCONCLUSIVE",
-                      reason=f"fewer than {EDGE_MIN_CLOSED_TRADES} closed trades after {EDGE_DEADLINE_WEEKS} weeks")
+    elif fired is not None and not late_trigger and due <= clock:
+        report.update(outcome="NOT_DUE", reason=f"8 closed trades reached at {fired['eighth_trade_closed_at']}; the "
+                                                f"bar of the Monday {due} is not committed yet, nothing is decided")
+    elif fired is not None and not late_trigger:
+        report.update(outcome="NOT_DUE", reason=f"8 closed trades reached at {fired['eighth_trade_closed_at']}; the "
+                                                f"evaluation is due at the Monday {due}")
+    elif late_trigger:
+        report.update(outcome="NOT_DUE", reason=f"the trigger Monday {due} is after the deadline {deadline}: "
+                                                "INCONCLUSIVE when the deadline is reached")
     else:
         report.update(outcome="NOT_DUE", reason=f"{figures['closed_trades']} of {EDGE_MIN_CLOSED_TRADES} closed "
                                                 f"trades, {weeks:.1f} of {EDGE_DEADLINE_WEEKS} weeks")
@@ -335,17 +407,22 @@ def main(argv=None) -> int:
     parser.add_argument("--as-of", help="DRY RUN at this UTC instant: nothing is written")
     args = parser.parse_args(argv)
     directory = Path(args.session_dir)
-    spec = load_spec(args.spec, repo_root=args.repo_root)
+    spec_path = Path(args.spec) if args.spec else Path(args.repo_root) / DEFAULT_SPEC
+    spec = load_spec(spec_path)
     dry = args.as_of is not None
-    if args.checkpoint == "edge" and not dry and (_decided(directory, "edge", args.repo_root)
-                                                  or (directory / "p1-edge-report.json").exists()):
-        print(json.dumps({"error": "the edge was already evaluated for this session"}))
+    already = {"error": "the edge was already evaluated for this session"}
+    if args.checkpoint == "edge" and not dry and edge_decided(directory):
+        print(json.dumps(already))
         return 2  # evaluated exactly once, recorded in the session as well as in the file
     run = week12 if args.checkpoint == "week12" else edge
     report = run(directory, repo_root=args.repo_root, as_of=args.as_of, spec=spec)
+    report["spec_sha256"] = spec_sha256(spec_path)  # to be compared with the official register
     if not dry and report["outcome"] != "NOT_DUE":
         name = "p1-edge-report.json" if args.checkpoint == "edge" else f"p1-week12-{report['outcome']}.json"
-        if not _record(directory, args.checkpoint, report, directory / name, args.repo_root):
+        if not record_decision(directory, args.checkpoint, report, directory / name):
+            if args.checkpoint == "edge":
+                print(json.dumps(already))
+                return 2  # lost the race to another evaluation
             report["note"] = f"{args.checkpoint} {report['outcome']} already recorded: not overwritten"
     print(json.dumps(report, indent=2, default=str))
     return 0 if report["outcome"] in ("NOT_DUE", "OPERATIONAL_PASS", "CONFIRMED") else 1

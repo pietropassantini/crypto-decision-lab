@@ -31,10 +31,12 @@ l'approvazione esplicita del coordinatore, registrata nella specifica (`deviatio
 ## Checkpoint e criteri
 
 **In qualsiasi momento (regole di stop, controllate da entrambi i rapporti):**
-- drawdown dell'equity sotto -20%: `FAILED`, la sessione si chiude;
-- la sessione non è la candidata congelata: `INVALID`. Si confrontano il digest della configurazione (fissato nella
-  specifica, `candidate.config_sha256`) e i parametri delle feature; in produzione la sessione deve anche essere una
-  sessione dal vivo su `public_klines`;
+- drawdown dell'equity sotto −20% su tutto ciò che si vede fino al momento del rapporto (anche dopo il trigger): `FAILED`,
+  la sessione si chiude;
+- la sessione non è la candidata congelata sulla fonte dichiarata: `INVALID`. In produzione si controllano la specifica
+  preregistrata (con data di registrazione), l'avvio della sessione dopo di essa, la fonte `public_klines`, la modalità
+  `paper`, il simbolo, l'host e la profondità del warmup, il digest della configurazione **ricalcolato** da quella
+  memorizzata e i parametri delle feature;
 - una decisione presa su una barra non chiusa: la rileva il controllo di fedeltà (il motore rigioca solo barre chiuse);
   un mancato accordo è `OPERATIONAL_FAIL` alla settimana 12 e `INVALID` nel rapporto sul vantaggio.
 
@@ -52,11 +54,14 @@ Spetta all'operatore lanciare i rapporti almeno una volta a settimana: il runner
 - drawdown ≥ −20%.
 
 **Checkpoint sul vantaggio (P1.edge)**, valutato **una volta sola**: scatta il primo lunedì alle 00:00 UTC in cui la
-sessione ha almeno **8 trade chiusi** (controllo settimanale). Se dopo 52 settimane non c'è, non si valuta e l'esito è
-INCONCLUSIVE. Il momento dipende solo dal numero di trade chiusi, mai dal risultato. Il rapporto è **calcolato sulla
-sessione fino a quel lunedì incluso, qualunque sia il giorno in cui si lancia lo strumento**: aspettare una cifra migliore
-non cambia il risultato, e il rapporto indica il ritardo della valutazione. Un fallimento chiude la candidata, un successo
-non si ripete né si prolunga. Il rapporto esegue anche il controllo di fedeltà: un mancato accordo dà `INVALID`.
+sessione ha almeno **8 trade chiusi** (controllo settimanale), entro 52 settimane dall'inizio: un ottavo trade il cui lunedì
+cade dopo la scadenza, o l'assenza di trigger alla scadenza, danno INCONCLUSIVE. Il momento dipende solo dal numero di trade
+chiusi, mai dal risultato. Il rapporto è **calcolato sulla sessione fino a quel lunedì incluso, qualunque sia il giorno in cui
+si lancia lo strumento**: aspettare una cifra migliore non cambia il risultato, e il rapporto indica il ritardo. **Non decide
+finché la sessione non ha registrato la barra di quel lunedì** (o un gap che la copre non è stato riconosciuto): fino ad allora
+è `NOT_DUE` e non scrive niente. Un fallimento chiude la candidata, un successo non si ripete né si prolunga. Il rapporto
+esegue anche il controllo di fedeltà fino al cutoff (un mancato accordo dà `INVALID`) e riporta a parte la fedeltà alla data
+del rapporto, che non cambia la decisione.
 
 Si riportano sempre affiancati il netto con la posizione aperta (equity) e il netto dei soli trade chiusi, la posizione
 aperta e il suo risultato non realizzato (rilievo R16 della review: la conferma di E05 passa solo per un plusvalore non
@@ -90,7 +95,7 @@ avvenuto, altrimenti INCONCLUSIVE.
 | PRE-4 | Review non Claude di E05 e del codice di PRE-1, PRE-2 e PRE-6 | revisore |
 | PRE-5 | Solo per lo specchio su testnet: collaudo S07 con le chiavi | operatore |
 | PRE-6 | Strumento di fedeltà per il criterio della settimana 12 | **realizzato**, da rivedere: `session_fidelity` |
-| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo la review del 15-11 (R27-R34)**, da rivedere di nuovo: tempestività da `status_log`, regole di stop (`FAILED`, `INVALID`), cifre di P1.edge calcolate fino al lunedì di trigger, decisioni registrate nella sessione |
+| PRE-7 | Strumento di rapporto per i checkpoint: `session_report week12|edge` | **realizzato e corretto dopo le review del 15-11 (R27-R43)**, da rivedere di nuovo: istantanea in sola lettura, regole di stop (`FAILED`, `INVALID`) con ammissione completa in produzione, vantaggio fino al lunedì di trigger e solo a barra registrata, scadenza sul trigger, decisione atomica nella sessione |
 
 Lo specchio su testnet (S07, facoltativo) calcola ancora solo `momentum_24h` e non è coperto.
 
@@ -127,8 +132,11 @@ python -m crypto_decision_lab.session_report week12 --session-dir <cartella dell
 python -m crypto_decision_lab.session_report edge --session-dir <cartella della sessione>
 ```
 
-Con `--as-of "<istante UTC>"` il rapporto è una **prova**: non scrive niente (né file né registrazione nella sessione).
-In produzione non si usa mai `--as-of`. `--spec` indica la specifica (di default quella di E05-P1).
+Con `--as-of "<istante UTC>"` il rapporto è una **prova**: non scrive niente (né file né registrazione nella sessione) e
+taglia la sessione a quell'istante, quindi non mostra dati successivi. I rapporti leggono la sessione da un'**istantanea in sola
+lettura** (una lettura coerente, senza aprire la fonte dati e senza chiedere l'orologio); scrivono solo per registrare una
+decisione in produzione. In produzione non si usa mai `--as-of`. `--spec` indica la specifica (di default quella di E05-P1);
+ogni rapporto stampa `spec_sha256`, da confrontare con quello del registro ufficiale.
 
 - `week12`: `NOT_DUE` prima delle 12 settimane, poi `OPERATIONAL_PASS` o `OPERATIONAL_FAIL`; `FAILED` o `INVALID` in qualsiasi
   momento. Ogni esito si registra una volta (`p1-week12-<ESITO>.json` e una riga nel database della sessione): un
@@ -136,7 +144,8 @@ In produzione non si usa mai `--as-of`. `--spec` indica la specifica (di default
 - `edge`: `NOT_DUE` finché i trade chiusi sono meno di 8 (e non sono passate 52 settimane) o finché non è arrivato il lunedì
   di trigger; poi `CONFIRMED` o `NOT_CONFIRMED`; dopo 52 settimane senza 8 trade chiusi `INCONCLUSIVE`; `FAILED` o `INVALID`
   per le regole di stop. La decisione si registra **una volta sola** nel database della sessione e in `p1-edge-report.json`:
-  una seconda valutazione è rifiutata (codice di uscita 2) anche se il file viene cancellato o la cartella copiata.
+  una seconda valutazione è rifiutata (codice di uscita 2) anche se il file viene cancellato (si ricrea dal database), la
+  cartella copiata dopo la decisione o due valutazioni partono insieme (la registrazione è atomica).
 
 Se la fonte non risponde, la poll segna `DATA_ERROR` senza toccare lo stato e la poll successiva riprova.
 

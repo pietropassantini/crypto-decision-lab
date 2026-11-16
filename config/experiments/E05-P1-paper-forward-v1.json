@@ -47,7 +47,10 @@
       "BTCUSDT-1h-forward-v1 and any path under data/forward (CP08 reserved)"
     ],
     "why_not_testnet_prices": "Testnet prices are those of the test market and were not checked against the real market; a signal must be judged on real prices. The testnet is used for the execution check below, not for the evidence on the edge.",
-    "source_kind": "public_klines"
+    "source_kind": "public_klines",
+    "base_url": "https://data-api.binance.vision",
+    "min_history_hours": 2400,
+    "admission": "A production report (no --as-of) requires: the spec PREREGISTERED with a registration date; a session that starts at or after that date; source kind public_klines (the tool's constant, not the spec's), mode paper, symbol and host as declared here, warmup of at least min_history_hours; the effective configuration digest (recomputed from the stored configuration) and the features of the frozen candidate. Otherwise the outcome is INVALID."
   },
   "execution": {
     "primary": "Paper execution simulated by the S06 engine with the cost model above (same engine as the backtest). This is the evidence for the criteria.",
@@ -72,14 +75,14 @@
   },
   "criteria": {
     "stop_rules_any_time": [
-      "max_drawdown_mtm_pct < -20 on the equity -> outcome FAILED, the session is closed (backtest worst drawdown was -17.2%). Both reports, week12 and edge, check it; it is the operator's duty to run them at least weekly",
-      "the session is not the frozen candidate -> outcome INVALID: its config_sha256 or feature parameters differ from candidate.config_sha256 / candidate.features, or (production only) it is not a live paper session on the public_klines source. Checked by both reports",
-      "a decision taken with a feature computed from a bar not yet closed -> detected by the fidelity check, which replays the engine on the session's own recorded bars (closed bars only): a mismatch is OPERATIONAL_FAIL at week 12 and INVALID at the edge checkpoint"
+      "max_drawdown_mtm_pct < -20 on the equity, over everything seen up to the instant of the report (also after the edge trigger) -> outcome FAILED, the session is closed (backtest worst drawdown was -17.2%). Both reports check it; it is the operator's duty to run them at least weekly",
+      "the session is not the frozen candidate on the declared source (see data.admission) -> outcome INVALID. Checked by both reports",
+      "a decision taken with a feature computed from a bar not yet closed -> detected by the fidelity check, which replays the engine on the session's own recorded bars (closed bars only): a mismatch is OPERATIONAL_FAIL at week 12 and INVALID at the edge checkpoint (checked up to the cutoff; the later state is reported as fidelity_to_date)"
     ],
     "week12_operational": [
       "timeliness: for each day, the 00:00 UTC event is committed (status_log.at, wall clock, of the row whose detail is 'last event <bar>') no later than 2 hours after the bar; at least 95% of the counted days since the start. Days whose 00:00 bar is missing because of an acknowledged market-data gap are not counted (they are checked by the next criterion); a day the runner never processed counts as not on time. A late poll that processes several bars at once is measured on each bar",
       "no day without decision because of the runner; missing market data are recorded as gaps and handled by the engine rule",
-      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored). It certifies the internal consistency of the session, not the authenticity of the bars",
+      "fidelity: python -m crypto_decision_lab.session_fidelity exits 0 on the session (same decisions, orders, fills and balances as the engine on the session's own recorded bars; feature values equal to 12 significant digits, gap notes ignored; a gap is replayed the way the runner handles it). It certifies the internal consistency of the session, NOT the authenticity of the bars and NOT the instant at which a recorded close became available",
       "max_drawdown_mtm_pct >= -20"
     ],
     "edge": {
@@ -90,7 +93,9 @@
         "buy_and_hold": "the constant LONG strategy of the same engine, with the candidate's initial capital, risk limits (max_exposure 0.5), fee and slippage, one entry at the first event of the session and valued at the same last event as the candidate; computed on the session's recorded bars",
         "report": "both equity and realized figures, the open position and its unrealized result are always reported side by side (E05 review R16)",
         "as_of_the_trigger": "The edge is computed on the session up to the trigger Monday 00:00 UTC (included), whenever the tool is run: the trigger is the first Monday 00:00 UTC at or after the close of the 8th closed trade. Running the tool later does not change the figures, so waiting for a better figure is not possible. The report states the trigger, the date of the evaluation and the delay",
-        "fidelity": "the edge report also runs the fidelity check; a mismatch makes the outcome INVALID"
+        "fidelity": "the edge report also runs the fidelity check on the session up to the cutoff; a mismatch makes the outcome INVALID. The state of the session after the cutoff is reported as fidelity_to_date and does not change the edge decision (it is the business of the stop rules and of week 12)",
+        "readiness": "Nothing is decided until the session has committed the bar of the trigger Monday 00:00 UTC, or a gap covering it was acknowledged: before that the outcome is NOT_DUE and nothing is written. An unacknowledged gap on that bar keeps it NOT_DUE until the operator acknowledges it.",
+        "deadline": "The trigger Monday must fall within 52 full weeks of the session start. If the 8th closed trade comes earlier but its Monday is after the deadline, or there is no trigger by the deadline, the outcome is INCONCLUSIVE, whenever the tool is run."
       },
       "criteria": [
         "realized_net_return_pct > 0",
@@ -114,7 +119,7 @@
         "CONFIRMED": "all four edge criteria pass at P1.edge -> S08 criteria may be registered for a new release of this exact candidate",
         "NOT_CONFIRMED": "an edge criterion fails at P1.edge -> the candidate is closed as REJECTED on forward data",
         "INCONCLUSIVE": "fewer than 8 closed trades after 52 full weeks, or the 78-week deadline of the restarts is reached",
-        "recorded": "the decision (CONFIRMED, NOT_CONFIRMED, INCONCLUSIVE, FAILED or INVALID) is recorded once in the session database and in p1-edge-report.json; a second evaluation is refused even if the file is deleted. --as-of makes any report a dry run that writes nothing",
+        "recorded": "the decision (CONFIRMED, NOT_CONFIRMED, INCONCLUSIVE, FAILED or INVALID) is recorded once in the session database, atomically (a unique index allows one edge row), and in p1-edge-report.json; a second evaluation is refused (exit 2) even if the file is deleted (it is re-created from the database) or two evaluations run at the same time. --as-of makes any report a dry run that writes nothing and cuts the session at that instant",
         "FAILED_INVALID": "FAILED or INVALID at an edge run closes the candidate on this session and counts as the edge decision"
       }
     }
@@ -152,8 +157,8 @@
     },
     {
       "id": "PRE-7",
-      "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--spec ...] [--as-of ...]. week12: timeliness from status_log (days excused by an acknowledged gap are not counted), unexplained missing days, fidelity, drawdown. edge: realized net of the closed trades up to the trigger Monday, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result. Both: INVALID (not the frozen candidate: config_sha256, features, and in production a live public_klines session) and FAILED (drawdown). --as-of is a dry run that writes nothing; decisions are recorded in the session database (edge once, week12 once per outcome). Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
-      "status": "implemented, corrected after the review of 2026-11-15 (R27-R34), pending a new review"
+      "what": "Report tool for the checkpoints: python -m crypto_decision_lab.session_report week12|edge --session-dir ... [--spec ...] [--as-of ...]. Both reports read the session through a read-only, consistent snapshot (no PaperSession, no data source, no clock, no writes except to record a production decision). week12: timeliness from status_log (days excused by an acknowledged gap are not counted), unexplained missing days, fidelity (a gap is replayed the way the runner handles it), drawdown. edge: realized net of the closed trades up to the trigger Monday and only once that bar is committed, equity net and drawdown, realized costs against gross, buy and hold of the same engine on the recorded bars, the open position and its unrealized result; the 52-week deadline applies to the trigger. Both: INVALID (production admission: preregistered spec, start after it, live public_klines session, mode, symbol, host, warmup, effective configuration digest, features; at the edge also the fidelity up to the cutoff) and FAILED (drawdown over everything seen). --as-of is a dry run that writes nothing and cuts the session at that instant; decisions are recorded atomically in the session database (one edge row by a unique index, week12 once per outcome), a missing file is re-created. Tests: tests/test_session_report.py. Run weekly on Monday 00:00 UTC.",
+      "status": "implemented, corrected after the reviews of 2026-11-15 (R27-R43), pending a new review"
     }
   ],
   "evidence_to_record": [
@@ -167,7 +172,9 @@
     "One asset, one regime: 12 to 52 weeks may fall entirely in a rising or falling market.",
     "Paper fills at the open with assumed slippage; real fills are observed only in the optional testnet mirror and, later, with minimal capital under S08.",
     "Warmup bars are read once and frozen in the session history (INSERT OR IGNORE): a later revision of a warmup bar is not seen; Binance does not revise closed bars in practice, and the features stay consistent with the stored history (review R17).",
-    "Judging the edge on realized trades only is stricter than the E05 backtest, whose confirmation passed through the unrealized gain of an open position (review R16): a candidate that holds a winning position at the checkpoint is judged on what it has already closed."
+    "Judging the edge on realized trades only is stricter than the E05 backtest, whose confirmation passed through the unrealized gain of an open position (review R16): a candidate that holds a winning position at the checkpoint is judged on what it has already closed.",
+    "The fidelity check cannot show when a recorded close became available (the session stores only the value); the runner's own tests and the public klines endpoint (closed bars only for the history, the current bar's open for the decision) are what keep the features causal.",
+    "A data gap is replayed the way the runner handles it; a gap on the bar of the trigger Monday keeps the decision pending until the operator acknowledges it."
   ],
   "deviations": [
     {
@@ -187,5 +194,10 @@
         "note": "DEV-1 approved in chat: forward evidence on real-market public klines with simulated execution; testnet only as an optional order mirror outside the criteria. The specification itself is still DRAFT: it is preregistered separately, after the report tool (PRE-7) and the non-Claude review."
       }
     }
-  ]
+  ],
+  "procedure": {
+    "official_register": "The coordinator keeps the official register in the backlog row of E05-P1 and in reports/e05-p1/: the id of the active session, the spec sha256 (every report prints spec_sha256 and it must equal the registered one), the start time, each restart with its approval and reason, and the 78-week deadline counted from the first session. The tool cannot know which session is the official one, or how many restarts happened: copies of a session folder made before a decision are outside its reach, and the register is what makes them void.",
+    "weekly_run": "every Monday 00:00 UTC: session_report week12 and session_report edge on the official session, without --as-of",
+    "reading": "the reports read the session through a read-only snapshot; they write only to record a production decision"
+  }
 }
